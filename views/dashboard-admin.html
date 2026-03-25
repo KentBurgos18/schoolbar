@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SchoolBar — Admin</title>
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    @media (max-width: 768px) {
+      /* Grid de 2 columnas de email → 1 columna */
+      #sec-email > div[style*="grid-template-columns:1fr 1fr"] {
+        display: flex !important; flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>SchoolBar</h1>
+      <span>Panel de administración</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="showSection('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Resumen
+      </div>
+      <div class="nav-section">Gestión</div>
+      <div class="nav-item" onclick="showSection('parents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Padres
+      </div>
+      <div class="nav-item" onclick="showSection('cashiers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Cajeros
+      </div>
+      <div class="nav-item" onclick="showSection('students')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        Estudiantes
+      </div>
+      <div class="nav-item" onclick="showSection('products')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Productos
+      </div>
+      <div class="nav-item" onclick="showSection('recharges')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Recargas
+        <span class="badge badge-danger" id="pendingBadge" style="margin-left:auto;display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showSection('bankAccounts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Cuentas bancarias
+      </div>
+      <div class="nav-section">Reportes</div>
+      <div class="nav-item" onclick="showSection('sales')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Ventas
+      </div>
+      <div class="nav-section">Configuración</div>
+      <div class="nav-item" onclick="showSection('email')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Correo / Notificaciones
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">A</div>
+        <div>
+          <div class="user-name" id="sidebarName">Admin</div>
+          <div class="user-role">Administrador</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center">
+        <button class="btn-hamburger" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title" id="topbarTitle">Resumen</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" id="topbarAction" style="display:none"></button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <section id="sec-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#eff6ff">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div><div class="stat-value" id="statParents">—</div><div class="stat-label">Padres registrados</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+            </div>
+            <div><div class="stat-value" id="statStudents">—</div><div class="stat-label">Estudiantes activos</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fffbeb">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div><div class="stat-value" id="statPending">—</div><div class="stat-label">Recargas pendientes</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fef2f2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div><div class="stat-value" id="statSalesToday">—</div><div class="stat-label">Ventas hoy</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Recargas pendientes de aprobación</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table id="overviewRechargesTable">
+                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Ref.</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <tbody id="overviewRechargesTbody"><tr><td colspan="7" class="empty-state"><p>Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAJEROS -->
+      <section id="sec-cashiers" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Cajeros</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modalCashier')">+ Nuevo cajero</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acceso</th></tr></thead>
+                <tbody id="cashiersTbody"><tr><td colspan="4"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PADRES -->
+      <section id="sec-parents" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Padres de familia</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modalParent')">+ Nuevo padre</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Hijos</th></tr></thead>
+                <tbody id="parentsTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ESTUDIANTES -->
+      <section id="sec-students" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Estudiantes</h3>
+            <button class="btn btn-primary btn-sm" onclick="openStudentModal()">+ Nuevo estudiante</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Grado</th><th>Padre</th><th>Estado</th><th>QR</th></tr></thead>
+                <tbody id="studentsTbody"><tr><td colspan="5"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUCTOS -->
+      <section id="sec-products" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Productos del bar</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modalProduct')">+ Nuevo producto</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="productsTbody"><tr><td colspan="5"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECARGAS -->
+      <section id="sec-recharges" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Todas las recargas</h3>
+            <button class="btn btn-primary btn-sm" onclick="openRechargeModal()">+ Recargar a padre</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CUENTAS BANCARIAS -->
+      <section id="sec-bankAccounts" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Cuentas bancarias</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modalBank')">+ Nueva cuenta</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Banco</th><th>Titular</th><th>Número</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="banksTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EMAIL / NOTIFICACIONES -->
+      <section id="sec-email" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+          <!-- Configuración SMTP -->
+          <div class="card">
+            <div class="card-header"><h3>Configuración SMTP</h3></div>
+            <div class="card-body">
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label class="form-label">Servidor SMTP</label>
+                  <input type="text" id="smtpHost" class="form-control" placeholder="smtp.gmail.com" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Puerto</label>
+                  <input type="number" id="smtpPort" class="form-control" placeholder="587" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Usuario (email)</label>
+                <input type="email" id="smtpUser" class="form-control" placeholder="noreply@tuescuela.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña / App Password</label>
+                <input type="password" id="smtpPass" class="form-control" placeholder="••••••••" autocomplete="new-password" />
+                <div class="form-hint">Para Gmail usa una <strong>App Password</strong>, no tu contraseña normal.</div>
+              </div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label class="form-label">Nombre remitente (From)</label>
+                  <input type="text" id="smtpFrom" class="form-control" placeholder="SchoolBar &lt;noreply@...&gt;" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Seguro (TLS)</label>
+                  <select id="smtpSecure" class="form-control form-select">
+                    <option value="false">No (puerto 587 STARTTLS)</option>
+                    <option value="true">Sí (puerto 465 SSL)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL de la app (para enlaces en los correos)</label>
+                <input type="text" id="appUrl" class="form-control" placeholder="http://tudominio.com" />
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="saveEmailSettings()">Guardar configuración</button>
+                <button class="btn btn-ghost" onclick="testSmtpConnection()">Probar conexión</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notificaciones y envío manual -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <div class="card">
+              <div class="card-header"><h3>Notificaciones semanales</h3></div>
+              <div class="card-body">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                  <div>
+                    <div style="font-weight:600;font-size:14px">Envío automático de deudas</div>
+                    <div style="font-size:12px;color:var(--gray-500);margin-top:2px">Todos los lunes a las 08:00 (Guayaquil)</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">
+                    <input type="checkbox" id="notifEnabled" style="opacity:0;width:0;height:0" onchange="toggleNotifications()" />
+                    <span id="toggleTrack" style="position:absolute;inset:0;border-radius:99px;background:var(--gray-300);transition:.2s"></span>
+                    <span id="toggleThumb" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s"></span>
+                  </label>
+                </div>
+                <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:13px;color:var(--gray-600);margin-bottom:16px">
+                  <strong>¿Qué se envía?</strong> Un correo a cada padre que tenga deuda &gt; $0, con el detalle de lo que consumió su hijo/a durante la semana.
+                </div>
+                <button class="btn btn-warning" style="width:100%" onclick="sendDebtNow()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Enviar notificaciones ahora
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h3>Correo de prueba</h3></div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Enviar a</label>
+                  <input type="email" id="testEmailTo" class="form-control" placeholder="tu@email.com" />
+                </div>
+                <button class="btn btn-primary" style="width:100%" onclick="sendTestEmail()">Enviar correo de prueba</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h3>Guía rápida — Gmail</h3></div>
+              <div class="card-body" style="font-size:13px;color:var(--gray-600);line-height:1.7">
+                <ol style="padding-left:18px;margin:0">
+                  <li>Activa la verificación en 2 pasos en tu cuenta Google.</li>
+                  <li>Ve a <strong>Cuenta Google → Seguridad → Contraseñas de aplicaciones</strong>.</li>
+                  <li>Crea una para "Correo / Otra aplicación".</li>
+                  <li>Usa esa clave de 16 caracteres como <em>Contraseña</em> aquí.</li>
+                  <li>Host: <code>smtp.gmail.com</code> | Puerto: <code>587</code> | TLS: <code>No</code></li>
+                </ol>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- VENTAS -->
+      <section id="sec-sales" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0;flex:1;min-width:140px">
+              <label class="form-label">Desde</label>
+              <input type="date" id="salesFrom" class="form-control" />
+            </div>
+            <div class="form-group" style="margin:0;flex:1;min-width:140px">
+              <label class="form-label">Hasta</label>
+              <input type="date" id="salesTo" class="form-control" />
+            </div>
+            <button class="btn btn-primary" onclick="loadSales()">Filtrar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Historial de ventas</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ID</th><th>Estudiante</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Cajero</th><th>Fecha</th><th>Ver</th></tr></thead>
+                <tbody id="salesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<!-- ── Modal: Recarga directa ── -->
+<div class="modal-overlay" id="modalRecharge">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Recargar saldo a padre</h3>
+      <button class="btn-close" onclick="closeModal('modalRecharge')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Padre</label>
+        <select id="rcParent" class="form-control form-select"><option value="">Seleccionar padre...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monto ($)</label>
+        <input type="number" id="rcAmount" class="form-control" placeholder="0.00" min="0.01" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Método de pago</label>
+        <select id="rcMethod" class="form-control form-select" onchange="toggleRcTransfer()">
+          <option value="CASH">Efectivo</option>
+          <option value="TRANSFER">Transferencia</option>
+        </select>
+      </div>
+      <div id="rcTransferFields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Cuenta destino</label>
+          <select id="rcBankAccount" class="form-control form-select"><option value="">Seleccionar cuenta...</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Referencia / comprobante</label>
+          <input type="text" id="rcRef" class="form-control" placeholder="Nro. de transacción" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalRecharge')">Cancelar</button>
+      <button class="btn btn-primary" onclick="applyRecharge()">Aplicar recarga</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo cajero ── -->
+<div class="modal-overlay" id="modalCashier">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo cajero</h3>
+      <button class="btn-close" onclick="closeModal('modalCashier')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="cName" class="form-control" placeholder="María López" /></div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="cEmail" class="form-control" placeholder="cajero@escuela.com" /></div>
+      <div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="cPass" class="form-control" placeholder="Mínimo 6 caracteres" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalCashier')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createCashier()">Crear cajero</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo padre ── -->
+<div class="modal-overlay" id="modalParent">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo padre de familia</h3>
+      <button class="btn-close" onclick="closeModal('modalParent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="pName" class="form-control" placeholder="Juan Pérez" /></div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="pEmail" class="form-control" placeholder="juan@email.com" /></div>
+      <div class="form-group"><label class="form-label">Contraseña temporal</label><input type="password" id="pPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input type="text" id="pPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalParent')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createParent()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo estudiante ── -->
+<div class="modal-overlay" id="modalStudent">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo estudiante</h3>
+      <button class="btn-close" onclick="closeModal('modalStudent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="stName" class="form-control" /></div>
+      <div class="form-group"><label class="form-label">Grado / Curso</label><input type="text" id="stGrade" class="form-control" placeholder="3ro bachillerato A" /></div>
+      <div class="form-group">
+        <label class="form-label">Padre / Madre</label>
+        <select id="stParent" class="form-control form-select"><option value="">Seleccionar padre</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalStudent')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createStudent()">Guardar y generar QR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo producto ── -->
+<div class="modal-overlay" id="modalProduct">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nuevo producto</h3>
+      <button class="btn-close" onclick="closeModal('modalProduct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre</label><input type="text" id="prName" class="form-control" placeholder="Jugo de naranja" /></div>
+      <div class="form-row form-row-2">
+        <div class="form-group"><label class="form-label">Precio ($)</label><input type="number" id="prPrice" class="form-control" step="0.01" min="0.01" /></div>
+        <div class="form-group"><label class="form-label">Categoría</label><input type="text" id="prCat" class="form-control" placeholder="Bebidas / Comidas" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalProduct')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createProduct()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Nueva cuenta bancaria ── -->
+<div class="modal-overlay" id="modalBank">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva cuenta bancaria</h3>
+      <button class="btn-close" onclick="closeModal('modalBank')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Banco</label><input type="text" id="bkBank" class="form-control" placeholder="Banco Pichincha" /></div>
+      <div class="form-group"><label class="form-label">Titular</label><input type="text" id="bkOwner" class="form-control" /></div>
+      <div class="form-row form-row-2">
+        <div class="form-group"><label class="form-label">Número de cuenta</label><input type="text" id="bkNumber" class="form-control" /></div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select id="bkType" class="form-control form-select">
+            <option value="AHORROS">Ahorros</option>
+            <option value="CORRIENTE">Corriente</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalBank')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createBank()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Ver QR estudiante ── -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Código QR</h3>
+      <button class="btn-close" onclick="closeModal('modalQR')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p style="margin-bottom:16px;font-weight:600;font-size:16px" id="qrStudentName"></p>
+      <img id="qrModalImg" class="qr-img" style="width:220px;height:220px" />
+      <p style="margin-top:12px;color:var(--gray-500);font-size:13px">Muestra este código en el bar para pagar</p>
+      <button class="btn btn-ghost" style="margin-top:14px" onclick="downloadQR()">Descargar QR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Detalle venta ── -->
+<div class="modal-overlay" id="modalSaleDetail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Detalle de venta</h3>
+      <button class="btn-close" onclick="closeModal('modalSaleDetail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="saleDetailBody"></div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── Sidebar móvil ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+const API = '/api';
+var token = localStorage.getItem('sbToken');
+var user  = JSON.parse(localStorage.getItem('sbUser') || '{}');
+
+if (!token || user.role !== 'ADMIN') window.location.href = '/';
+
+// Init UI
+document.getElementById('sidebarAvatar').textContent = (user.name || 'A')[0].toUpperCase();
+document.getElementById('sidebarName').textContent = user.name || 'Admin';
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+}
+
+async function api(path, opts) {
+  const res = await fetch(API + path, { headers: authHeaders(), ...opts });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+// ── Navigation ──
+var sections = ['overview','parents','cashiers','students','products','recharges','bankAccounts','sales','email'];
+var sectionTitles = { overview:'Resumen', parents:'Padres de familia', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', sales:'Ventas', email:'Correo y notificaciones' };
+
+function showSection(id) {
+  if (!sections.includes(id)) id = 'overview';
+  sections.forEach(s => {
+    document.getElementById('sec-' + s).style.display = s === id ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var navItem = document.querySelector('.nav-item[onclick="showSection(\'' + id + '\')"]');
+  if (navItem) navItem.classList.add('active');
+  document.getElementById('topbarTitle').textContent = sectionTitles[id] || id;
+  window.location.hash = id;
+  closeSidebar();
+  if (id === 'cashiers')     loadCashiers();
+  if (id === 'parents')      loadParents();
+  if (id === 'students')     loadStudents();
+  if (id === 'products')     loadProducts();
+  if (id === 'recharges')    loadRecharges();
+  if (id === 'bankAccounts') loadBanks();
+  if (id === 'sales')        loadSales();
+  if (id === 'email')        loadEmailSettings();
+}
+
+// ── Modals ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+// ── Toast ──
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type || '');
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Logout ──
+function logout() { localStorage.clear(); window.location.href = '/'; }
+
+// ── Overview ──
+async function loadOverview() {
+  var parents   = await api('/parents');
+  var students  = await api('/students');
+  var recharges = await api('/recharges');
+  var sales     = await api('/sales');
+
+  if (parents)   document.getElementById('statParents').textContent = parents.length;
+  if (students)  document.getElementById('statStudents').textContent = students.filter(s => s.active).length;
+  var pending = (recharges || []).filter(r => r.status === 'PENDING');
+  document.getElementById('statPending').textContent = pending.length;
+
+  if (pending.length > 0) {
+    document.getElementById('pendingBadge').textContent = pending.length;
+    document.getElementById('pendingBadge').style.display = '';
+  }
+
+  var today = new Date().toISOString().split('T')[0];
+  var salesToday = (sales || []).filter(s => s.createdAt && s.createdAt.startsWith(today));
+  document.getElementById('statSalesToday').textContent = '$' + salesToday.reduce((a, s) => a + parseFloat(s.total), 0).toFixed(2);
+
+  renderOverviewRecharges(pending);
+}
+
+function renderOverviewRecharges(recharges) {
+  var tb = document.getElementById('overviewRechargesTbody');
+  if (!recharges.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">No hay recargas pendientes</td></tr>'; return; }
+  tb.innerHTML = recharges.map(r => `
+    <tr>
+      <td><strong>${r.parent_id}</strong></td>
+      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
+      <td><span class="badge ${r.method==='TRANSFER'?'badge-primary':'badge-gray'}">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</span></td>
+      <td>${r.bankAccount ? r.bankAccount.bank + '<br><small>' + r.bankAccount.number + '</small>' : '—'}</td>
+      <td>${r.receipt_ref || '—'}</td>
+      <td style="color:var(--gray-500);font-size:12px">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button>
+        <button class="btn btn-danger btn-sm"  onclick="rejectRecharge(${r.id})">Rechazar</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── Cashiers ──
+async function loadCashiers() {
+  var data = await api('/auth/cashiers');
+  var tb = document.getElementById('cashiersTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cajeros registrados</td></tr>'; return; }
+  tb.innerHTML = data.map(c => `
+    <tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.email}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(c.createdAt).toLocaleDateString('es-EC')}</td>
+      <td><a href="/cajero" target="_blank" class="btn btn-ghost btn-sm">Abrir POS</a></td>
+    </tr>`).join('');
+}
+
+async function createCashier() {
+  var body = { name: document.getElementById('cName').value, email: document.getElementById('cEmail').value, password: document.getElementById('cPass').value };
+  var res = await fetch(API + '/auth/register-cashier', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Cajero creado correctamente', 'success');
+  closeModal('modalCashier');
+  document.getElementById('cName').value = '';
+  document.getElementById('cEmail').value = '';
+  document.getElementById('cPass').value = '';
+  loadCashiers();
+}
+
+// ── Parents ──
+async function loadParents() {
+  var data = await api('/parents');
+  var tb = document.getElementById('parentsTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
+  tb.innerHTML = data.map(p => `
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.email}</td>
+      <td>${p.phone || '—'}</td>
+      <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
+      <td>${parseFloat(p.debt)>0?`<span class="debt-pill">$${parseFloat(p.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
+      <td>${(p.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
+    </tr>`).join('');
+}
+
+async function createParent() {
+  var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, password: document.getElementById('pPass').value, phone: document.getElementById('pPhone').value };
+  var res = await fetch(API + '/auth/register-parent', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Padre registrado correctamente', 'success');
+  closeModal('modalParent');
+  loadParents();
+}
+
+// ── Students ──
+async function fillParentSelect() {
+  var parents = await api('/parents');
+  var sel = document.getElementById('stParent');
+  sel.innerHTML = '<option value="">Seleccionar padre</option>';
+  (parents||[]).forEach(p => { var o = document.createElement('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); });
+}
+
+async function openStudentModal() {
+  await fillParentSelect();
+  openModal('modalStudent');
+}
+
+async function loadStudents() {
+  var data = await api('/students');
+  var tb = document.getElementById('studentsTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin estudiantes</td></tr>'; return; }
+  tb.innerHTML = data.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.grade || '—'}</td>
+      <td>${s.parent ? s.parent.name : '—'}</td>
+      <td><span class="badge ${s.active?'badge-success':'badge-danger'}">${s.active?'Activo':'Inactivo'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewQR(${s.id},'${s.name}')">Ver QR</button></td>
+    </tr>`).join('');
+}
+
+async function createStudent() {
+  var body = { name: document.getElementById('stName').value, grade: document.getElementById('stGrade').value, parent_id: document.getElementById('stParent').value };
+  var res = await fetch(API + '/students', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Estudiante creado y QR generado', 'success');
+  closeModal('modalStudent');
+  loadStudents();
+}
+
+async function viewQR(id, name) {
+  var data = await api('/students/' + id + '/qr');
+  if (!data) return;
+  document.getElementById('qrStudentName').textContent = name;
+  document.getElementById('qrModalImg').src = data.qr_image;
+  document.getElementById('qrModalImg').setAttribute('data-name', name);
+  openModal('modalQR');
+}
+
+function downloadQR() {
+  var img = document.getElementById('qrModalImg');
+  var a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'qr-' + img.getAttribute('data-name').replace(/\s/g,'-') + '.png';
+  a.click();
+}
+
+// ── Products ──
+async function loadProducts() {
+  var data = await api('/products');
+  var tb = document.getElementById('productsTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin productos</td></tr>'; return; }
+  tb.innerHTML = data.map(p => `
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="badge badge-gray">${p.category || '—'}</span></td>
+      <td><strong>$${parseFloat(p.price).toFixed(2)}</strong></td>
+      <td><span class="badge ${p.active?'badge-success':'badge-danger'}">${p.active?'Activo':'Inactivo'}</span></td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Desactivar</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function createProduct() {
+  var body = { name: document.getElementById('prName').value, price: parseFloat(document.getElementById('prPrice').value), category: document.getElementById('prCat').value };
+  var res = await fetch(API + '/products', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Producto creado', 'success');
+  closeModal('modalProduct');
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('¿Desactivar este producto?')) return;
+  await fetch(API + '/products/' + id, { method:'DELETE', headers: authHeaders() });
+  toast('Producto desactivado', 'warning');
+  loadProducts();
+}
+
+// ── Recharges ──
+async function openRechargeModal() {
+  // Cargar padres
+  var parents = await api('/parents');
+  var sel = document.getElementById('rcParent');
+  sel.innerHTML = '<option value="">Seleccionar padre...</option>';
+  (parents||[]).forEach(p => { var o = document.createElement('option'); o.value = p.id; o.textContent = p.name + ' — Saldo: $' + parseFloat(p.balance||0).toFixed(2); sel.appendChild(o); });
+
+  // Cargar cuentas bancarias
+  var accounts = await api('/bank-accounts');
+  var selBank = document.getElementById('rcBankAccount');
+  selBank.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+  (accounts||[]).filter(a=>a.active).forEach(a => { var o = document.createElement('option'); o.value = a.id; o.textContent = a.bank + ' — ' + a.number; selBank.appendChild(o); });
+
+  document.getElementById('rcAmount').value = '';
+  document.getElementById('rcMethod').value = 'CASH';
+  document.getElementById('rcRef').value = '';
+  document.getElementById('rcTransferFields').style.display = 'none';
+  openModal('modalRecharge');
+}
+
+function toggleRcTransfer() {
+  var method = document.getElementById('rcMethod').value;
+  document.getElementById('rcTransferFields').style.display = method === 'TRANSFER' ? 'block' : 'none';
+}
+
+async function applyRecharge() {
+  var body = {
+    parent_id:      document.getElementById('rcParent').value,
+    amount:         parseFloat(document.getElementById('rcAmount').value),
+    method:         document.getElementById('rcMethod').value,
+    bank_account_id:document.getElementById('rcBankAccount').value || null,
+    receipt_ref:    document.getElementById('rcRef').value || null,
+  };
+  if (!body.parent_id) { toast('Selecciona un padre', 'error'); return; }
+  if (!body.amount || body.amount <= 0) { toast('Ingresa un monto válido', 'error'); return; }
+
+  var res = await fetch(API + '/recharges/admin-add', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast(data.message, 'success');
+  closeModal('modalRecharge');
+  loadRecharges();
+}
+
+async function loadRecharges() {
+  var data = await api('/recharges');
+  var tb = document.getElementById('rechargesTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
+  tb.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.parent_id}</td>
+      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
+      <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
+      <td>${r.bankAccount ? r.bankAccount.bank : '—'}</td>
+      <td>${r.receipt_ref || '—'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+      <td>${r.status==='PENDING'?`<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>`:'—'}</td>
+    </tr>`).join('');
+}
+
+function statusBadge(s) {
+  var map = { PENDING:'badge-warning', APPROVED:'badge-success', REJECTED:'badge-danger' };
+  var label = { PENDING:'Pendiente', APPROVED:'Aprobada', REJECTED:'Rechazada' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${label[s]||s}</span>`;
+}
+
+async function approveRecharge(id) {
+  var res = await fetch(API + '/recharges/' + id + '/approve', { method:'PATCH', headers: authHeaders() });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Recarga aprobada. Nuevo saldo: $' + data.new_balance, 'success');
+  loadOverview(); loadRecharges();
+}
+
+async function rejectRecharge(id) {
+  var note = prompt('Motivo del rechazo (opcional):') || '';
+  var res = await fetch(API + '/recharges/' + id + '/reject', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ note }) });
+  if (!res.ok) { toast('Error al rechazar', 'error'); return; }
+  toast('Recarga rechazada', 'warning');
+  loadOverview(); loadRecharges();
+}
+
+// ── Banks ──
+async function loadBanks() {
+  var data = await api('/bank-accounts');
+  var tb = document.getElementById('banksTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cuentas</td></tr>'; return; }
+  tb.innerHTML = data.map(b => `
+    <tr>
+      <td><strong>${b.bank}</strong></td>
+      <td>${b.owner}</td>
+      <td><code>${b.number}</code></td>
+      <td>${b.type}</td>
+      <td><span class="badge ${b.active?'badge-success':'badge-danger'}">${b.active?'Activa':'Inactiva'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteBank(${b.id})">Desactivar</button></td>
+    </tr>`).join('');
+}
+
+async function createBank() {
+  var body = { bank: document.getElementById('bkBank').value, owner: document.getElementById('bkOwner').value, number: document.getElementById('bkNumber').value, type: document.getElementById('bkType').value };
+  var res = await fetch(API + '/bank-accounts', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+  if (!res.ok) { toast('Error al crear cuenta', 'error'); return; }
+  toast('Cuenta bancaria creada', 'success');
+  closeModal('modalBank');
+  loadBanks();
+}
+
+async function deleteBank(id) {
+  if (!confirm('¿Desactivar esta cuenta?')) return;
+  await fetch(API + '/bank-accounts/' + id, { method:'DELETE', headers: authHeaders() });
+  toast('Cuenta desactivada', 'warning');
+  loadBanks();
+}
+
+// ── Sales ──
+async function loadSales() {
+  var from = document.getElementById('salesFrom').value;
+  var to   = document.getElementById('salesTo').value;
+  var qs   = new URLSearchParams();
+  if (from) qs.set('from', from);
+  if (to)   qs.set('to', to);
+  var data = await api('/sales?' + qs.toString());
+  var tb = document.getElementById('salesTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin ventas</td></tr>'; return; }
+  tb.innerHTML = data.map(s => `
+    <tr>
+      <td>#${s.id}</td>
+      <td>${s.student ? s.student.name : '—'}</td>
+      <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
+      <td style="color:var(--success)">$${parseFloat(s.paid_from_balance).toFixed(2)}</td>
+      <td style="color:var(--danger)">$${parseFloat(s.added_to_debt).toFixed(2)}</td>
+      <td>${s.cashier_id}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewSale(${s.id})">Ver</button></td>
+    </tr>`).join('');
+}
+
+async function viewSale(id) {
+  var data = await api('/sales?id=' + id);
+  var sale = (data||[]).find(s => s.id === id);
+  if (!sale) return;
+  var body = document.getElementById('saleDetailBody');
+  body.innerHTML = `
+    <p style="margin-bottom:12px"><strong>Estudiante:</strong> ${sale.student?.name || '—'} &nbsp;|&nbsp; <strong>Total:</strong> $${parseFloat(sale.total).toFixed(2)}</p>
+    <table><thead><tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th></tr></thead>
+    <tbody>${(sale.items||[]).map(i=>`<tr><td>${i.name}</td><td>$${parseFloat(i.price).toFixed(2)}</td><td>${i.quantity}</td><td>$${parseFloat(i.subtotal).toFixed(2)}</td></tr>`).join('')}</tbody></table>
+    <div style="margin-top:12px;display:flex;gap:12px">
+      <span class="badge badge-success">Del saldo: $${parseFloat(sale.paid_from_balance).toFixed(2)}</span>
+      <span class="badge ${parseFloat(sale.added_to_debt)>0?'badge-danger':'badge-gray'}">A deuda: $${parseFloat(sale.added_to_debt).toFixed(2)}</span>
+    </div>`;
+  openModal('modalSaleDetail');
+}
+
+// ── Email Settings ──
+async function loadEmailSettings() {
+  var data = await api('/settings/email');
+  if (!data) return;
+  document.getElementById('smtpHost').value   = data.smtp_host || '';
+  document.getElementById('smtpPort').value   = data.smtp_port || '587';
+  document.getElementById('smtpUser').value   = data.smtp_user || '';
+  document.getElementById('smtpPass').value   = data.smtp_pass || '';
+  document.getElementById('smtpFrom').value   = data.smtp_from || '';
+  document.getElementById('appUrl').value     = data.app_url   || '';
+  document.getElementById('smtpSecure').value = data.smtp_secure || 'false';
+
+  var enabled = data.email_notifications_enabled === 'true';
+  var cb = document.getElementById('notifEnabled');
+  cb.checked = enabled;
+  updateToggleUI(enabled);
+}
+
+function updateToggleUI(enabled) {
+  var track = document.getElementById('toggleTrack');
+  var thumb = document.getElementById('toggleThumb');
+  track.style.background = enabled ? 'var(--success)' : 'var(--gray-300)';
+  thumb.style.left = enabled ? '22px' : '2px';
+}
+
+async function toggleNotifications() {
+  var enabled = document.getElementById('notifEnabled').checked;
+  updateToggleUI(enabled);
+  await fetch(API + '/settings/email', {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ email_notifications_enabled: String(enabled) })
+  });
+  toast(enabled ? 'Notificaciones activadas' : 'Notificaciones desactivadas', enabled ? 'success' : 'warning');
+}
+
+async function saveEmailSettings() {
+  var body = {
+    smtp_host:   document.getElementById('smtpHost').value,
+    smtp_port:   document.getElementById('smtpPort').value,
+    smtp_user:   document.getElementById('smtpUser').value,
+    smtp_pass:   document.getElementById('smtpPass').value,
+    smtp_from:   document.getElementById('smtpFrom').value,
+    smtp_secure: document.getElementById('smtpSecure').value,
+    app_url:     document.getElementById('appUrl').value,
+  };
+  var res = await fetch(API + '/settings/email', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast(data.message, 'success');
+}
+
+async function testSmtpConnection() {
+  toast('Probando conexión...', '');
+  var res = await fetch(API + '/settings/email/test', { method:'POST', headers:authHeaders() });
+  var data = await res.json();
+  toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+}
+
+async function sendTestEmail() {
+  var to = document.getElementById('testEmailTo').value;
+  if (!to) { toast('Ingresa un correo destino', 'error'); return; }
+  var res = await fetch(API + '/settings/email/send-test', { method:'POST', headers:authHeaders(), body:JSON.stringify({ to }) });
+  var data = await res.json();
+  toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+}
+
+async function sendDebtNow() {
+  toast('Enviando notificaciones...', '');
+  var res = await fetch(API + '/settings/email/send-debt-now', { method:'POST', headers:authHeaders() });
+  var data = await res.json();
+  toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+}
+
+// ── SSE — tiempo real ──
+var currentSection = 'overview';
+
+var sectionLoaders = {
+  overview:     loadOverview,
+  parents:      loadParents,
+  students:     loadStudents,
+  products:     loadProducts,
+  recharges:    loadRecharges,
+  bankAccounts: loadBanks,
+  sales:        loadSales,
+  email:        null
+};
+
+// Sobreescribir showSection para trackear sección actual
+var _showSection = showSection;
+showSection = function(id) {
+  currentSection = sections.includes(id) ? id : 'overview';
+  _showSection(id);
+};
+
+function connectSSE() {
+  var es = new EventSource('/api/events?token=' + token);
+
+  es.addEventListener('connected', function() {
+    console.log('[SSE] Conectado — actualizaciones en tiempo real activas');
+  });
+
+  // Nueva recarga solicitada por un padre
+  es.addEventListener('recharge:new', function() {
+    loadOverview();
+    if (currentSection === 'recharges') loadRecharges();
+    toast('Nueva solicitud de recarga recibida', 'warning');
+  });
+
+  // Recarga aprobada (por admin desde otra pestaña o por admin-add)
+  es.addEventListener('recharge:approved', function() {
+    loadOverview();
+    if (currentSection === 'recharges') loadRecharges();
+    if (currentSection === 'parents')   loadParents();
+  });
+
+  // Recarga rechazada
+  es.addEventListener('recharge:rejected', function() {
+    loadOverview();
+    if (currentSection === 'recharges') loadRecharges();
+  });
+
+  // Nueva venta procesada por el cajero
+  es.addEventListener('sale:new', function() {
+    loadOverview();
+    if (currentSection === 'sales')   loadSales();
+    if (currentSection === 'parents') loadParents();
+  });
+
+  es.onerror = function() {
+    console.warn('[SSE] Conexión perdida. Reconectando...');
+    es.close();
+    setTimeout(connectSSE, 5000);
+  };
+}
+
+connectSSE();
+
+// Init — restaurar sección desde el hash de la URL
+var initSection = window.location.hash.replace('#', '') || 'overview';
+currentSection = initSection;
+showSection(initSection);
+if (initSection === 'overview') loadOverview();
+</script>
+</body>
+</html>

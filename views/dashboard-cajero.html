@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SchoolBar — POS</title>
+  <link rel="stylesheet" href="/css/theme.css" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { background: var(--gray-100); }
+
+    /* ── Topbar ── */
+    .pos-topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 56px; background: #1e3a8a;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .pos-topbar .brand { color: #fff; font-weight: 800; font-size: 18px; letter-spacing: -.3px; }
+    .pos-topbar .cashier-info { color: rgba(255,255,255,.75); font-size: 13px; }
+    .pos-topbar .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .pos-topbar .btn-new { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .pos-topbar .btn-new:hover { background: rgba(255,255,255,.25); }
+    .pos-topbar .btn-exit { background: transparent; color: rgba(255,255,255,.6); border: none; cursor: pointer; font-size: 13px; font-family: inherit; }
+    .pos-topbar .btn-exit:hover { color: #fff; }
+
+    /* ── Layout ── */
+    .pos-layout {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Panel izquierdo ── */
+    .pos-left {
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Panel derecho: carrito ── */
+    .pos-right {
+      background: #fff;
+      border-left: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ── Resultados de búsqueda ── */
+    .search-result-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px;
+      margin-bottom: 8px; cursor: pointer; transition: all .15s;
+      background: #fff;
+    }
+    .search-result-item:hover { border-color: var(--primary); background: #eff6ff; }
+    .search-result-item .sr-name  { font-weight: 700; font-size: 15px; }
+    .search-result-item .sr-grade { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+    .search-result-item .sr-bal   { font-size: 13px; font-weight: 600; color: var(--success); }
+    .search-empty { text-align:center; padding: 24px; color: var(--gray-400); font-size: 14px; }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
+      .pos-topbar .brand span { display: none; }
+      .pos-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow-y: auto;
+      }
+      .pos-left { padding: 12px; }
+      .pos-right {
+        border-left: none;
+        border-top: 2px solid var(--gray-200);
+        height: auto;
+        max-height: none;
+      }
+      .product-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+      .cart-body { max-height: 260px; overflow-y: auto; }
+    }
+    @media (max-width: 480px) {
+      .pos-topbar { padding: 0 12px; }
+      .pos-topbar .btn-exit { display: none; }
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .cart-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cart-header h3 { font-size: 16px; font-weight: 700; margin: 0; }
+    .cart-body { flex: 1; overflow-y: auto; padding: 12px 20px; }
+    .cart-footer { padding: 16px 20px; border-top: 1px solid var(--gray-200); }
+
+    .cart-empty { text-align: center; padding: 40px 20px; color: var(--gray-400); }
+    .cart-empty svg { display: block; margin: 0 auto 12px; }
+
+    /* ── Estudiante identificado ── */
+    .student-banner {
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      border: 2px solid #86efac; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .student-banner .st-name  { font-size: 20px; font-weight: 800; color: #15803d; }
+    .student-banner .st-grade { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
+    .student-banner .st-saldo { font-size: 13px; margin-top: 8px; }
+
+    /* ── Scanner ── */
+    .scanner-wrap {
+      background: #0f172a; border-radius: 14px; padding: 24px;
+      text-align: center; color: #fff;
+    }
+    .scanner-wrap h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .scanner-wrap p  { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+    #qr-reader { margin: 0 auto; max-width: 280px; }
+    .scanner-actions { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+
+    .manual-toggle { margin-top: 12px; }
+    .manual-row { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* ── Productos ── */
+    .cat-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; }
+    .product-btn {
+      background: #fff; border: 1.5px solid var(--gray-200); border-radius: 12px;
+      padding: 14px 10px; text-align: center; cursor: pointer;
+      transition: all .15s; font-family: inherit; width: 100%;
+    }
+    .product-btn:hover { border-color: var(--primary); background: #eff6ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,.12); }
+    .product-btn:active { transform: translateY(0); }
+    .p-name  { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+    .p-cat   { font-size: 11px; color: var(--gray-500); margin-bottom: 8px; }
+    .p-price { font-size: 18px; font-weight: 800; color: var(--primary); }
+
+    /* ── Cart items ── */
+    .cart-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--gray-100);
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+    .qty-ctrl button {
+      width: 26px; height: 26px; border-radius: 6px; border: none;
+      background: var(--gray-200); cursor: pointer; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; font-family: inherit;
+    }
+    .qty-ctrl button:hover { background: var(--gray-300); }
+    .qty-ctrl span { width: 24px; text-align: center; font-weight: 700; font-size: 14px; }
+
+    /* ── Totales ── */
+    .total-row { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 20px; margin: 12px 0; }
+    .balance-preview { background: var(--gray-50); border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 13px; }
+    .balance-preview-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .balance-preview-row:last-child { margin-bottom: 0; }
+
+    .btn-process {
+      width: 100%; padding: 14px; font-size: 16px; font-weight: 800;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff; border: none; border-radius: 12px; cursor: pointer;
+      font-family: inherit; transition: opacity .15s;
+    }
+    .btn-process:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-process:not(:disabled):hover { opacity: .9; }
+
+    /* ── Modal resultado ── */
+    .sale-result-icon { font-size: 48px; text-align: center; margin-bottom: 12px; }
+    .sale-result-total { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    .sale-result-sub { text-align: center; color: var(--gray-500); font-size: 14px; margin-bottom: 20px; }
+    .sale-result-detail { background: var(--gray-50); border-radius: 10px; padding: 14px; }
+    .sale-result-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-200); }
+    .sale-result-row:last-child { border-bottom: none; }
+    .debt-alert { background: #fef3c7; border: 1.5px solid #fcd34d; border-radius: 10px; padding: 12px; margin-top: 12px; font-size: 13px; color: #92400e; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Topbar ── -->
+  <div class="pos-topbar">
+    <div class="brand">SchoolBar <span style="font-weight:400;font-size:14px;opacity:.6">— Punto de venta</span></div>
+    <div class="topbar-right">
+      <span class="cashier-info" id="cashierInfo"></span>
+      <button class="btn-new" onclick="resetSale()">+ Nueva venta</button>
+      <button class="btn-exit" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- ── Layout principal ── -->
+  <div class="pos-layout">
+
+    <!-- Izquierda -->
+    <div class="pos-left">
+
+      <!-- Estudiante identificado -->
+      <div id="studentBanner" style="display:none">
+        <div class="student-banner">
+          <div>
+            <div class="st-name" id="stName">—</div>
+            <div class="st-grade" id="stGrade"></div>
+            <div class="st-grade" id="stParent" style="margin-top:2px"></div>
+            <div class="st-saldo">
+              Saldo: <strong style="color:#16a34a" id="stBalance">$0.00</strong>
+              &nbsp;·&nbsp;
+              Deuda: <strong style="color:var(--danger)" id="stDebt">$0.00</strong>
+            </div>
+          </div>
+          <div>
+            <button class="btn btn-ghost btn-sm" onclick="resetSale()">Cambiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scanner -->
+      <div class="card" id="scannerCard">
+        <div class="card-header"><h3>Identificar estudiante</h3></div>
+        <div class="card-body" style="padding-top:0">
+
+          <!-- Tabs -->
+          <div class="tabs" style="margin-bottom:16px">
+            <button class="tab-btn active" onclick="switchTab('qr',this)">📷 Escanear QR</button>
+            <button class="tab-btn" onclick="switchTab('search',this)">🔍 Buscar por nombre</button>
+          </div>
+
+          <!-- Tab QR -->
+          <div id="tab-qr">
+            <div class="scanner-wrap">
+              <h3>Escanear código QR</h3>
+              <p>Apunta la cámara al código QR del estudiante</p>
+              <div id="qr-reader"></div>
+              <div class="scanner-actions">
+                <button class="btn btn-primary" id="btnStart" onclick="startScanner()">Iniciar cámara</button>
+                <button class="btn btn-danger"  id="btnStop"  onclick="stopScanner()" style="display:none">Detener</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Buscar por nombre -->
+          <div id="tab-search" style="display:none">
+            <div style="margin-bottom:12px">
+              <input type="text" id="searchName" class="form-control" placeholder="Nombre del estudiante..." oninput="onSearchInput()" autocomplete="off" />
+            </div>
+            <div id="searchResults"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Productos -->
+      <div class="card" id="productsCard" style="display:none">
+        <div class="card-header"><h3>Productos</h3></div>
+        <div class="card-body">
+          <div class="cat-filters" id="catFilters"></div>
+          <div class="product-grid" id="productGrid"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Derecha: Carrito -->
+    <div class="pos-right">
+      <div class="cart-header">
+        <h3>Carrito</h3>
+        <button class="btn btn-ghost btn-sm" onclick="clearCart()">Limpiar</button>
+      </div>
+
+      <div class="cart-body">
+        <div id="cartItems">
+          <div class="cart-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            <p>Escanea un QR y agrega productos</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cart-footer">
+        <div id="cartSummary" style="display:none">
+          <div class="total-row">
+            <span>Total</span>
+            <span id="totalAmt">$0.00</span>
+          </div>
+          <div class="balance-preview" id="balancePreview" style="display:none">
+            <div class="balance-preview-row">
+              <span>Del saldo</span>
+              <strong style="color:#16a34a" id="previewBalance">$0.00</strong>
+            </div>
+            <div class="balance-preview-row">
+              <span>A deuda</span>
+              <strong id="previewDebt">$0.00</strong>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <input type="text" id="saleNote" class="form-control" placeholder="Nota (opcional)" />
+          </div>
+        </div>
+        <button class="btn-process" id="btnProcess" onclick="processSale()" disabled>
+          Cobrar
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal resultado -->
+  <div class="modal-overlay" id="modalResult">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Venta registrada</h3>
+        <button class="btn-close" onclick="closeModal('modalResult');resetSale()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="resultBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" style="width:100%" onclick="closeModal('modalResult');resetSale()">Nueva venta</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+<script>
+var API   = '/api';
+var token = localStorage.getItem('sbToken');
+var user  = JSON.parse(localStorage.getItem('sbUser') || '{}');
+
+if (!token || user.role !== 'CASHIER') window.location.href = '/';
+
+document.getElementById('cashierInfo').textContent = user.name || 'Cajero';
+
+function authHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+async function api(path, opts) {
+  var res = await fetch(API + path, { headers: authHeaders(), ...(opts||{}) });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function logout() { localStorage.clear(); window.location.href = '/'; }
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── State ──
+var currentStudent = null;
+var cart = [];
+var allProducts = [];
+var scanner = null;
+var scannerOn = false;
+
+// ── Tabs del scanner ──
+function switchTab(tab, btn) {
+  ['qr','search'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab !== 'qr') stopScanner();
+  if (tab === 'search') document.getElementById('searchName').focus();
+}
+
+// ── Búsqueda por nombre ──
+var searchTimer = null;
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(doSearch, 300);
+}
+
+async function doSearch() {
+  var q = document.getElementById('searchName').value.trim();
+  var el = document.getElementById('searchResults');
+  if (!q) { el.innerHTML = ''; return; }
+
+  var res = await fetch(API + '/students/search?q=' + encodeURIComponent(q), { headers: authHeaders() });
+  var data = await res.json();
+
+  if (!data.length) {
+    el.innerHTML = '<div class="search-empty">No se encontraron estudiantes con ese nombre</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(s => `
+    <div class="search-result-item" onclick="selectStudentFromSearch('${s.qr_token}')">
+      <div>
+        <div class="sr-name">${s.name}</div>
+        <div class="sr-grade">${s.grade || 'Sin grado'} · Padre: ${s.parent ? s.parent.name : '—'}</div>
+      </div>
+      <div class="sr-bal">$${parseFloat(s.parent ? s.parent.balance : 0).toFixed(2)}</div>
+    </div>`).join('');
+}
+
+async function selectStudentFromSearch(qrToken) {
+  document.getElementById('searchName').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  await loadStudent(qrToken);
+}
+
+// ── Scanner ──
+function startScanner() {
+  if (scanner) return;
+  scanner = new Html5Qrcode('qr-reader');
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('btnStop').style.display  = '';
+  scannerOn = true;
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    async (text) => { if (!scannerOn) return; stopScanner(); await loadStudent(text.trim()); },
+    () => {}
+  ).catch(err => {
+    toast('No se pudo acceder a la cámara', 'error');
+    scanner = null;
+    document.getElementById('btnStart').style.display = '';
+    document.getElementById('btnStop').style.display  = 'none';
+  });
+}
+
+function stopScanner() {
+  if (scanner && scannerOn) {
+    scanner.stop().then(() => { scanner.clear(); scanner = null; scannerOn = false; });
+  }
+  document.getElementById('btnStart').style.display = '';
+  document.getElementById('btnStop').style.display  = 'none';
+}
+
+
+async function loadStudent(qrToken) {
+  var data = await api('/students/scan/' + qrToken);
+  if (!data || data.error) { toast(data?.error || 'QR no válido', 'error'); return; }
+  currentStudent = data;
+  document.getElementById('stName').textContent    = data.name;
+  document.getElementById('stGrade').textContent   = data.grade || '';
+  document.getElementById('stParent').textContent  = 'Padre/Madre: ' + (data.parent ? data.parent.name : '—');
+  document.getElementById('stBalance').textContent = '$' + parseFloat(data.parent.balance).toFixed(2);
+  document.getElementById('stDebt').textContent    = '$' + parseFloat(data.parent.debt).toFixed(2);
+  document.getElementById('studentBanner').style.display = '';
+  document.getElementById('scannerCard').style.display   = 'none';
+  document.getElementById('productsCard').style.display  = '';
+  await loadProducts();
+  renderCart();
+  toast('✅ ' + data.name + ' identificado', 'success');
+}
+
+// ── Products ──
+async function loadProducts() {
+  allProducts = (await api('/products') || []).filter(p => p.active);
+  renderFilters();
+  renderProducts(allProducts);
+}
+
+var activeCat = 'all';
+function renderFilters() {
+  var cats = ['all', ...new Set(allProducts.map(p => p.category).filter(Boolean))];
+  document.getElementById('catFilters').innerHTML = cats.map(c =>
+    `<button class="btn ${activeCat===c?'btn-primary':'btn-ghost'} btn-sm" onclick="filterCat('${c}')">${c==='all'?'Todos':c}</button>`
+  ).join('');
+}
+
+function filterCat(cat) {
+  activeCat = cat;
+  renderFilters();
+  renderProducts(cat === 'all' ? allProducts : allProducts.filter(p => p.category === cat));
+}
+
+function renderProducts(list) {
+  document.getElementById('productGrid').innerHTML = list.map(p =>
+    `<button class="product-btn" onclick="addToCart(${p.id})">
+      <div class="p-name">${p.name}</div>
+      <div class="p-cat">${p.category||''}</div>
+      <div class="p-price">$${parseFloat(p.price).toFixed(2)}</div>
+    </button>`
+  ).join('');
+}
+
+// ── Cart ──
+function addToCart(id) {
+  var p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  var item = cart.find(x => x.product_id === id);
+  if (item) item.quantity++;
+  else cart.push({ product_id: id, name: p.name, price: parseFloat(p.price), quantity: 1 });
+  renderCart();
+}
+
+function changeQty(id, d) {
+  var idx = cart.findIndex(x => x.product_id === id);
+  if (idx < 0) return;
+  cart[idx].quantity += d;
+  if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+  renderCart();
+}
+
+function clearCart() { cart = []; renderCart(); }
+
+function renderCart() {
+  var el = document.getElementById('cartItems');
+  var total = cart.reduce((a, i) => a + i.price * i.quantity, 0);
+
+  if (!cart.length) {
+    el.innerHTML = '<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Carrito vacío</p></div>';
+    document.getElementById('cartSummary').style.display = 'none';
+    document.getElementById('btnProcess').disabled = true;
+    return;
+  }
+
+  el.innerHTML = cart.map(i => `
+    <div class="cart-item">
+      <div>
+        <div style="font-weight:600;font-size:14px">${i.name}</div>
+        <div style="font-size:12px;color:var(--gray-500)">$${i.price.toFixed(2)} c/u</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="qty-ctrl">
+          <button onclick="changeQty(${i.product_id},-1)">−</button>
+          <span>${i.quantity}</span>
+          <button onclick="changeQty(${i.product_id},1)">+</button>
+        </div>
+        <strong style="min-width:52px;text-align:right">$${(i.price*i.quantity).toFixed(2)}</strong>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('cartSummary').style.display = '';
+  document.getElementById('totalAmt').textContent = '$' + total.toFixed(2);
+
+  if (currentStudent) {
+    var bal = parseFloat(currentStudent.parent.balance);
+    var fromBal = Math.min(bal, total);
+    var toDebt  = Math.max(0, total - bal);
+    document.getElementById('balancePreview').style.display = '';
+    document.getElementById('previewBalance').textContent = '$' + fromBal.toFixed(2);
+    var debtEl = document.getElementById('previewDebt');
+    debtEl.textContent = '$' + toDebt.toFixed(2);
+    debtEl.style.color = toDebt > 0 ? 'var(--danger)' : 'var(--gray-400)';
+  }
+
+  document.getElementById('btnProcess').disabled = !currentStudent || !cart.length;
+}
+
+// ── Procesar venta ──
+async function processSale() {
+  if (!currentStudent || !cart.length) return;
+  var btn = document.getElementById('btnProcess');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+
+  var res = await fetch(API + '/sales', {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({
+      qr_token: currentStudent.qr_token,
+      items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
+      note: document.getElementById('saleNote').value
+    })
+  });
+  var data = await res.json();
+  btn.textContent = 'Cobrar';
+
+  if (!res.ok) { toast(data.error, 'error'); btn.disabled = false; return; }
+
+  var hasDebt = parseFloat(data.added_to_debt) > 0;
+  document.getElementById('resultBody').innerHTML = `
+    <div class="sale-result-icon">${hasDebt ? '⚠️' : '✅'}</div>
+    <div class="sale-result-total">$${data.total}</div>
+    <div class="sale-result-sub">Venta #${data.sale_id} · ${data.student}</div>
+    <div class="sale-result-detail">
+      <div class="sale-result-row"><span>Pagado del saldo</span><strong style="color:#16a34a">$${data.paid_from_balance}</strong></div>
+      <div class="sale-result-row"><span>Añadido a deuda</span><strong style="color:${hasDebt?'var(--danger)':'var(--gray-400)'}">$${data.added_to_debt}</strong></div>
+      <div class="sale-result-row"><span>Nuevo saldo del padre</span><strong>$${data.parent_new_balance}</strong></div>
+    </div>
+    ${hasDebt ? '<div class="debt-alert">⚠️ Saldo insuficiente — el monto restante fue añadido a la deuda del padre.</div>' : ''}`;
+
+  openModal('modalResult');
+  cart = [];
+  currentStudent = null;
+}
+
+function resetSale() {
+  cart = []; currentStudent = null;
+  stopScanner();
+  document.getElementById('studentBanner').style.display = 'none';
+  document.getElementById('scannerCard').style.display   = '';
+  document.getElementById('productsCard').style.display  = 'none';
+  document.getElementById('manualToken').value = '';
+  document.getElementById('saleNote').value    = '';
+  renderCart();
+}
+</script>
+</body>
+</html>

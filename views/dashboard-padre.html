@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SchoolBar — Padre</title>
+  <link rel="stylesheet" href="/css/theme.css" />
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>SchoolBar</h1>
+      <span>Portal de padres</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Mi cuenta</div>
+      <div class="nav-item active" onclick="showSection('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Inicio
+      </div>
+      <div class="nav-item" onclick="showSection('children')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+        Mis hijos
+      </div>
+      <div class="nav-item" onclick="showSection('consumptions')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Consumos
+      </div>
+      <div class="nav-section">Pagos</div>
+      <div class="nav-item" onclick="showSection('recharge')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Recargar saldo
+      </div>
+      <div class="nav-item" onclick="showSection('myRecharges')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Mis recargas
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">P</div>
+        <div>
+          <div class="user-name" id="sidebarName">Padre</div>
+          <div class="user-role">Padre / Madre</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center">
+        <button class="btn-hamburger" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title" id="topbarTitle">Inicio</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <section id="sec-home">
+        <!-- Balance y deuda -->
+        <div class="stats-grid" style="margin-bottom:24px">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeBalance" style="color:var(--success)">$0.00</div>
+              <div class="stat-label">Saldo disponible</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fef2f2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeDebt" style="color:var(--danger)">$0.00</div>
+              <div class="stat-label">Deuda pendiente</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#eff6ff">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeChildren">0</div>
+              <div class="stat-label">Hijos registrados</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fffbeb">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeSalesCount">0</div>
+              <div class="stat-label">Compras este mes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deuda alert -->
+        <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <strong style="color:var(--danger)">Tienes una deuda pendiente</strong>
+            <p style="font-size:13px;color:var(--danger);margin-top:2px">Tu saldo fue insuficiente en compras recientes. Por favor realiza el pago.</p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="showSection('recharge')">Pagar ahora</button>
+        </div>
+
+        <!-- Últimos consumos -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Últimas compras</h3>
+            <button class="btn btn-ghost btn-sm" onclick="showSection('consumptions')">Ver todo</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Hijo/a</th><th>Productos</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <tbody id="homeSalesTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MIS HIJOS -->
+      <section id="sec-children" style="display:none">
+        <div id="childrenGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+      </section>
+
+      <!-- CONSUMOS -->
+      <section id="sec-consumptions" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0;flex:1;min-width:140px">
+              <label class="form-label">Hijo/a</label>
+              <select id="filterChild" class="form-control form-select">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;flex:1;min-width:130px">
+              <label class="form-label">Desde</label>
+              <input type="date" id="consFrom" class="form-control" />
+            </div>
+            <div class="form-group" style="margin:0;flex:1;min-width:130px">
+              <label class="form-label">Hasta</label>
+              <input type="date" id="consTo" class="form-control" />
+            </div>
+            <button class="btn btn-primary" onclick="loadConsumptions()">Filtrar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Historial de consumos</h3><span id="consTotalLabel" style="font-size:13px;color:var(--gray-500)"></span></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Hijo/a</th><th>Detalle</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <tbody id="consTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Usa los filtros para buscar</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECARGAR SALDO -->
+      <section id="sec-recharge" style="display:none">
+        <div style="max-width:520px">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-body" style="display:flex;align-items:center;gap:16px">
+              <div>
+                <div style="font-size:13px;color:var(--gray-500)">Saldo actual</div>
+                <div class="balance-pill" id="rechargeSaldoActual">$0.00</div>
+              </div>
+              <div style="width:1px;height:40px;background:var(--gray-200)"></div>
+              <div>
+                <div style="font-size:13px;color:var(--gray-500)">Deuda</div>
+                <div class="debt-pill" id="rechargeDeudaActual">$0.00</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Solicitar recarga</h3></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Monto a recargar ($)</label>
+                <input type="number" id="rAmount" class="form-control" step="0.50" min="1" placeholder="10.00" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Método de pago</label>
+                <select id="rMethod" class="form-control form-select" onchange="toggleTransferFields()">
+                  <option value="CASH">Efectivo</option>
+                  <option value="TRANSFER">Transferencia bancaria</option>
+                </select>
+              </div>
+
+              <div id="transferFields" style="display:none">
+                <div class="form-group">
+                  <label class="form-label">Cuenta destino</label>
+                  <select id="rBankAccount" class="form-control form-select">
+                    <option value="">Cargando cuentas...</option>
+                  </select>
+                  <div class="form-hint">Selecciona la cuenta a la que harás la transferencia</div>
+                </div>
+                <div id="bankDetail" style="display:none;background:var(--primary-light);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13.5px">
+                  <strong id="bdBank"></strong><br>
+                  Titular: <span id="bdOwner"></span><br>
+                  N° cuenta: <code id="bdNumber"></code><br>
+                  Tipo: <span id="bdType"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Número de referencia / comprobante</label>
+                  <input type="text" id="rRef" class="form-control" placeholder="Ej: 000123456" />
+                  <div class="form-hint">Anota el número de comprobante de tu transferencia</div>
+                </div>
+              </div>
+
+              <div style="background:var(--warning-light);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--warning);margin-bottom:16px">
+                Tu solicitud quedará pendiente hasta que el administrador la apruebe.
+              </div>
+
+              <button class="btn btn-primary" style="width:100%" onclick="submitRecharge()">Enviar solicitud</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MIS RECARGAS -->
+      <section id="sec-myRecharges" style="display:none">
+        <div class="card">
+          <div class="card-header"><h3>Historial de recargas</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th></tr></thead>
+                <tbody id="myRechargesTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── Modal: Ver QR ── -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="qrModalTitle">Código QR</h3>
+      <button class="btn-close" onclick="closeModal('modalQR')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="qrModalImg" class="qr-img" style="width:220px;height:220px" />
+      <p style="margin-top:14px;color:var(--gray-500);font-size:13px">Muestra este código en el bar para pagar</p>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="downloadQR()">Descargar QR</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+var API   = '/api';
+var token = localStorage.getItem('sbToken');
+var user  = JSON.parse(localStorage.getItem('sbUser') || '{}');
+var bankAccounts = [];
+
+if (!token || user.role !== 'PARENT') window.location.href = '/';
+
+document.getElementById('sidebarAvatar').textContent = (user.name || 'P')[0].toUpperCase();
+document.getElementById('sidebarName').textContent = user.name || 'Padre';
+
+function authHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+async function api(path, opts) {
+  var res = await fetch(API + path, { headers: authHeaders(), ...opts });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+var sections = ['home','children','consumptions','recharge','myRecharges'];
+var titles   = { home:'Inicio', children:'Mis hijos', consumptions:'Historial de consumos', recharge:'Recargar saldo', myRecharges:'Mis recargas' };
+
+function showSection(id) {
+  sections.forEach(s => document.getElementById('sec-'+s).style.display = s===id?'':'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var el = document.querySelector('.nav-item[onclick="showSection(\''+id+'\')"]');
+  if (el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = titles[id] || id;
+  closeSidebar();
+  if (id==='children')    loadChildren();
+  if (id==='consumptions') loadConsumptions();
+  if (id==='recharge')    loadRechargeSection();
+  if (id==='myRecharges') loadMyRecharges();
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+function toast(msg, type) {
+  var el = document.createElement('div'); el.className='toast '+(type||''); el.textContent=msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+function logout() { localStorage.clear(); window.location.href='/'; }
+
+// ── Home ──
+async function loadHome() {
+  var me = await api('/parents/me');
+  if (!me) return;
+
+  user.balance = me.balance; user.debt = me.debt;
+  localStorage.setItem('sbUser', JSON.stringify(user));
+
+  document.getElementById('homeBalance').textContent   = '$'+parseFloat(me.balance).toFixed(2);
+  document.getElementById('homeDebt').textContent      = '$'+parseFloat(me.debt).toFixed(2);
+  document.getElementById('homeChildren').textContent  = (me.students||[]).length;
+
+  var debtAlert = document.getElementById('debtAlert');
+  debtAlert.style.display = parseFloat(me.debt)>0 ? 'flex' : 'none';
+
+  // Cargar últimas 5 ventas
+  var sales = await api('/parents/me/consumptions');
+  var latest = (sales||[]).slice(0,5);
+  document.getElementById('homeSalesCount').textContent = (sales||[]).filter(s => {
+    var d = new Date(s.createdAt); var now = new Date();
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).length;
+  renderSalesTable(latest, 'homeSalesTbody');
+
+  // Rellenar filtro hijos
+  var sel = document.getElementById('filterChild');
+  sel.innerHTML = '<option value="">Todos</option>';
+  (me.students||[]).forEach(s => { var o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o); });
+}
+
+function renderSalesTable(sales, tbodyId) {
+  var tb = document.getElementById(tbodyId);
+  if (!sales.length) { tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin compras</td></tr>'; return; }
+  tb.innerHTML = sales.map(s => `
+    <tr>
+      <td>${s.student?s.student.name:'—'}</td>
+      <td style="font-size:12px;color:var(--gray-600)">${(s.items||[]).map(i=>i.name+' x'+i.quantity).join(', ')}</td>
+      <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
+      <td style="color:var(--success)">$${parseFloat(s.paid_from_balance).toFixed(2)}</td>
+      <td style="color:${parseFloat(s.added_to_debt)>0?'var(--danger)':'var(--gray-400)'}">$${parseFloat(s.added_to_debt).toFixed(2)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
+    </tr>`).join('');
+}
+
+// ── Children ──
+async function loadChildren() {
+  var me = await api('/parents/me');
+  if (!me) return;
+  var grid = document.getElementById('childrenGrid');
+  if (!me.students||!me.students.length) { grid.innerHTML='<p style="color:var(--gray-400)">No tienes hijos registrados. Contacta al administrador.</p>'; return; }
+  grid.innerHTML = me.students.map(s => `
+    <div class="card">
+      <div class="card-body" style="text-align:center">
+        <div style="width:50px;height:50px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;font-weight:800;color:var(--primary)">${s.name[0].toUpperCase()}</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:4px">${s.name}</div>
+        <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px">${s.grade||'Sin grado asignado'}</div>
+        ${s.qr_image ? `<img src="${s.qr_image}" class="qr-img" style="width:160px;height:160px;margin-bottom:12px"/>` : ''}
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="viewQR(${s.id},'${s.name}','${s.qr_image}')">Ver QR completo</button>
+          <button class="btn btn-ghost btn-sm" onclick="showChildConsumptions(${s.id})">Ver consumos</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function showChildConsumptions(id) {
+  document.getElementById('filterChild').value = id;
+  showSection('consumptions');
+  loadConsumptions();
+}
+
+function viewQR(id, name, img) {
+  document.getElementById('qrModalTitle').textContent = 'QR de ' + name;
+  document.getElementById('qrModalImg').src = img;
+  document.getElementById('qrModalImg').setAttribute('data-name', name);
+  openModal('modalQR');
+}
+
+function downloadQR() {
+  var img = document.getElementById('qrModalImg');
+  var a = document.createElement('a'); a.href=img.src; a.download='qr-'+img.getAttribute('data-name').replace(/\s/g,'-')+'.png'; a.click();
+}
+
+// ── Consumptions ──
+async function loadConsumptions() {
+  var qs = new URLSearchParams();
+  var child = document.getElementById('filterChild').value;
+  var from  = document.getElementById('consFrom').value;
+  var to    = document.getElementById('consTo').value;
+  if (child) qs.set('student_id', child);
+  if (from)  qs.set('from', from);
+  if (to)    qs.set('to', to);
+  var data = await api('/parents/me/consumptions?'+qs.toString());
+  renderSalesTable(data||[], 'consTbody');
+  var total = (data||[]).reduce((a,s)=>a+parseFloat(s.total),0);
+  document.getElementById('consTotalLabel').textContent = data&&data.length ? data.length+' compras | Total: $'+total.toFixed(2) : '';
+}
+
+// ── Recharge ──
+async function loadRechargeSection() {
+  var me = await api('/parents/me');
+  if (me) {
+    document.getElementById('rechargeSaldoActual').textContent = '$'+parseFloat(me.balance).toFixed(2);
+    document.getElementById('rechargeDeudaActual').textContent = '$'+parseFloat(me.debt).toFixed(2);
+  }
+  var banks = await api('/bank-accounts');
+  bankAccounts = banks || [];
+  var sel = document.getElementById('rBankAccount');
+  sel.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
+  bankAccounts.forEach(b => { var o=document.createElement('option'); o.value=b.id; o.textContent=b.bank+' — '+b.type+' '+b.number; sel.appendChild(o); });
+  sel.onchange = showBankDetail;
+}
+
+function toggleTransferFields() {
+  var show = document.getElementById('rMethod').value === 'TRANSFER';
+  document.getElementById('transferFields').style.display = show ? '' : 'none';
+}
+
+function showBankDetail() {
+  var id = parseInt(document.getElementById('rBankAccount').value);
+  var bank = bankAccounts.find(b => b.id===id);
+  var div = document.getElementById('bankDetail');
+  if (!bank) { div.style.display='none'; return; }
+  div.style.display='';
+  document.getElementById('bdBank').textContent   = bank.bank;
+  document.getElementById('bdOwner').textContent  = bank.owner;
+  document.getElementById('bdNumber').textContent = bank.number;
+  document.getElementById('bdType').textContent   = bank.type;
+}
+
+async function submitRecharge() {
+  var amount = parseFloat(document.getElementById('rAmount').value);
+  var method = document.getElementById('rMethod').value;
+  if (!amount || amount<=0) { toast('Ingresa un monto válido', 'error'); return; }
+  if (method==='TRANSFER' && !document.getElementById('rBankAccount').value) { toast('Selecciona una cuenta bancaria', 'error'); return; }
+  if (method==='TRANSFER' && !document.getElementById('rRef').value) { toast('Ingresa el número de referencia', 'error'); return; }
+
+  var body = { amount, method, bank_account_id: method==='TRANSFER'?parseInt(document.getElementById('rBankAccount').value):null, receipt_ref: method==='TRANSFER'?document.getElementById('rRef').value:null };
+  var res = await fetch(API+'/recharges', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Solicitud enviada. Pendiente de aprobación del administrador.', 'success');
+  document.getElementById('rAmount').value='';
+  document.getElementById('rRef').value='';
+}
+
+// ── My Recharges ──
+async function loadMyRecharges() {
+  var data = await api('/recharges');
+  var tb = document.getElementById('myRechargesTbody');
+  if (!data||!data.length) { tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
+  tb.innerHTML = data.map(r => `
+    <tr>
+      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
+      <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
+      <td>${r.bankAccount?r.bankAccount.bank:'—'}</td>
+      <td>${r.receipt_ref||'—'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+    </tr>`).join('');
+}
+
+function statusBadge(s) {
+  var map = { PENDING:'badge-warning', APPROVED:'badge-success', REJECTED:'badge-danger' };
+  var lbl = { PENDING:'Pendiente', APPROVED:'Aprobada', REJECTED:'Rechazada' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${lbl[s]||s}</span>`;
+}
+
+loadHome();
+</script>
+</body>
+</html>

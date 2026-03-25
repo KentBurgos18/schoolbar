@@ -1,0 +1,47 @@
+services:
+  app:
+    build: .
+    container_name: schoolbar-app
+    ports:
+      - "3030:3030"
+    environment:
+      NODE_ENV: development
+      PORT: 3030
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: schoolbar
+      DB_USER: schoolbar_user
+      DB_PASS: schoolbar_pass
+      JWT_SECRET: schoolbar_jwt_secret_change_in_prod
+    volumes:
+      - ./routes:/app/routes
+      - ./models:/app/models
+      - ./views:/app/views
+      - ./public:/app/public
+      - ./services:/app/services
+      - ./middlewares:/app/middlewares
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    container_name: schoolbar-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: schoolbar
+      POSTGRES_USER: schoolbar_user
+      POSTGRES_PASSWORD: schoolbar_pass
+    volumes:
+      - schoolbar_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schoolbar_user -d schoolbar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  schoolbar_pgdata:
