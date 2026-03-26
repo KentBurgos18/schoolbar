@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const express  = require('express');
+const router   = express.Router();
+const bcrypt   = require('bcryptjs');
+const jwt      = require('jsonwebtoken');
+const crypto   = require('crypto');
+const { User, PasswordReset, Setting } = require('../models');
+const { sendMail } = require('../services/EmailService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'schoolbar_jwt_secret';
 
@@ -98,6 +100,80 @@ router.get('/cashiers', async (req, res) => {
     res.json(cashiers);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener cajeros' });
+  }
+});
+
+// POST /api/auth/forgot-password  → genera token y envía correo
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Ingresa tu correo electrónico' });
+
+    const user = await User.findOne({ where: { email } });
+    // Responder siempre igual para no revelar si el email existe
+    if (!user) return res.json({ message: 'Si el correo está registrado recibirás un enlace en breve.' });
+
+    // Invalidar tokens anteriores del mismo usuario
+    await PasswordReset.update({ used: true }, { where: { user_id: user.id, used: false } });
+
+    const token     = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    await PasswordReset.create({ user_id: user.id, token, expires_at: expiresAt });
+
+    const appUrlRow = await Setting.findOne({ where: { key: 'app_url' } });
+    const appUrl    = (appUrlRow && appUrlRow.value) ? appUrlRow.value : '';
+    const resetLink = `${appUrl}/reset-password?token=${token}`;
+
+    await sendMail({
+      to:      user.email,
+      subject: 'SchoolBar — Recuperación de contraseña',
+      html: `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;background:#f9fafb;padding:32px 0">
+          <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08)">
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;text-align:center">
+              <h1 style="color:#fff;margin:0;font-size:20px;font-weight:800">SchoolBar</h1>
+              <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:13px">Recuperación de contraseña</p>
+            </div>
+            <div style="padding:28px 32px">
+              <p style="color:#374151;font-size:15px;margin:0 0 12px">Hola <strong>${user.name}</strong>,</p>
+              <p style="color:#374151;font-size:14px;margin:0 0 24px">Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón para continuar. El enlace expira en <strong>1 hora</strong>.</p>
+              <div style="text-align:center;margin-bottom:24px">
+                <a href="${resetLink}" style="background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">Restablecer contraseña</a>
+              </div>
+              <p style="color:#9ca3af;font-size:12px;margin:0">Si no solicitaste este cambio, ignora este correo. Tu contraseña no será modificada.</p>
+            </div>
+          </div>
+        </div>`
+    });
+
+    res.json({ message: 'Si el correo está registrado recibirás un enlace en breve.' });
+  } catch (err) {
+    console.error('[forgot-password]', err.message);
+    res.status(500).json({ error: 'Error al procesar la solicitud. Intenta de nuevo.' });
+  }
+});
+
+// POST /api/auth/reset-password  → valida token y actualiza contraseña
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Datos incompletos' });
+    if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    const record = await PasswordReset.findOne({ where: { token, used: false } });
+    if (!record) return res.status(400).json({ error: 'El enlace no es válido o ya fue utilizado.' });
+    if (new Date() > record.expires_at) return res.status(400).json({ error: 'El enlace expiró. Solicita uno nuevo.' });
+
+    const user = await User.findByPk(record.user_id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const hash = await bcrypt.hash(password, 10);
+    await user.update({ password: hash });
+    await record.update({ used: true });
+
+    res.json({ message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
   }
 });
 

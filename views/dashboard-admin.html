@@ -571,6 +571,23 @@
       <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="pEmail" class="form-control" placeholder="juan@email.com" /></div>
       <div class="form-group" id="pPassGroup"><label class="form-label">Contraseña temporal</label><input type="password" id="pPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
       <div class="form-group"><label class="form-label">Teléfono</label><input type="text" id="pPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
+
+      <!-- Cambiar contraseña (solo en modo edición) -->
+      <div id="pChangePassSection" style="display:none;border-top:1px solid var(--gray-200);margin-top:4px;padding-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--gray-700)">Cambiar contraseña</span>
+          <button type="button" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--primary);font-family:inherit;padding:0" onclick="toggleChangePass()">
+            <span id="pChangePassToggleLabel">+ Mostrar</span>
+          </button>
+        </div>
+        <div id="pChangePassFields" style="display:none">
+          <div class="form-group" style="margin-bottom:10px">
+            <label class="form-label">Nueva contraseña</label>
+            <input type="password" id="pNewPass" class="form-control" placeholder="mínimo 6 caracteres" autocomplete="new-password" />
+          </div>
+          <button type="button" class="btn btn-warning btn-sm" style="width:100%" onclick="changeParentPassword()">Actualizar contraseña</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalParent')">Cancelar</button>
@@ -924,27 +941,57 @@ async function toggleAllowDebt(id, value) {
 }
 
 function openNewParent() {
-  document.getElementById('pId').value = '';
-  document.getElementById('pName').value = '';
+  document.getElementById('pId').value    = '';
+  document.getElementById('pName').value  = '';
   document.getElementById('pEmail').value = '';
-  document.getElementById('pPass').value = '';
+  document.getElementById('pPass').value  = '';
   document.getElementById('pPhone').value = '';
-  document.getElementById('pPassGroup').style.display = '';
+  document.getElementById('pPassGroup').style.display        = '';
+  document.getElementById('pChangePassSection').style.display = 'none';
+  document.getElementById('pChangePassFields').style.display  = 'none';
+  document.getElementById('pChangePassToggleLabel').textContent = '+ Mostrar';
   document.getElementById('modalParentTitle').textContent = 'Nuevo padre de familia';
-  document.getElementById('btnSaveParent').textContent = 'Guardar';
+  document.getElementById('btnSaveParent').textContent    = 'Guardar';
   openModal('modalParent');
 }
 
 function openEditParent(id, name, email, phone) {
-  document.getElementById('pId').value = id;
-  document.getElementById('pName').value = name;
+  document.getElementById('pId').value    = id;
+  document.getElementById('pName').value  = name;
   document.getElementById('pEmail').value = email;
-  document.getElementById('pPass').value = '';
+  document.getElementById('pPass').value  = '';
   document.getElementById('pPhone').value = phone;
-  document.getElementById('pPassGroup').style.display = 'none';
+  document.getElementById('pNewPass').value = '';
+  document.getElementById('pPassGroup').style.display         = 'none';
+  document.getElementById('pChangePassSection').style.display = 'block';
+  document.getElementById('pChangePassFields').style.display  = 'none';
+  document.getElementById('pChangePassToggleLabel').textContent = '+ Mostrar';
   document.getElementById('modalParentTitle').textContent = 'Editar padre';
-  document.getElementById('btnSaveParent').textContent = 'Guardar cambios';
+  document.getElementById('btnSaveParent').textContent    = 'Guardar cambios';
   openModal('modalParent');
+}
+
+function toggleChangePass() {
+  var fields = document.getElementById('pChangePassFields');
+  var label  = document.getElementById('pChangePassToggleLabel');
+  var hidden = fields.style.display === 'none';
+  fields.style.display = hidden ? 'block' : 'none';
+  label.textContent    = hidden ? '− Ocultar' : '+ Mostrar';
+  if (hidden) document.getElementById('pNewPass').focus();
+}
+
+async function changeParentPassword() {
+  var id   = document.getElementById('pId').value;
+  var pass = document.getElementById('pNewPass').value;
+  if (!pass) { toast('Ingresa la nueva contraseña', 'error'); return; }
+  if (pass.length < 6) { toast('Mínimo 6 caracteres', 'error'); return; }
+  var res  = await fetch(API + '/parents/' + id + '/password', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ password: pass }) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast(data.message, 'success');
+  document.getElementById('pNewPass').value = '';
+  document.getElementById('pChangePassFields').style.display = 'none';
+  document.getElementById('pChangePassToggleLabel').textContent = '+ Mostrar';
 }
 
 async function saveParent() {

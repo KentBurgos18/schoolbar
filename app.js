@@ -15,10 +15,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Vistas ──
-app.get('/',       (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
-app.get('/admin',  (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-admin.html')));
-app.get('/cajero', (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-cajero.html')));
-app.get('/padres', (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-padre.html')));
+app.get('/',               (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/login',          (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'views', 'reset-password.html')));
+app.get('/admin',          (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-admin.html')));
+app.get('/cajero',         (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-cajero.html')));
+app.get('/padres',         (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-padre.html')));
 
 // ── API Routes ──
 app.use('/api/auth',          require('./routes/auth'));

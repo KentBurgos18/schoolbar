@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
+const bcrypt  = require('bcryptjs');
 const { User, Student, Sale, SaleItem } = require('../models');
 const auth = require('../middlewares/auth');
 
@@ -82,6 +83,21 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Padre eliminado' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar padre' });
+  }
+});
+
+// PATCH /api/parents/:id/password  → admin cambia la contraseña de un padre
+router.patch('/:id/password', auth('ADMIN'), async (req, res) => {
+  try {
+    const parent = await User.findOne({ where: { id: req.params.id, role: 'PARENT' } });
+    if (!parent) return res.status(404).json({ error: 'Padre no encontrado' });
+    const { password } = req.body;
+    if (!password || password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const hash = await bcrypt.hash(password, 10);
+    await parent.update({ password: hash });
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
   }
 });
 

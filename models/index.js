@@ -108,4 +108,14 @@ const Setting = sequelize.define('Setting', {
   value: { type: DataTypes.TEXT },
 }, { tableName: 'settings', underscored: true });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, BankAccount, Category, Setting };
+const PasswordReset = sequelize.define('PasswordReset', {
+  id:         { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:    { type: DataTypes.INTEGER, allowNull: false },
+  token:      { type: DataTypes.STRING(64), allowNull: false, unique: true },
+  expires_at: { type: DataTypes.DATE, allowNull: false },
+  used:       { type: DataTypes.BOOLEAN, defaultValue: false },
+}, { tableName: 'password_resets', underscored: true });
+
+PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, BankAccount, Category, Setting, PasswordReset };
