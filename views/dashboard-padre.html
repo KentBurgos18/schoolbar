@@ -196,11 +196,11 @@
             <div class="card-body">
               <div class="form-group">
                 <label class="form-label">Monto a recargar ($)</label>
-                <input type="number" id="rAmount" class="form-control" step="0.50" min="1" placeholder="10.00" />
+                <input type="number" id="rAmount" class="form-control" step="0.50" min="1" placeholder="10.00" oninput="validateRechargeForm()" />
               </div>
               <div class="form-group">
                 <label class="form-label">Método de pago</label>
-                <select id="rMethod" class="form-control form-select" onchange="toggleTransferFields()">
+                <select id="rMethod" class="form-control form-select" onchange="toggleTransferFields();validateRechargeForm()">
                   <option value="CASH">Efectivo</option>
                   <option value="TRANSFER">Transferencia bancaria</option>
                 </select>
@@ -209,21 +209,60 @@
               <div id="transferFields" style="display:none">
                 <div class="form-group">
                   <label class="form-label">Cuenta destino</label>
-                  <select id="rBankAccount" class="form-control form-select">
+                  <select id="rBankAccount" class="form-control form-select" onchange="showBankDetail();validateRechargeForm()">
                     <option value="">Cargando cuentas...</option>
                   </select>
                   <div class="form-hint">Selecciona la cuenta a la que harás la transferencia</div>
                 </div>
-                <div id="bankDetail" style="display:none;background:var(--primary-light);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13.5px">
-                  <strong id="bdBank"></strong><br>
-                  Titular: <span id="bdOwner"></span><br>
-                  N° cuenta: <code id="bdNumber"></code><br>
-                  Tipo: <span id="bdType"></span>
+                <div id="bankDetail" style="display:none;background:var(--primary-light);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13.5px">
+                  <strong id="bdBank"></strong>
+                  <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Titular</span>
+                      <span id="bdOwner" style="font-weight:600"></span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Cédula</span>
+                      <span style="display:flex;align-items:center;gap:6px">
+                        <code id="bdCedula"></code>
+                        <button id="btnCopyCedula" onclick="copyBankField('bdCedula','btnCopyCedula')" title="Copiar cédula" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">N° cuenta</span>
+                      <span style="display:flex;align-items:center;gap:6px">
+                        <code id="bdNumber"></code>
+                        <button id="btnCopyNumber" onclick="copyBankField('bdNumber','btnCopyNumber')" title="Copiar número" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Tipo</span>
+                      <span id="bdType" style="font-weight:600"></span>
+                    </div>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Número de referencia / comprobante</label>
-                  <input type="text" id="rRef" class="form-control" placeholder="Ej: 000123456" />
+                  <input type="text" id="rRef" class="form-control" placeholder="Ej: 000123456" oninput="validateRechargeForm()" />
                   <div class="form-hint">Anota el número de comprobante de tu transferencia</div>
+                </div>
+              </div>
+
+              <!-- Preview descuento de deuda -->
+              <div id="debtPreview" style="display:none;background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13.5px;color:#92400e">
+                <div style="font-weight:700;margin-bottom:8px">⚠️ Tienes deuda pendiente</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span>Monto a recargar</span><strong id="dpAmount">$0.00</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span>Descuento por deuda</span><strong id="dpDebt" style="color:#dc2626">−$0.00</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-top:1px solid #fcd34d;padding-top:6px;margin-top:4px">
+                  <span style="font-weight:700">Saldo que recibirás</span><strong id="dpFinal" style="color:#15803d">$0.00</strong>
                 </div>
               </div>
 
@@ -231,7 +270,7 @@
                 Tu solicitud quedará pendiente hasta que el administrador la apruebe.
               </div>
 
-              <button class="btn btn-primary" style="width:100%" onclick="submitRecharge()">Enviar solicitud</button>
+              <button class="btn btn-primary" style="width:100%" id="btnSubmitRecharge" onclick="submitRecharge()" disabled>Enviar solicitud</button>
             </div>
           </div>
         </div>
@@ -427,9 +466,18 @@ async function loadConsumptions() {
 }
 
 // ── Recharge ──
+var currentDebt = 0;
+
 async function loadRechargeSection() {
+  document.getElementById('rMethod').value = 'CASH';
+  document.getElementById('transferFields').style.display = 'none';
+  document.getElementById('rAmount').value = '';
+  document.getElementById('rRef').value = '';
+  document.getElementById('debtPreview').style.display = 'none';
+  validateRechargeForm();
   var me = await api('/parents/me');
   if (me) {
+    currentDebt = parseFloat(me.debt) || 0;
     document.getElementById('rechargeSaldoActual').textContent = '$'+parseFloat(me.balance).toFixed(2);
     document.getElementById('rechargeDeudaActual').textContent = '$'+parseFloat(me.debt).toFixed(2);
   }
@@ -438,12 +486,34 @@ async function loadRechargeSection() {
   var sel = document.getElementById('rBankAccount');
   sel.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
   bankAccounts.forEach(b => { var o=document.createElement('option'); o.value=b.id; o.textContent=b.bank+' — '+b.type+' '+b.number; sel.appendChild(o); });
-  sel.onchange = showBankDetail;
 }
 
 function toggleTransferFields() {
   var show = document.getElementById('rMethod').value === 'TRANSFER';
   document.getElementById('transferFields').style.display = show ? '' : 'none';
+}
+
+function validateRechargeForm() {
+  var amount  = parseFloat(document.getElementById('rAmount').value);
+  var method  = document.getElementById('rMethod').value;
+  var account = document.getElementById('rBankAccount').value;
+  var ref     = document.getElementById('rRef').value.trim();
+  var ok = amount > 0;
+  if (method === 'TRANSFER') ok = ok && !!account && !!ref;
+  document.getElementById('btnSubmitRecharge').disabled = !ok;
+
+  // Preview descuento de deuda
+  var preview = document.getElementById('debtPreview');
+  if (amount > 0 && currentDebt > 0) {
+    var debtPaid = Math.min(currentDebt, amount);
+    var finalBalance = amount - debtPaid;
+    document.getElementById('dpAmount').textContent  = '$' + amount.toFixed(2);
+    document.getElementById('dpDebt').textContent    = '−$' + debtPaid.toFixed(2);
+    document.getElementById('dpFinal').textContent   = '$' + finalBalance.toFixed(2);
+    preview.style.display = '';
+  } else {
+    preview.style.display = 'none';
+  }
 }
 
 function showBankDetail() {
@@ -454,8 +524,21 @@ function showBankDetail() {
   div.style.display='';
   document.getElementById('bdBank').textContent   = bank.bank;
   document.getElementById('bdOwner').textContent  = bank.owner;
+  document.getElementById('bdCedula').textContent = bank.cedula || '—';
   document.getElementById('bdNumber').textContent = bank.number;
   document.getElementById('bdType').textContent   = bank.type;
+  // Ocultar botón copiar cédula si no hay cédula
+  document.getElementById('btnCopyCedula').style.display = bank.cedula ? '' : 'none';
+}
+
+function copyBankField(elementId, btnId) {
+  var text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById(btnId);
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(function() { btn.innerHTML = orig; }, 1500);
+  });
 }
 
 async function submitRecharge() {

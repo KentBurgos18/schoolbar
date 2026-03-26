@@ -16,8 +16,8 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
 // POST /api/bank-accounts  → solo admin
 router.post('/', auth('ADMIN'), async (req, res) => {
   try {
-    const { bank, owner, number, type } = req.body;
-    const account = await BankAccount.create({ bank, owner, number, type });
+    const { bank, owner, cedula, number, type } = req.body;
+    const account = await BankAccount.create({ bank, owner, cedula, number, type });
     res.json(account);
   } catch (err) {
     res.status(500).json({ error: 'Error al crear cuenta bancaria' });

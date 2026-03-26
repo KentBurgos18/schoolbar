@@ -8,7 +8,7 @@ router.get('/', auth('ADMIN'), async (req, res) => {
   try {
     const parents = await User.findAll({
       where: { role: 'PARENT' },
-      attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt'],
+      attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt', 'allow_debt'],
       include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade'] }]
     });
     res.json(parents);
@@ -55,6 +55,18 @@ router.get('/me/consumptions', auth('PARENT'), async (req, res) => {
     res.json(sales);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener consumos' });
+  }
+});
+
+// PATCH /api/parents/:id/allow-debt  → activar/desactivar deuda permitida
+router.patch('/:id/allow-debt', auth('ADMIN'), async (req, res) => {
+  try {
+    const parent = await User.findOne({ where: { id: req.params.id, role: 'PARENT' } });
+    if (!parent) return res.status(404).json({ error: 'Padre no encontrado' });
+    await parent.update({ allow_debt: req.body.allow_debt });
+    res.json({ allow_debt: parent.allow_debt });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar configuración' });
   }
 });
 

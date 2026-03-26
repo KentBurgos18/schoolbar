@@ -19,8 +19,9 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING(200), allowNull: false },
   role:     { type: DataTypes.ENUM('ADMIN', 'PARENT', 'CASHIER'), defaultValue: 'PARENT' },
   phone:    { type: DataTypes.STRING(30) },
-  balance:  { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
-  debt:     { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  balance:    { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  debt:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  allow_debt: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, { tableName: 'users', underscored: true });
 
 const Student = sequelize.define('Student', {
@@ -43,12 +44,14 @@ const Product = sequelize.define('Product', {
 
 const Sale = sequelize.define('Sale', {
   id:                { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  student_id:        { type: DataTypes.INTEGER, allowNull: false },
-  parent_id:         { type: DataTypes.INTEGER, allowNull: false },
+  student_id:        { type: DataTypes.INTEGER, allowNull: true },
+  parent_id:         { type: DataTypes.INTEGER, allowNull: true },
   cashier_id:        { type: DataTypes.INTEGER, allowNull: false },
   total:             { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   paid_from_balance: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   added_to_debt:     { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  payment_method:    { type: DataTypes.ENUM('BALANCE', 'CASH'), defaultValue: 'BALANCE' },
+  customer_type:     { type: DataTypes.ENUM('STUDENT', 'FINAL_CONSUMER'), defaultValue: 'STUDENT' },
   note:              { type: DataTypes.STRING(255) },
 }, { tableName: 'sales', underscored: true });
 
@@ -71,6 +74,7 @@ const Recharge = sequelize.define('Recharge', {
   bank_account_id: { type: DataTypes.INTEGER },
   receipt_ref:     { type: DataTypes.STRING(100) },
   approved_by:     { type: DataTypes.INTEGER },
+  debt_paid:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   note:            { type: DataTypes.STRING(255) },
 }, { tableName: 'recharges', underscored: true });
 
@@ -78,6 +82,7 @@ const BankAccount = sequelize.define('BankAccount', {
   id:     { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   bank:   { type: DataTypes.STRING(80), allowNull: false },
   owner:  { type: DataTypes.STRING(120), allowNull: false },
+  cedula: { type: DataTypes.STRING(20) },
   number: { type: DataTypes.STRING(30), allowNull: false },
   type:   { type: DataTypes.ENUM('CORRIENTE', 'AHORROS'), defaultValue: 'AHORROS' },
   active: { type: DataTypes.BOOLEAN, defaultValue: true },
@@ -91,10 +96,15 @@ Sale.hasMany(SaleItem,  { foreignKey: 'sale_id', as: 'items' });
 SaleItem.belongsTo(Product,     { foreignKey: 'product_id', as: 'product' });
 Recharge.belongsTo(BankAccount, { foreignKey: 'bank_account_id', as: 'bankAccount' });
 
+const Category = sequelize.define('Category', {
+  id:   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(60), allowNull: false, unique: true },
+}, { tableName: 'categories', underscored: true });
+
 const Setting = sequelize.define('Setting', {
   id:    { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   key:   { type: DataTypes.STRING(80), allowNull: false, unique: true },
   value: { type: DataTypes.TEXT },
 }, { tableName: 'settings', underscored: true });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, BankAccount, Setting };
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, BankAccount, Category, Setting };

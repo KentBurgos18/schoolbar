@@ -11,7 +11,16 @@
       #sec-email > div[style*="grid-template-columns:1fr 1fr"] {
         display: flex !important; flex-direction: column;
       }
+      /* Cards de estadísticas de ventas → 1 columna en móvil */
+      #salesStatsGrid { grid-template-columns: 1fr !important; }
     }
+    /* Toggle switch */
+    .toggle-switch { position:relative; display:inline-block; width:38px; height:22px; cursor:pointer; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:var(--gray-300); border-radius:22px; transition:.2s; }
+    .toggle-slider::before { content:''; position:absolute; width:16px; height:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+    .toggle-switch input:checked + .toggle-slider { background:var(--success); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(16px); }
   </style>
 </head>
 <body>
@@ -167,8 +176,8 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Hijos</th></tr></thead>
-                <tbody id="parentsTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite deuda</th><th>Hijos</th></tr></thead>
+                <tbody id="parentsTbody"><tr><td colspan="7"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -198,7 +207,7 @@
         <div class="card">
           <div class="card-header">
             <h3>Productos del bar</h3>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modalProduct')">+ Nuevo producto</button>
+            <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Nuevo producto</button>
           </div>
           <div class="card-body">
             <div class="table-wrap">
@@ -239,8 +248,8 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Banco</th><th>Titular</th><th>Número</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
-                <tbody id="banksTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Banco</th><th>Titular</th><th>Cédula</th><th>Número</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="banksTbody"><tr><td colspan="7"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -355,6 +364,47 @@
 
       <!-- VENTAS -->
       <section id="sec-sales" style="display:none">
+
+        <!-- Cards resumen -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px" id="salesStatsGrid">
+          <!-- Hoy -->
+          <div class="card">
+            <div class="card-body" style="padding:20px">
+              <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Hoy</div>
+              <div style="font-size:28px;font-weight:800;color:var(--primary)" id="statCardTodayTotal">—</div>
+              <div style="font-size:13px;color:var(--gray-500);margin-top:4px"><span id="statCardTodayCount">—</span> ventas</div>
+              <div style="display:flex;gap:10px;margin-top:10px;font-size:12px">
+                <span style="color:var(--success)">↑ saldo <strong id="statCardTodayBal">—</strong></span>
+                <span style="color:var(--danger)">↑ deuda <strong id="statCardTodayDebt">—</strong></span>
+              </div>
+            </div>
+          </div>
+          <!-- Esta semana -->
+          <div class="card">
+            <div class="card-body" style="padding:20px">
+              <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Esta semana</div>
+              <div style="font-size:28px;font-weight:800;color:#7c3aed" id="statCardWeekTotal">—</div>
+              <div style="font-size:13px;color:var(--gray-500);margin-top:4px"><span id="statCardWeekCount">—</span> ventas</div>
+              <div style="display:flex;gap:10px;margin-top:10px;font-size:12px">
+                <span style="color:var(--success)">↑ saldo <strong id="statCardWeekBal">—</strong></span>
+                <span style="color:var(--danger)">↑ deuda <strong id="statCardWeekDebt">—</strong></span>
+              </div>
+            </div>
+          </div>
+          <!-- Este mes -->
+          <div class="card">
+            <div class="card-body" style="padding:20px">
+              <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Este mes</div>
+              <div style="font-size:28px;font-weight:800;color:#0891b2" id="statCardMonthTotal">—</div>
+              <div style="font-size:13px;color:var(--gray-500);margin-top:4px"><span id="statCardMonthCount">—</span> ventas</div>
+              <div style="display:flex;gap:10px;margin-top:10px;font-size:12px">
+                <span style="color:var(--success)">↑ saldo <strong id="statCardMonthBal">—</strong></span>
+                <span style="color:var(--danger)">↑ deuda <strong id="statCardMonthDebt">—</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom:16px">
           <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
             <div class="form-group" style="margin:0;flex:1;min-width:140px">
@@ -498,7 +548,24 @@
       <div class="form-group"><label class="form-label">Nombre</label><input type="text" id="prName" class="form-control" placeholder="Jugo de naranja" /></div>
       <div class="form-row form-row-2">
         <div class="form-group"><label class="form-label">Precio ($)</label><input type="number" id="prPrice" class="form-control" step="0.01" min="0.01" /></div>
-        <div class="form-group"><label class="form-label">Categoría</label><input type="text" id="prCat" class="form-control" placeholder="Bebidas / Comidas" /></div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+            Categoría
+            <button onclick="toggleCatPanel()" title="Gestionar categorías" style="background:none;border:none;cursor:pointer;color:var(--gray-500);padding:0;line-height:1" id="btnCatGear">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            </button>
+          </label>
+          <select id="prCat" class="form-control form-select"><option value="">Seleccionar...</option></select>
+          <!-- Panel gestión de categorías -->
+          <div id="catPanel" style="display:none;margin-top:10px;padding:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px">
+            <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Gestionar categorías</div>
+            <div id="catPanelList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="newCatName" class="form-control" placeholder="Nueva categoría..." style="font-size:13px;padding:6px 10px" />
+              <button class="btn btn-primary btn-sm" onclick="createCategory()">+ Agregar</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -517,7 +584,10 @@
     </div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Banco</label><input type="text" id="bkBank" class="form-control" placeholder="Banco Pichincha" /></div>
-      <div class="form-group"><label class="form-label">Titular</label><input type="text" id="bkOwner" class="form-control" /></div>
+      <div class="form-row form-row-2">
+        <div class="form-group"><label class="form-label">Titular</label><input type="text" id="bkOwner" class="form-control" /></div>
+        <div class="form-group"><label class="form-label">Cédula del titular</label><input type="text" id="bkCedula" class="form-control" placeholder="0912345678" /></div>
+      </div>
       <div class="form-row form-row-2">
         <div class="form-group"><label class="form-label">Número de cuenta</label><input type="text" id="bkNumber" class="form-control" /></div>
         <div class="form-group">
@@ -713,7 +783,7 @@ async function createCashier() {
 async function loadParents() {
   var data = await api('/parents');
   var tb = document.getElementById('parentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong></td>
@@ -721,8 +791,20 @@ async function loadParents() {
       <td>${p.phone || '—'}</td>
       <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
       <td>${parseFloat(p.debt)>0?`<span class="debt-pill">$${parseFloat(p.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
+      <td style="text-align:center">
+        <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar deuda' : 'Activar deuda'}">
+          <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
       <td>${(p.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
     </tr>`).join('');
+}
+
+async function toggleAllowDebt(id, value) {
+  var res = await fetch(API + '/parents/' + id + '/allow-debt', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ allow_debt: value }) });
+  if (!res.ok) { toast('Error al actualizar', 'error'); loadParents(); return; }
+  toast(value ? 'Deuda habilitada' : 'Deuda deshabilitada', value ? 'success' : 'warning');
 }
 
 async function createParent() {
@@ -789,6 +871,65 @@ function downloadQR() {
   a.click();
 }
 
+// ── Categories ──
+var allCategories = [];
+
+async function loadCategories() {
+  allCategories = await api('/products/categories') || [];
+  renderCategoryList();
+  renderCategorySelect();
+}
+
+function renderCategoryList() {
+  var el = document.getElementById('catPanelList');
+  if (!el) return;
+  if (!allCategories.length) { el.innerHTML = '<span style="color:var(--gray-400);font-size:12px">Sin categorías aún.</span>'; return; }
+  el.innerHTML = allCategories.map(c =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--gray-200);border-radius:20px;padding:3px 8px 3px 10px;font-size:12px;font-weight:600">
+      ${c.name}
+      <button onclick="deleteCategory(${c.id})" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:15px;line-height:1;padding:0;display:flex;align-items:center" title="Eliminar">&times;</button>
+    </span>`).join('');
+}
+
+function toggleCatPanel() {
+  var panel = document.getElementById('catPanel');
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : '';
+  document.getElementById('btnCatGear').style.color = isOpen ? 'var(--gray-500)' : 'var(--primary)';
+  if (!isOpen) document.getElementById('newCatName').focus();
+}
+
+function renderCategorySelect() {
+  var sel = document.getElementById('prCat');
+  sel.innerHTML = '<option value="">Seleccionar...</option>';
+  allCategories.forEach(c => {
+    var o = document.createElement('option');
+    o.value = c.name;
+    o.textContent = c.name;
+    sel.appendChild(o);
+  });
+}
+
+async function createCategory() {
+  var name = document.getElementById('newCatName').value.trim();
+  if (!name) { toast('Escribe un nombre para la categoría', 'error'); return; }
+  var res = await fetch(API + '/products/categories', { method:'POST', headers: authHeaders(), body: JSON.stringify({ name }) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  document.getElementById('newCatName').value = '';
+  toast('Categoría creada', 'success');
+  loadCategories();
+}
+
+async function deleteCategory(id) {
+  if (!confirm('¿Eliminar esta categoría?')) return;
+  var res = await fetch(API + '/products/categories/' + id, { method:'DELETE', headers: authHeaders() });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Categoría eliminada', 'warning');
+  loadCategories();
+}
+
 // ── Products ──
 async function loadProducts() {
   var data = await api('/products');
@@ -806,8 +947,19 @@ async function loadProducts() {
     </tr>`).join('');
 }
 
+async function openProductModal() {
+  await loadCategories();
+  document.getElementById('prName').value = '';
+  document.getElementById('prPrice').value = '';
+  document.getElementById('prCat').value = '';
+  document.getElementById('catPanel').style.display = 'none';
+  document.getElementById('btnCatGear').style.color = 'var(--gray-500)';
+  openModal('modalProduct');
+}
+
 async function createProduct() {
   var body = { name: document.getElementById('prName').value, price: parseFloat(document.getElementById('prPrice').value), category: document.getElementById('prCat').value };
+  if (!body.name || !body.price) { toast('Nombre y precio son obligatorios', 'error'); return; }
   var res = await fetch(API + '/products', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
   var data = await res.json();
   if (!res.ok) { toast(data.error, 'error'); return; }
@@ -911,11 +1063,12 @@ async function rejectRecharge(id) {
 async function loadBanks() {
   var data = await api('/bank-accounts');
   var tb = document.getElementById('banksTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cuentas</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cuentas</td></tr>'; return; }
   tb.innerHTML = data.map(b => `
     <tr>
       <td><strong>${b.bank}</strong></td>
       <td>${b.owner}</td>
+      <td><code>${b.cedula || '—'}</code></td>
       <td><code>${b.number}</code></td>
       <td>${b.type}</td>
       <td><span class="badge ${b.active?'badge-success':'badge-danger'}">${b.active?'Activa':'Inactiva'}</span></td>
@@ -924,7 +1077,7 @@ async function loadBanks() {
 }
 
 async function createBank() {
-  var body = { bank: document.getElementById('bkBank').value, owner: document.getElementById('bkOwner').value, number: document.getElementById('bkNumber').value, type: document.getElementById('bkType').value };
+  var body = { bank: document.getElementById('bkBank').value, owner: document.getElementById('bkOwner').value, cedula: document.getElementById('bkCedula').value, number: document.getElementById('bkNumber').value, type: document.getElementById('bkType').value };
   var res = await fetch(API + '/bank-accounts', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
   if (!res.ok) { toast('Error al crear cuenta', 'error'); return; }
   toast('Cuenta bancaria creada', 'success');
@@ -940,7 +1093,22 @@ async function deleteBank(id) {
 }
 
 // ── Sales ──
+async function loadSalesStats() {
+  var data = await api('/sales/stats');
+  if (!data) return;
+  function fill(prefix, s) {
+    document.getElementById('statCard'+prefix+'Total').textContent = '$' + s.total.toFixed(2);
+    document.getElementById('statCard'+prefix+'Count').textContent = s.count;
+    document.getElementById('statCard'+prefix+'Bal').textContent   = '$' + s.paid_from_balance.toFixed(2);
+    document.getElementById('statCard'+prefix+'Debt').textContent  = '$' + s.added_to_debt.toFixed(2);
+  }
+  fill('Today', data.today);
+  fill('Week',  data.week);
+  fill('Month', data.month);
+}
+
 async function loadSales() {
+  loadSalesStats();
   var from = document.getElementById('salesFrom').value;
   var to   = document.getElementById('salesTo').value;
   var qs   = new URLSearchParams();

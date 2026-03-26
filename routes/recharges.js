@@ -49,15 +49,25 @@ router.patch('/:id/approve', auth('ADMIN'), async (req, res) => {
     if (!recharge) { await t.rollback(); return res.status(404).json({ error: 'Recarga no encontrada' }); }
     if (recharge.status !== 'PENDING') { await t.rollback(); return res.status(400).json({ error: 'Solo se pueden aprobar recargas pendientes' }); }
 
-    await recharge.update({ status: 'APPROVED', approved_by: req.user.id }, { transaction: t });
-
     const parent = await User.findByPk(recharge.parent_id, { transaction: t, lock: true });
-    const newBalance = parseFloat(parent.balance) + parseFloat(recharge.amount);
-    await parent.update({ balance: newBalance }, { transaction: t });
+    const amount   = parseFloat(recharge.amount);
+    const debt     = parseFloat(parent.debt);
+    const debtPaid = Math.min(debt, amount);
+    const added    = amount - debtPaid;
+    const newBalance = parseFloat(parent.balance) + added;
+    const newDebt    = debt - debtPaid;
+
+    await recharge.update({ status: 'APPROVED', approved_by: req.user.id, debt_paid: debtPaid }, { transaction: t });
+    await parent.update({ balance: newBalance, debt: newDebt }, { transaction: t });
 
     await t.commit();
     EventBus.emit('recharge:approved', { id: recharge.id, new_balance: newBalance.toFixed(2) });
-    res.json({ message: 'Recarga aprobada', new_balance: newBalance.toFixed(2) });
+    res.json({
+      message: 'Recarga aprobada',
+      new_balance: newBalance.toFixed(2),
+      debt_paid: debtPaid.toFixed(2),
+      added_to_balance: added.toFixed(2)
+    });
   } catch (err) {
     await t.rollback();
     res.status(500).json({ error: 'Error al aprobar recarga' });
@@ -85,12 +95,21 @@ router.post('/admin-add', auth('ADMIN'), async (req, res) => {
       approved_by: req.user.id
     }, { transaction: t });
 
-    const newBalance = parseFloat(parent.balance) + parseFloat(amount);
-    await parent.update({ balance: newBalance }, { transaction: t });
+    const debt     = parseFloat(parent.debt);
+    const debtPaid = Math.min(debt, parseFloat(amount));
+    const added    = parseFloat(amount) - debtPaid;
+    const newBalance = parseFloat(parent.balance) + added;
+    const newDebt    = debt - debtPaid;
+
+    await recharge.update({ debt_paid: debtPaid }, { transaction: t });
+    await parent.update({ balance: newBalance, debt: newDebt }, { transaction: t });
 
     await t.commit();
     EventBus.emit('recharge:approved', { id: recharge.id, new_balance: newBalance.toFixed(2) });
-    res.json({ message: `Recarga de $${parseFloat(amount).toFixed(2)} aplicada a ${parent.name}`, new_balance: newBalance.toFixed(2) });
+    const msg = debtPaid > 0
+      ? `Recarga aplicada a ${parent.name}. Deuda descontada: $${debtPaid.toFixed(2)}. Saldo añadido: $${added.toFixed(2)}.`
+      : `Recarga de $${parseFloat(amount).toFixed(2)} aplicada a ${parent.name}.`;
+    res.json({ message: msg, new_balance: newBalance.toFixed(2), debt_paid: debtPaid.toFixed(2), added_to_balance: added.toFixed(2) });
   } catch (err) {
     await t.rollback();
     res.status(500).json({ error: 'Error al aplicar recarga' });

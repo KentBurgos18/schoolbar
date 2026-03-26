@@ -24,13 +24,38 @@
     .pos-topbar .btn-exit { background: transparent; color: rgba(255,255,255,.6); border: none; cursor: pointer; font-size: 13px; font-family: inherit; }
     .pos-topbar .btn-exit:hover { color: #fff; }
 
+    /* ── Sales tabs ── */
+    .sales-tabs {
+      position: fixed; top: 56px; left: 0; right: 0; z-index: 99;
+      height: 38px; background: #1e3a8a; border-top: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: stretch; padding: 0 12px; gap: 4px;
+      overflow-x: auto;
+    }
+    .sales-tabs::-webkit-scrollbar { display: none; }
+    .sale-tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+      color: rgba(255,255,255,.55); border: none; background: transparent;
+      border-bottom: 2px solid transparent; white-space: nowrap;
+      font-family: inherit; transition: all .15s;
+    }
+    .sale-tab:hover { color: rgba(255,255,255,.8); }
+    .sale-tab.active { color: #fff; border-bottom-color: #60a5fa; background: rgba(255,255,255,.08); }
+    .sale-tab .tab-close {
+      width: 16px; height: 16px; border-radius: 4px; border: none;
+      background: transparent; color: rgba(255,255,255,.4); cursor: pointer;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+      font-family: inherit; line-height: 1;
+    }
+    .sale-tab .tab-close:hover { background: rgba(255,255,255,.15); color: #fff; }
+
     /* ── Layout ── */
     .pos-layout {
-      margin-top: 56px;
+      margin-top: 94px;
       display: grid;
       grid-template-columns: 1fr 380px;
       gap: 0;
-      height: calc(100vh - 56px);
+      height: calc(100vh - 94px);
     }
 
     /* ── Panel izquierdo ── */
@@ -109,6 +134,15 @@
     .student-banner .st-grade { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
     .student-banner .st-saldo { font-size: 13px; margin-top: 8px; }
 
+    /* ── Consumidor final banner ── */
+    .consumer-banner {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 2px solid #93c5fd; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .consumer-banner .st-name { font-size: 20px; font-weight: 800; color: #1d4ed8; }
+    .consumer-banner .st-grade { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+
     /* ── Scanner ── */
     .scanner-wrap {
       background: #0f172a; border-radius: 14px; padding: 24px;
@@ -157,6 +191,20 @@
     .balance-preview-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .balance-preview-row:last-child { margin-bottom: 0; }
 
+    /* ── Payment method selector ── */
+    .payment-selector { margin-bottom: 12px; }
+    .payment-selector label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+    .payment-options { display: flex; gap: 8px; }
+    .payment-opt {
+      flex: 1; padding: 10px 12px; border: 2px solid var(--gray-200); border-radius: 10px;
+      background: #fff; cursor: pointer; text-align: center; font-family: inherit;
+      transition: all .15s; font-size: 13px; font-weight: 600; color: var(--gray-600);
+    }
+    .payment-opt:hover { border-color: var(--primary); }
+    .payment-opt.selected { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+    .payment-opt.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+    .payment-opt .pay-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
     .btn-process {
       width: 100%; padding: 14px; font-size: 16px; font-weight: 800;
       background: linear-gradient(135deg, #16a34a, #15803d);
@@ -183,10 +231,13 @@
     <div class="brand">SchoolBar <span style="font-weight:400;font-size:14px;opacity:.6">— Punto de venta</span></div>
     <div class="topbar-right">
       <span class="cashier-info" id="cashierInfo"></span>
-      <button class="btn-new" onclick="resetSale()">+ Nueva venta</button>
+      <button class="btn-new" onclick="addSaleTab()">+ Nueva venta</button>
       <button class="btn-exit" onclick="logout()">Cerrar sesión</button>
     </div>
   </div>
+
+  <!-- ── Tabs de ventas simultáneas ── -->
+  <div class="sales-tabs" id="salesTabs"></div>
 
   <!-- ── Layout principal ── -->
   <div class="pos-layout">
@@ -194,34 +245,35 @@
     <!-- Izquierda -->
     <div class="pos-left">
 
-      <!-- Estudiante identificado -->
+      <!-- Estudiante/Consumidor identificado -->
       <div id="studentBanner" style="display:none">
-        <div class="student-banner">
+        <div class="student-banner" id="bannerInner">
           <div>
             <div class="st-name" id="stName">—</div>
             <div class="st-grade" id="stGrade"></div>
             <div class="st-grade" id="stParent" style="margin-top:2px"></div>
-            <div class="st-saldo">
+            <div class="st-saldo" id="stSaldo">
               Saldo: <strong style="color:#16a34a" id="stBalance">$0.00</strong>
               &nbsp;·&nbsp;
               Deuda: <strong style="color:var(--danger)" id="stDebt">$0.00</strong>
             </div>
           </div>
           <div>
-            <button class="btn btn-ghost btn-sm" onclick="resetSale()">Cambiar</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearCustomer()">Cambiar</button>
           </div>
         </div>
       </div>
 
-      <!-- Scanner -->
+      <!-- Scanner / Selector de cliente -->
       <div class="card" id="scannerCard">
-        <div class="card-header"><h3>Identificar estudiante</h3></div>
+        <div class="card-header"><h3>Identificar cliente</h3></div>
         <div class="card-body" style="padding-top:0">
 
           <!-- Tabs -->
           <div class="tabs" style="margin-bottom:16px">
             <button class="tab-btn active" onclick="switchTab('qr',this)">📷 Escanear QR</button>
             <button class="tab-btn" onclick="switchTab('search',this)">🔍 Buscar por nombre</button>
+            <button class="tab-btn" onclick="switchTab('consumer',this)">🧑 Consumidor final</button>
           </div>
 
           <!-- Tab QR -->
@@ -243,6 +295,16 @@
               <input type="text" id="searchName" class="form-control" placeholder="Nombre del estudiante..." oninput="onSearchInput()" autocomplete="off" />
             </div>
             <div id="searchResults"></div>
+          </div>
+
+          <!-- Tab Consumidor final -->
+          <div id="tab-consumer" style="display:none">
+            <div style="text-align:center;padding:20px">
+              <div style="font-size:48px;margin-bottom:12px">🧑</div>
+              <h3 style="margin:0 0 8px;font-size:18px;font-weight:700">Venta sin estudiante</h3>
+              <p style="color:var(--gray-500);font-size:14px;margin:0 0 20px">Para clientes que no están registrados en el sistema. Solo pago en efectivo.</p>
+              <button class="btn btn-primary" onclick="selectFinalConsumer()">Seleccionar consumidor final</button>
+            </div>
           </div>
 
         </div>
@@ -270,7 +332,7 @@
         <div id="cartItems">
           <div class="cart-empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            <p>Escanea un QR y agrega productos</p>
+            <p>Selecciona un cliente y agrega productos</p>
           </div>
         </div>
       </div>
@@ -281,6 +343,20 @@
             <span>Total</span>
             <span id="totalAmt">$0.00</span>
           </div>
+
+          <!-- Método de pago -->
+          <div class="payment-selector" id="paymentSelector">
+            <label>Método de pago</label>
+            <div class="payment-options">
+              <button class="payment-opt selected" id="payOptCash" onclick="selectPayment('CASH')">
+                <span class="pay-icon">💵</span> Efectivo
+              </button>
+              <button class="payment-opt" id="payOptBalance" onclick="selectPayment('BALANCE')">
+                <span class="pay-icon">💳</span> Saldo escolar
+              </button>
+            </div>
+          </div>
+
           <div class="balance-preview" id="balancePreview" style="display:none">
             <div class="balance-preview-row">
               <span>Del saldo</span>
@@ -308,13 +384,13 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Venta registrada</h3>
-        <button class="btn-close" onclick="closeModal('modalResult');resetSale()">
+        <button class="btn-close" onclick="closeModal('modalResult');clearCustomer()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body" id="resultBody"></div>
       <div class="modal-footer">
-        <button class="btn btn-primary" style="width:100%" onclick="closeModal('modalResult');resetSale()">Nueva venta</button>
+        <button class="btn btn-primary" style="width:100%" onclick="closeModal('modalResult');clearCustomer()">Nueva venta</button>
       </div>
     </div>
   </div>
@@ -347,22 +423,173 @@ function toast(msg, type) {
   setTimeout(() => el.remove(), 3500);
 }
 
-// ── State ──
-var currentStudent = null;
+// ══════════════════════════════════════════════════════
+// ══  MULTI-TAB SALES SYSTEM
+// ══════════════════════════════════════════════════════
+var saleTabs = [];      // [{id, label, state}]
+var activeTabId = null;
+var tabCounter  = 0;
+
+function createTabState() {
+  return {
+    currentStudent: null,
+    isFinalConsumer: false,
+    cart: [],
+    paymentMethod: 'CASH',
+    activeCat: 'all',
+    note: ''
+  };
+}
+
+function addSaleTab() {
+  tabCounter++;
+  var tab = { id: 'tab_' + tabCounter, label: 'Venta ' + tabCounter, state: createTabState() };
+  saleTabs.push(tab);
+  switchToTab(tab.id);
+  renderTabs();
+}
+
+function closeSaleTab(id, ev) {
+  if (ev) ev.stopPropagation();
+  if (saleTabs.length <= 1) { toast('Debe haber al menos una venta abierta', 'error'); return; }
+  saleTabs = saleTabs.filter(t => t.id !== id);
+  if (activeTabId === id) switchToTab(saleTabs[saleTabs.length - 1].id);
+  renderTabs();
+}
+
+function switchToTab(id) {
+  // Guardar estado actual antes de cambiar
+  if (activeTabId) saveCurrentState();
+  activeTabId = id;
+  restoreState(id);
+  renderTabs();
+}
+
+function saveCurrentState() {
+  var tab = saleTabs.find(t => t.id === activeTabId);
+  if (!tab) return;
+  tab.state.currentStudent = currentStudent;
+  tab.state.isFinalConsumer = isFinalConsumer;
+  tab.state.cart = JSON.parse(JSON.stringify(cart));
+  tab.state.paymentMethod = paymentMethod;
+  tab.state.activeCat = activeCat;
+  tab.state.note = document.getElementById('saleNote') ? document.getElementById('saleNote').value : '';
+}
+
+function restoreState(id) {
+  var tab = saleTabs.find(t => t.id === id);
+  if (!tab) return;
+  var s = tab.state;
+  currentStudent = s.currentStudent;
+  isFinalConsumer = s.isFinalConsumer;
+  cart = JSON.parse(JSON.stringify(s.cart));
+  paymentMethod = s.paymentMethod;
+  activeCat = s.activeCat;
+
+  // Restaurar UI
+  if (isFinalConsumer) {
+    showFinalConsumerBanner();
+  } else if (currentStudent) {
+    showStudentBanner(currentStudent);
+  } else {
+    showScannerCard();
+  }
+  renderCart();
+  if (document.getElementById('saleNote')) document.getElementById('saleNote').value = s.note || '';
+}
+
+function renderTabs() {
+  var el = document.getElementById('salesTabs');
+  el.innerHTML = saleTabs.map(t => {
+    var isActive = t.id === activeTabId;
+    var label = t.state.isFinalConsumer ? 'Cons. final' :
+                t.state.currentStudent ? t.state.currentStudent.name.split(' ')[0] :
+                t.label;
+    var itemCount = t.state.cart.length;
+    return '<button class="sale-tab' + (isActive ? ' active' : '') + '" onclick="switchToTab(\'' + t.id + '\')">' +
+      label + (itemCount ? ' (' + itemCount + ')' : '') +
+      (saleTabs.length > 1 ? ' <span class="tab-close" onclick="closeSaleTab(\'' + t.id + '\',event)">&times;</span>' : '') +
+    '</button>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// ══  STATE
+// ══════════════════════════════════════════════════════
+var currentStudent  = null;
+var isFinalConsumer = false;
 var cart = [];
 var allProducts = [];
 var scanner = null;
 var scannerOn = false;
+var paymentMethod = 'CASH';
+var activeCat = 'all';
 
 // ── Tabs del scanner ──
 function switchTab(tab, btn) {
-  ['qr','search'].forEach(t => {
+  ['qr','search','consumer'].forEach(function(t) {
     document.getElementById('tab-'+t).style.display = t===tab ? '' : 'none';
   });
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#scannerCard .tab-btn').forEach(function(b) { b.classList.remove('active'); });
   btn.classList.add('active');
   if (tab !== 'qr') stopScanner();
   if (tab === 'search') document.getElementById('searchName').focus();
+}
+
+// ── Consumidor final ──
+function selectFinalConsumer() {
+  isFinalConsumer = true;
+  currentStudent = null;
+  paymentMethod = 'CASH';
+  showFinalConsumerBanner();
+  loadProducts();
+  renderCart();
+  toast('Consumidor final seleccionado', 'success');
+}
+
+function showFinalConsumerBanner() {
+  var banner = document.getElementById('studentBanner');
+  var inner = document.getElementById('bannerInner');
+  inner.className = 'consumer-banner';
+  document.getElementById('stName').textContent = 'Consumidor final';
+  document.getElementById('stGrade').textContent = 'Venta sin registro de estudiante';
+  document.getElementById('stParent').textContent = '';
+  document.getElementById('stSaldo').style.display = 'none';
+  banner.style.display = '';
+  document.getElementById('scannerCard').style.display = 'none';
+  document.getElementById('productsCard').style.display = '';
+}
+
+function showStudentBanner(data) {
+  var banner = document.getElementById('studentBanner');
+  var inner = document.getElementById('bannerInner');
+  inner.className = 'student-banner';
+  document.getElementById('stName').textContent = data.name;
+  document.getElementById('stGrade').textContent = data.grade || '';
+  document.getElementById('stParent').textContent = 'Padre/Madre: ' + (data.parent ? data.parent.name : '—');
+  document.getElementById('stSaldo').style.display = '';
+  document.getElementById('stBalance').textContent = '$' + parseFloat(data.parent.balance).toFixed(2);
+  document.getElementById('stDebt').textContent = '$' + parseFloat(data.parent.debt).toFixed(2);
+  banner.style.display = '';
+  document.getElementById('scannerCard').style.display = 'none';
+  document.getElementById('productsCard').style.display = '';
+}
+
+function showScannerCard() {
+  document.getElementById('studentBanner').style.display = 'none';
+  document.getElementById('scannerCard').style.display = '';
+  document.getElementById('productsCard').style.display = 'none';
+}
+
+function clearCustomer() {
+  cart = [];
+  currentStudent = null;
+  isFinalConsumer = false;
+  paymentMethod = 'CASH';
+  stopScanner();
+  showScannerCard();
+  if (document.getElementById('saleNote')) document.getElementById('saleNote').value = '';
+  renderCart();
 }
 
 // ── Búsqueda por nombre ──
@@ -385,14 +612,15 @@ async function doSearch() {
     return;
   }
 
-  el.innerHTML = data.map(s => `
-    <div class="search-result-item" onclick="selectStudentFromSearch('${s.qr_token}')">
-      <div>
-        <div class="sr-name">${s.name}</div>
-        <div class="sr-grade">${s.grade || 'Sin grado'} · Padre: ${s.parent ? s.parent.name : '—'}</div>
-      </div>
-      <div class="sr-bal">$${parseFloat(s.parent ? s.parent.balance : 0).toFixed(2)}</div>
-    </div>`).join('');
+  el.innerHTML = data.map(function(s) {
+    return '<div class="search-result-item" onclick="selectStudentFromSearch(\'' + s.qr_token + '\')">' +
+      '<div>' +
+        '<div class="sr-name">' + s.name + '</div>' +
+        '<div class="sr-grade">' + (s.grade || 'Sin grado') + ' · Padre: ' + (s.parent ? s.parent.name : '—') + '</div>' +
+      '</div>' +
+      '<div class="sr-bal">$' + parseFloat(s.parent ? s.parent.balance : 0).toFixed(2) + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 async function selectStudentFromSearch(qrToken) {
@@ -411,9 +639,9 @@ function startScanner() {
   scanner.start(
     { facingMode: 'environment' },
     { fps: 10, qrbox: { width: 220, height: 220 } },
-    async (text) => { if (!scannerOn) return; stopScanner(); await loadStudent(text.trim()); },
-    () => {}
-  ).catch(err => {
+    async function(text) { if (!scannerOn) return; stopScanner(); await loadStudent(text.trim()); },
+    function() {}
+  ).catch(function(err) {
     toast('No se pudo acceder a la cámara', 'error');
     scanner = null;
     document.getElementById('btnStart').style.display = '';
@@ -423,7 +651,7 @@ function startScanner() {
 
 function stopScanner() {
   if (scanner && scannerOn) {
-    scanner.stop().then(() => { scanner.clear(); scanner = null; scannerOn = false; });
+    scanner.stop().then(function() { scanner.clear(); scanner = null; scannerOn = false; });
   }
   document.getElementById('btnStart').style.display = '';
   document.getElementById('btnStop').style.display  = 'none';
@@ -434,14 +662,9 @@ async function loadStudent(qrToken) {
   var data = await api('/students/scan/' + qrToken);
   if (!data || data.error) { toast(data?.error || 'QR no válido', 'error'); return; }
   currentStudent = data;
-  document.getElementById('stName').textContent    = data.name;
-  document.getElementById('stGrade').textContent   = data.grade || '';
-  document.getElementById('stParent').textContent  = 'Padre/Madre: ' + (data.parent ? data.parent.name : '—');
-  document.getElementById('stBalance').textContent = '$' + parseFloat(data.parent.balance).toFixed(2);
-  document.getElementById('stDebt').textContent    = '$' + parseFloat(data.parent.debt).toFixed(2);
-  document.getElementById('studentBanner').style.display = '';
-  document.getElementById('scannerCard').style.display   = 'none';
-  document.getElementById('productsCard').style.display  = '';
+  isFinalConsumer = false;
+  paymentMethod = 'BALANCE'; // Default para estudiantes
+  showStudentBanner(data);
   await loadProducts();
   renderCart();
   toast('✅ ' + data.name + ' identificado', 'success');
@@ -449,47 +672,46 @@ async function loadStudent(qrToken) {
 
 // ── Products ──
 async function loadProducts() {
-  allProducts = (await api('/products') || []).filter(p => p.active);
+  allProducts = (await api('/products') || []).filter(function(p) { return p.active; });
   renderFilters();
   renderProducts(allProducts);
 }
 
-var activeCat = 'all';
 function renderFilters() {
-  var cats = ['all', ...new Set(allProducts.map(p => p.category).filter(Boolean))];
-  document.getElementById('catFilters').innerHTML = cats.map(c =>
-    `<button class="btn ${activeCat===c?'btn-primary':'btn-ghost'} btn-sm" onclick="filterCat('${c}')">${c==='all'?'Todos':c}</button>`
-  ).join('');
+  var cats = ['all'].concat([...new Set(allProducts.map(function(p) { return p.category; }).filter(Boolean))]);
+  document.getElementById('catFilters').innerHTML = cats.map(function(c) {
+    return '<button class="btn ' + (activeCat===c ? 'btn-primary' : 'btn-ghost') + ' btn-sm" onclick="filterCat(\'' + c + '\')">' + (c==='all' ? 'Todos' : c) + '</button>';
+  }).join('');
 }
 
 function filterCat(cat) {
   activeCat = cat;
   renderFilters();
-  renderProducts(cat === 'all' ? allProducts : allProducts.filter(p => p.category === cat));
+  renderProducts(cat === 'all' ? allProducts : allProducts.filter(function(p) { return p.category === cat; }));
 }
 
 function renderProducts(list) {
-  document.getElementById('productGrid').innerHTML = list.map(p =>
-    `<button class="product-btn" onclick="addToCart(${p.id})">
-      <div class="p-name">${p.name}</div>
-      <div class="p-cat">${p.category||''}</div>
-      <div class="p-price">$${parseFloat(p.price).toFixed(2)}</div>
-    </button>`
-  ).join('');
+  document.getElementById('productGrid').innerHTML = list.map(function(p) {
+    return '<button class="product-btn" onclick="addToCart(' + p.id + ')">' +
+      '<div class="p-name">' + p.name + '</div>' +
+      '<div class="p-cat">' + (p.category||'') + '</div>' +
+      '<div class="p-price">$' + parseFloat(p.price).toFixed(2) + '</div>' +
+    '</button>';
+  }).join('');
 }
 
 // ── Cart ──
 function addToCart(id) {
-  var p = allProducts.find(x => x.id === id);
+  var p = allProducts.find(function(x) { return x.id === id; });
   if (!p) return;
-  var item = cart.find(x => x.product_id === id);
+  var item = cart.find(function(x) { return x.product_id === id; });
   if (item) item.quantity++;
   else cart.push({ product_id: id, name: p.name, price: parseFloat(p.price), quantity: 1 });
   renderCart();
 }
 
 function changeQty(id, d) {
-  var idx = cart.findIndex(x => x.product_id === id);
+  var idx = cart.findIndex(function(x) { return x.product_id === id; });
   if (idx < 0) return;
   cart[idx].quantity += d;
   if (cart[idx].quantity <= 0) cart.splice(idx, 1);
@@ -498,9 +720,16 @@ function changeQty(id, d) {
 
 function clearCart() { cart = []; renderCart(); }
 
+// ── Payment method ──
+function selectPayment(method) {
+  if (isFinalConsumer && method === 'BALANCE') return;
+  paymentMethod = method;
+  renderCart();
+}
+
 function renderCart() {
   var el = document.getElementById('cartItems');
-  var total = cart.reduce((a, i) => a + i.price * i.quantity, 0);
+  var total = cart.reduce(function(a, i) { return a + i.price * i.quantity; }, 0);
 
   if (!cart.length) {
     el.innerHTML = '<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Carrito vacío</p></div>';
@@ -509,26 +738,47 @@ function renderCart() {
     return;
   }
 
-  el.innerHTML = cart.map(i => `
-    <div class="cart-item">
-      <div>
-        <div style="font-weight:600;font-size:14px">${i.name}</div>
-        <div style="font-size:12px;color:var(--gray-500)">$${i.price.toFixed(2)} c/u</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="qty-ctrl">
-          <button onclick="changeQty(${i.product_id},-1)">−</button>
-          <span>${i.quantity}</span>
-          <button onclick="changeQty(${i.product_id},1)">+</button>
-        </div>
-        <strong style="min-width:52px;text-align:right">$${(i.price*i.quantity).toFixed(2)}</strong>
-      </div>
-    </div>`).join('');
+  el.innerHTML = cart.map(function(i) {
+    return '<div class="cart-item">' +
+      '<div>' +
+        '<div style="font-weight:600;font-size:14px">' + i.name + '</div>' +
+        '<div style="font-size:12px;color:var(--gray-500)">$' + i.price.toFixed(2) + ' c/u</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div class="qty-ctrl">' +
+          '<button onclick="changeQty(' + i.product_id + ',-1)">−</button>' +
+          '<span>' + i.quantity + '</span>' +
+          '<button onclick="changeQty(' + i.product_id + ',1)">+</button>' +
+        '</div>' +
+        '<strong style="min-width:52px;text-align:right">$' + (i.price*i.quantity).toFixed(2) + '</strong>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 
   document.getElementById('cartSummary').style.display = '';
   document.getElementById('totalAmt').textContent = '$' + total.toFixed(2);
 
-  if (currentStudent) {
+  // Payment selector
+  var payOptCash = document.getElementById('payOptCash');
+  var payOptBalance = document.getElementById('payOptBalance');
+
+  if (isFinalConsumer) {
+    paymentMethod = 'CASH';
+    payOptCash.classList.add('selected');
+    payOptBalance.classList.add('disabled');
+    payOptBalance.classList.remove('selected');
+  } else if (currentStudent) {
+    payOptBalance.classList.remove('disabled');
+    payOptCash.classList.toggle('selected', paymentMethod === 'CASH');
+    payOptBalance.classList.toggle('selected', paymentMethod === 'BALANCE');
+  } else {
+    payOptCash.classList.add('selected');
+    payOptBalance.classList.add('disabled');
+    payOptBalance.classList.remove('selected');
+  }
+
+  // Balance preview (solo si paga con saldo escolar)
+  if (currentStudent && paymentMethod === 'BALANCE') {
     var bal = parseFloat(currentStudent.parent.balance);
     var fromBal = Math.min(bal, total);
     var toDebt  = Math.max(0, total - bal);
@@ -537,24 +787,32 @@ function renderCart() {
     var debtEl = document.getElementById('previewDebt');
     debtEl.textContent = '$' + toDebt.toFixed(2);
     debtEl.style.color = toDebt > 0 ? 'var(--danger)' : 'var(--gray-400)';
+  } else {
+    document.getElementById('balancePreview').style.display = 'none';
   }
 
-  document.getElementById('btnProcess').disabled = !currentStudent || !cart.length;
+  var hasClient = currentStudent || isFinalConsumer;
+  document.getElementById('btnProcess').disabled = !hasClient || !cart.length;
 }
 
 // ── Procesar venta ──
 async function processSale() {
-  if (!currentStudent || !cart.length) return;
+  if ((!currentStudent && !isFinalConsumer) || !cart.length) return;
   var btn = document.getElementById('btnProcess');
   btn.disabled = true; btn.textContent = 'Procesando...';
 
+  var body = {
+    items: cart.map(function(i) { return { product_id: i.product_id, quantity: i.quantity }; }),
+    note: document.getElementById('saleNote').value,
+    payment_method: paymentMethod,
+    customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : 'STUDENT'
+  };
+
+  if (currentStudent) body.qr_token = currentStudent.qr_token;
+
   var res = await fetch(API + '/sales', {
     method: 'POST', headers: authHeaders(),
-    body: JSON.stringify({
-      qr_token: currentStudent.qr_token,
-      items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
-      note: document.getElementById('saleNote').value
-    })
+    body: JSON.stringify(body)
   });
   var data = await res.json();
   btn.textContent = 'Cobrar';
@@ -562,32 +820,35 @@ async function processSale() {
   if (!res.ok) { toast(data.error, 'error'); btn.disabled = false; return; }
 
   var hasDebt = parseFloat(data.added_to_debt) > 0;
-  document.getElementById('resultBody').innerHTML = `
-    <div class="sale-result-icon">${hasDebt ? '⚠️' : '✅'}</div>
-    <div class="sale-result-total">$${data.total}</div>
-    <div class="sale-result-sub">Venta #${data.sale_id} · ${data.student}</div>
-    <div class="sale-result-detail">
-      <div class="sale-result-row"><span>Pagado del saldo</span><strong style="color:#16a34a">$${data.paid_from_balance}</strong></div>
-      <div class="sale-result-row"><span>Añadido a deuda</span><strong style="color:${hasDebt?'var(--danger)':'var(--gray-400)'}">$${data.added_to_debt}</strong></div>
-      <div class="sale-result-row"><span>Nuevo saldo del padre</span><strong>$${data.parent_new_balance}</strong></div>
-    </div>
-    ${hasDebt ? '<div class="debt-alert">⚠️ Saldo insuficiente — el monto restante fue añadido a la deuda del padre.</div>' : ''}`;
+  var isCash = data.payment_method === 'CASH';
 
+  var resultHtml = '<div class="sale-result-icon">' + (hasDebt ? '⚠️' : '✅') + '</div>' +
+    '<div class="sale-result-total">$' + data.total + '</div>' +
+    '<div class="sale-result-sub">Venta #' + data.sale_id + ' · ' + data.student + '</div>' +
+    '<div class="sale-result-detail">' +
+      '<div class="sale-result-row"><span>Método de pago</span><strong>' + (isCash ? '💵 Efectivo' : '💳 Saldo escolar') + '</strong></div>';
+
+  if (!isCash) {
+    resultHtml += '<div class="sale-result-row"><span>Pagado del saldo</span><strong style="color:#16a34a">$' + data.paid_from_balance + '</strong></div>' +
+      '<div class="sale-result-row"><span>Añadido a deuda</span><strong style="color:' + (hasDebt ? 'var(--danger)' : 'var(--gray-400)') + '">$' + data.added_to_debt + '</strong></div>' +
+      '<div class="sale-result-row"><span>Nuevo saldo del padre</span><strong>$' + data.parent_new_balance + '</strong></div>';
+  }
+
+  resultHtml += '</div>';
+
+  if (hasDebt) {
+    resultHtml += '<div class="debt-alert">⚠️ Saldo insuficiente — el monto restante fue añadido a la deuda del padre.</div>';
+  }
+
+  document.getElementById('resultBody').innerHTML = resultHtml;
   openModal('modalResult');
   cart = [];
   currentStudent = null;
+  isFinalConsumer = false;
 }
 
-function resetSale() {
-  cart = []; currentStudent = null;
-  stopScanner();
-  document.getElementById('studentBanner').style.display = 'none';
-  document.getElementById('scannerCard').style.display   = '';
-  document.getElementById('productsCard').style.display  = 'none';
-  document.getElementById('manualToken').value = '';
-  document.getElementById('saleNote').value    = '';
-  renderCart();
-}
+// Init: crear primera pestaña
+addSaleTab();
 </script>
 </body>
 </html>
