@@ -58,6 +58,33 @@ router.get('/me/consumptions', auth('PARENT'), async (req, res) => {
   }
 });
 
+// PATCH /api/parents/:id  → editar datos del padre
+router.patch('/:id', async (req, res) => {
+  try {
+    const parent = await User.findOne({ where: { id: req.params.id, role: 'PARENT' } });
+    if (!parent) return res.status(404).json({ error: 'Padre no encontrado' });
+    const { name, email, phone } = req.body;
+    await parent.update({ name, email, phone });
+    res.json({ id: parent.id, name: parent.name, email: parent.email, phone: parent.phone });
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError')
+      return res.status(400).json({ error: 'El correo ya está en uso' });
+    res.status(500).json({ error: 'Error al actualizar padre' });
+  }
+});
+
+// DELETE /api/parents/:id  → eliminar padre
+router.delete('/:id', async (req, res) => {
+  try {
+    const parent = await User.findOne({ where: { id: req.params.id, role: 'PARENT' } });
+    if (!parent) return res.status(404).json({ error: 'Padre no encontrado' });
+    await parent.destroy();
+    res.json({ message: 'Padre eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar padre' });
+  }
+});
+
 // PATCH /api/parents/:id/allow-debt  → activar/desactivar deuda permitida
 router.patch('/:id/allow-debt', auth('ADMIN'), async (req, res) => {
   try {

@@ -24,6 +24,19 @@ router.post('/', auth('ADMIN'), async (req, res) => {
   }
 });
 
+// PATCH /api/bank-accounts/:id  → editar cuenta
+router.patch('/:id', auth('ADMIN'), async (req, res) => {
+  try {
+    const account = await BankAccount.findByPk(req.params.id);
+    if (!account) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    const { bank, owner, cedula, number, type } = req.body;
+    await account.update({ bank, owner, cedula, number, type });
+    res.json(account);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar cuenta' });
+  }
+});
+
 // DELETE /api/bank-accounts/:id  (soft delete)
 router.delete('/:id', auth('ADMIN'), async (req, res) => {
   try {

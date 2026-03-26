@@ -49,6 +49,31 @@ router.post('/', auth('ADMIN'), async (req, res) => {
   }
 });
 
+// PATCH /api/students/:id  → editar estudiante
+router.patch('/:id', auth('ADMIN'), async (req, res) => {
+  try {
+    const student = await Student.findByPk(req.params.id);
+    if (!student) return res.status(404).json({ error: 'Estudiante no encontrado' });
+    const { name, grade, parent_id, active } = req.body;
+    await student.update({ name, grade, parent_id, active });
+    res.json(student);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar estudiante' });
+  }
+});
+
+// DELETE /api/students/:id  → desactivar estudiante (soft delete)
+router.delete('/:id', auth('ADMIN'), async (req, res) => {
+  try {
+    const student = await Student.findByPk(req.params.id);
+    if (!student) return res.status(404).json({ error: 'Estudiante no encontrado' });
+    await student.update({ active: false });
+    res.json({ message: 'Estudiante desactivado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al desactivar estudiante' });
+  }
+});
+
 // GET /api/students/:id/qr  → devuelve imagen QR base64
 router.get('/:id/qr', auth('ADMIN', 'PARENT'), async (req, res) => {
   try {

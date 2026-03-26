@@ -61,6 +61,33 @@ router.post('/register-cashier', async (req, res) => {
   }
 });
 
+// PATCH /api/auth/cashiers/:id  → editar cajero
+router.patch('/cashiers/:id', async (req, res) => {
+  try {
+    const cashier = await User.findOne({ where: { id: req.params.id, role: 'CASHIER' } });
+    if (!cashier) return res.status(404).json({ error: 'Cajero no encontrado' });
+    const { name, email } = req.body;
+    await cashier.update({ name, email });
+    res.json({ id: cashier.id, name: cashier.name, email: cashier.email });
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError')
+      return res.status(400).json({ error: 'El correo ya está en uso' });
+    res.status(500).json({ error: 'Error al actualizar cajero' });
+  }
+});
+
+// DELETE /api/auth/cashiers/:id  → eliminar cajero
+router.delete('/cashiers/:id', async (req, res) => {
+  try {
+    const cashier = await User.findOne({ where: { id: req.params.id, role: 'CASHIER' } });
+    if (!cashier) return res.status(404).json({ error: 'Cajero no encontrado' });
+    await cashier.destroy();
+    res.json({ message: 'Cajero eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar cajero' });
+  }
+});
+
 // GET /api/auth/cashiers  (solo admin)
 router.get('/cashiers', async (req, res) => {
   try {

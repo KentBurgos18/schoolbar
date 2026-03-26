@@ -55,7 +55,8 @@ router.delete('/categories/:id', auth('ADMIN'), async (req, res) => {
 // GET /api/products
 router.get('/', auth('ADMIN', 'CASHIER'), async (req, res) => {
   try {
-    const products = await Product.findAll({ where: { active: true }, order: [['category', 'ASC'], ['name', 'ASC']] });
+    const where = req.user.role === 'ADMIN' ? {} : { active: true };
+    const products = await Product.findAll({ where, order: [['category', 'ASC'], ['name', 'ASC']] });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener productos' });

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Recharge, User, BankAccount } = require('../models');
+const { Op } = require('sequelize');
 const { sequelize } = require('../models');
 const auth     = require('../middlewares/auth');
 const EventBus = require('../services/EventBus');
@@ -32,7 +33,10 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
     const where = req.user.role === 'PARENT' ? { parent_id: req.user.id } : {};
     const recharges = await Recharge.findAll({
       where,
-      include: [{ model: BankAccount, as: 'bankAccount', attributes: ['bank', 'number', 'owner'] }],
+      include: [
+        { model: BankAccount, as: 'bankAccount', attributes: ['bank', 'number', 'owner'] },
+        { model: User, as: 'parent', attributes: ['id', 'name'] }
+      ],
       order: [['created_at', 'DESC']]
     });
     res.json(recharges);

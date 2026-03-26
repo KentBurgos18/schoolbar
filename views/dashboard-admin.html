@@ -153,13 +153,13 @@
         <div class="card">
           <div class="card-header">
             <h3>Cajeros</h3>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modalCashier')">+ Nuevo cajero</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewCashier()">+ Nuevo cajero</button>
           </div>
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acceso</th></tr></thead>
-                <tbody id="cashiersTbody"><tr><td colspan="4"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acceso</th><th>Acciones</th></tr></thead>
+                <tbody id="cashiersTbody"><tr><td colspan="5"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -171,13 +171,13 @@
         <div class="card">
           <div class="card-header">
             <h3>Padres de familia</h3>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modalParent')">+ Nuevo padre</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewParent()">+ Nuevo padre</button>
           </div>
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite deuda</th><th>Hijos</th></tr></thead>
-                <tbody id="parentsTbody"><tr><td colspan="7"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite deuda</th><th>Hijos</th><th>Acciones</th></tr></thead>
+                <tbody id="parentsTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -194,8 +194,8 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Grado</th><th>Padre</th><th>Estado</th><th>QR</th></tr></thead>
-                <tbody id="studentsTbody"><tr><td colspan="5"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Nombre</th><th>Grado</th><th>Padre</th><th>Estado</th><th>QR</th><th>Acciones</th></tr></thead>
+                <tbody id="studentsTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -230,7 +230,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th><th>Aprobación</th></tr></thead>
                 <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -243,13 +243,13 @@
         <div class="card">
           <div class="card-header">
             <h3>Cuentas bancarias</h3>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modalBank')">+ Nueva cuenta</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewBank()">+ Nueva cuenta</button>
           </div>
           <div class="card-body">
             <div class="table-wrap">
               <table>
                 <thead><tr><th>Banco</th><th>Titular</th><th>Cédula</th><th>Número</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
-                <tbody id="banksTbody"><tr><td colspan="7"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <tbody id="banksTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -476,53 +476,56 @@
   </div>
 </div>
 
-<!-- ── Modal: Nuevo cajero ── -->
+<!-- ── Modal: Cajero (crear/editar) ── -->
 <div class="modal-overlay" id="modalCashier">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nuevo cajero</h3>
+      <h3 id="modalCashierTitle">Nuevo cajero</h3>
       <button class="btn-close" onclick="closeModal('modalCashier')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="cId" />
       <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="cName" class="form-control" placeholder="María López" /></div>
       <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="cEmail" class="form-control" placeholder="cajero@escuela.com" /></div>
-      <div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="cPass" class="form-control" placeholder="Mínimo 6 caracteres" /></div>
+      <div class="form-group" id="cPassGroup"><label class="form-label">Contraseña</label><input type="password" id="cPass" class="form-control" placeholder="Mínimo 6 caracteres" /></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalCashier')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createCashier()">Crear cajero</button>
+      <button class="btn btn-primary" id="btnSaveCashier" onclick="saveCashier()">Crear cajero</button>
     </div>
   </div>
 </div>
 
-<!-- ── Modal: Nuevo padre ── -->
+<!-- ── Modal: Padre (crear/editar) ── -->
 <div class="modal-overlay" id="modalParent">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nuevo padre de familia</h3>
+      <h3 id="modalParentTitle">Nuevo padre de familia</h3>
       <button class="btn-close" onclick="closeModal('modalParent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="pId" />
       <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="pName" class="form-control" placeholder="Juan Pérez" /></div>
       <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="pEmail" class="form-control" placeholder="juan@email.com" /></div>
-      <div class="form-group"><label class="form-label">Contraseña temporal</label><input type="password" id="pPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
+      <div class="form-group" id="pPassGroup"><label class="form-label">Contraseña temporal</label><input type="password" id="pPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
       <div class="form-group"><label class="form-label">Teléfono</label><input type="text" id="pPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalParent')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createParent()">Guardar</button>
+      <button class="btn btn-primary" id="btnSaveParent" onclick="saveParent()">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- ── Modal: Nuevo estudiante ── -->
+<!-- ── Modal: Estudiante (crear/editar) ── -->
 <div class="modal-overlay" id="modalStudent">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nuevo estudiante</h3>
+      <h3 id="modalStudentTitle">Nuevo estudiante</h3>
       <button class="btn-close" onclick="closeModal('modalStudent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="stId" />
       <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="stName" class="form-control" /></div>
       <div class="form-group"><label class="form-label">Grado / Curso</label><input type="text" id="stGrade" class="form-control" placeholder="3ro bachillerato A" /></div>
       <div class="form-group">
@@ -532,7 +535,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalStudent')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createStudent()">Guardar y generar QR</button>
+      <button class="btn btn-primary" id="btnSaveStudent" onclick="saveStudent()">Guardar y generar QR</button>
     </div>
   </div>
 </div>
@@ -541,10 +544,11 @@
 <div class="modal-overlay" id="modalProduct">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nuevo producto</h3>
+      <h3 id="modalProductTitle">Nuevo producto</h3>
       <button class="btn-close" onclick="closeModal('modalProduct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="prId" />
       <div class="form-group"><label class="form-label">Nombre</label><input type="text" id="prName" class="form-control" placeholder="Jugo de naranja" /></div>
       <div class="form-row form-row-2">
         <div class="form-group"><label class="form-label">Precio ($)</label><input type="number" id="prPrice" class="form-control" step="0.01" min="0.01" /></div>
@@ -570,7 +574,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalProduct')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createProduct()">Guardar</button>
+      <button class="btn btn-primary" id="btnSaveProduct" onclick="saveProduct()">Guardar</button>
     </div>
   </div>
 </div>
@@ -579,10 +583,11 @@
 <div class="modal-overlay" id="modalBank">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nueva cuenta bancaria</h3>
+      <h3 id="modalBankTitle">Nueva cuenta bancaria</h3>
       <button class="btn-close" onclick="closeModal('modalBank')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="bkId" />
       <div class="form-group"><label class="form-label">Banco</label><input type="text" id="bkBank" class="form-control" placeholder="Banco Pichincha" /></div>
       <div class="form-row form-row-2">
         <div class="form-group"><label class="form-label">Titular</label><input type="text" id="bkOwner" class="form-control" /></div>
@@ -601,7 +606,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalBank')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createBank()">Guardar</button>
+      <button class="btn btn-primary" id="btnSaveBank" onclick="saveBank()">Guardar</button>
     </div>
   </div>
 </div>
@@ -757,25 +762,68 @@ async function loadCashiers() {
   var data = await api('/auth/cashiers');
   var tb = document.getElementById('cashiersTbody');
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cajeros registrados</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cajeros registrados</td></tr>'; return; }
   tb.innerHTML = data.map(c => `
     <tr>
       <td><strong>${c.name}</strong></td>
       <td>${c.email}</td>
       <td style="font-size:12px;color:var(--gray-500)">${new Date(c.createdAt).toLocaleDateString('es-EC')}</td>
       <td><a href="/cajero" target="_blank" class="btn btn-ghost btn-sm">Abrir POS</a></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditCashier(${c.id},'${c.name.replace(/'/g,"\\'")}','${c.email}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCashier(${c.id})">Eliminar</button>
+        </div>
+      </td>
     </tr>`).join('');
 }
 
-async function createCashier() {
-  var body = { name: document.getElementById('cName').value, email: document.getElementById('cEmail').value, password: document.getElementById('cPass').value };
-  var res = await fetch(API + '/auth/register-cashier', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  var data = await res.json();
-  if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Cajero creado correctamente', 'success');
-  closeModal('modalCashier');
+function openNewCashier() {
+  document.getElementById('cId').value = '';
   document.getElementById('cName').value = '';
   document.getElementById('cEmail').value = '';
   document.getElementById('cPass').value = '';
+  document.getElementById('cPassGroup').style.display = '';
+  document.getElementById('modalCashierTitle').textContent = 'Nuevo cajero';
+  document.getElementById('btnSaveCashier').textContent = 'Crear cajero';
+  openModal('modalCashier');
+}
+
+function openEditCashier(id, name, email) {
+  document.getElementById('cId').value = id;
+  document.getElementById('cName').value = name;
+  document.getElementById('cEmail').value = email;
+  document.getElementById('cPass').value = '';
+  document.getElementById('cPassGroup').style.display = 'none';
+  document.getElementById('modalCashierTitle').textContent = 'Editar cajero';
+  document.getElementById('btnSaveCashier').textContent = 'Guardar cambios';
+  openModal('modalCashier');
+}
+
+async function saveCashier() {
+  var id = document.getElementById('cId').value;
+  if (id) {
+    var body = { name: document.getElementById('cName').value, email: document.getElementById('cEmail').value };
+    var res = await fetch(API + '/auth/cashiers/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Cajero actualizado', 'success');
+  } else {
+    var body = { name: document.getElementById('cName').value, email: document.getElementById('cEmail').value, password: document.getElementById('cPass').value };
+    var res = await fetch(API + '/auth/register-cashier', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Cajero creado', 'success');
+  }
+  closeModal('modalCashier');
+  loadCashiers();
+}
+
+async function deleteCashier(id) {
+  if (!confirm('¿Eliminar este cajero?')) return;
+  var res = await fetch(API + '/auth/cashiers/' + id, { method:'DELETE', headers: authHeaders() });
+  if (!res.ok) { toast('Error al eliminar cajero', 'error'); return; }
+  toast('Cajero eliminado', 'warning');
   loadCashiers();
 }
 
@@ -783,7 +831,7 @@ async function createCashier() {
 async function loadParents() {
   var data = await api('/parents');
   var tb = document.getElementById('parentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong></td>
@@ -798,6 +846,12 @@ async function loadParents() {
         </label>
       </td>
       <td>${(p.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditParent(${p.id},'${p.name.replace(/'/g,"\\'")}','${p.email}','${p.phone||''}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteParent(${p.id})">Eliminar</button>
+        </div>
+      </td>
     </tr>`).join('');
 }
 
@@ -807,13 +861,54 @@ async function toggleAllowDebt(id, value) {
   toast(value ? 'Deuda habilitada' : 'Deuda deshabilitada', value ? 'success' : 'warning');
 }
 
-async function createParent() {
-  var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, password: document.getElementById('pPass').value, phone: document.getElementById('pPhone').value };
-  var res = await fetch(API + '/auth/register-parent', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  var data = await res.json();
-  if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Padre registrado correctamente', 'success');
+function openNewParent() {
+  document.getElementById('pId').value = '';
+  document.getElementById('pName').value = '';
+  document.getElementById('pEmail').value = '';
+  document.getElementById('pPass').value = '';
+  document.getElementById('pPhone').value = '';
+  document.getElementById('pPassGroup').style.display = '';
+  document.getElementById('modalParentTitle').textContent = 'Nuevo padre de familia';
+  document.getElementById('btnSaveParent').textContent = 'Guardar';
+  openModal('modalParent');
+}
+
+function openEditParent(id, name, email, phone) {
+  document.getElementById('pId').value = id;
+  document.getElementById('pName').value = name;
+  document.getElementById('pEmail').value = email;
+  document.getElementById('pPass').value = '';
+  document.getElementById('pPhone').value = phone;
+  document.getElementById('pPassGroup').style.display = 'none';
+  document.getElementById('modalParentTitle').textContent = 'Editar padre';
+  document.getElementById('btnSaveParent').textContent = 'Guardar cambios';
+  openModal('modalParent');
+}
+
+async function saveParent() {
+  var id = document.getElementById('pId').value;
+  if (id) {
+    var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, phone: document.getElementById('pPhone').value };
+    var res = await fetch(API + '/parents/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Padre actualizado', 'success');
+  } else {
+    var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, password: document.getElementById('pPass').value, phone: document.getElementById('pPhone').value };
+    var res = await fetch(API + '/auth/register-parent', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Padre registrado', 'success');
+  }
   closeModal('modalParent');
+  loadParents();
+}
+
+async function deleteParent(id) {
+  if (!confirm('¿Eliminar este padre? Se perderán sus datos de acceso.')) return;
+  var res = await fetch(API + '/parents/' + id, { method:'DELETE', headers: authHeaders() });
+  if (!res.ok) { toast('Error al eliminar padre', 'error'); return; }
+  toast('Padre eliminado', 'warning');
   loadParents();
 }
 
@@ -833,7 +928,7 @@ async function openStudentModal() {
 async function loadStudents() {
   var data = await api('/students');
   var tb = document.getElementById('studentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin estudiantes</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin estudiantes</td></tr>'; return; }
   tb.innerHTML = data.map(s => `
     <tr>
       <td><strong>${s.name}</strong></td>
@@ -841,16 +936,64 @@ async function loadStudents() {
       <td>${s.parent ? s.parent.name : '—'}</td>
       <td><span class="badge ${s.active?'badge-success':'badge-danger'}">${s.active?'Activo':'Inactivo'}</span></td>
       <td><button class="btn btn-ghost btn-sm" onclick="viewQR(${s.id},'${s.name}')">Ver QR</button></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditStudent(${s.id},'${s.name.replace(/'/g,"\\'")}','${s.grade||''}',${s.parent_id})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="toggleStudent(${s.id},${s.active})">${s.active?'Desactivar':'Activar'}</button>
+        </div>
+      </td>
     </tr>`).join('');
 }
 
-async function createStudent() {
+async function openStudentModal() {
+  document.getElementById('stId').value = '';
+  document.getElementById('stName').value = '';
+  document.getElementById('stGrade').value = '';
+  document.getElementById('modalStudentTitle').textContent = 'Nuevo estudiante';
+  document.getElementById('btnSaveStudent').textContent = 'Guardar y generar QR';
+  await fillParentSelect();
+  openModal('modalStudent');
+}
+
+async function openEditStudent(id, name, grade, parentId) {
+  document.getElementById('stId').value = id;
+  document.getElementById('stName').value = name;
+  document.getElementById('stGrade').value = grade;
+  document.getElementById('modalStudentTitle').textContent = 'Editar estudiante';
+  document.getElementById('btnSaveStudent').textContent = 'Guardar cambios';
+  await fillParentSelect();
+  document.getElementById('stParent').value = parentId;
+  openModal('modalStudent');
+}
+
+async function saveStudent() {
+  var id = document.getElementById('stId').value;
   var body = { name: document.getElementById('stName').value, grade: document.getElementById('stGrade').value, parent_id: document.getElementById('stParent').value };
-  var res = await fetch(API + '/students', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  var data = await res.json();
-  if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Estudiante creado y QR generado', 'success');
+  if (id) {
+    var res = await fetch(API + '/students/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Estudiante actualizado', 'success');
+  } else {
+    var res = await fetch(API + '/students', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Estudiante creado y QR generado', 'success');
+  }
   closeModal('modalStudent');
+  loadStudents();
+}
+
+async function toggleStudent(id, active) {
+  var action = active ? 'desactivar' : 'activar';
+  if (!confirm('¿' + action.charAt(0).toUpperCase() + action.slice(1) + ' este estudiante?')) return;
+  if (active) {
+    await fetch(API + '/students/' + id, { method:'DELETE', headers: authHeaders() });
+    toast('Estudiante desactivado', 'warning');
+  } else {
+    await fetch(API + '/students/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
+    toast('Estudiante activado', 'success');
+  }
   loadStudents();
 }
 
@@ -934,7 +1077,7 @@ async function deleteCategory(id) {
 async function loadProducts() {
   var data = await api('/products');
   var tb = document.getElementById('productsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin productos</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin productos</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong></td>
@@ -942,28 +1085,50 @@ async function loadProducts() {
       <td><strong>$${parseFloat(p.price).toFixed(2)}</strong></td>
       <td><span class="badge ${p.active?'badge-success':'badge-danger'}">${p.active?'Activo':'Inactivo'}</span></td>
       <td>
-        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Desactivar</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditProduct(${p.id},'${p.name.replace(/'/g,"\\'")}',${p.price},'${(p.category||'').replace(/'/g,"\\'")}')">Editar</button>
+          ${p.active ? `<button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Desactivar</button>` : `<button class="btn btn-success btn-sm" onclick="reactivateProduct(${p.id})">Activar</button>`}
+        </div>
       </td>
     </tr>`).join('');
 }
 
 async function openProductModal() {
   await loadCategories();
-  document.getElementById('prName').value = '';
+  document.getElementById('prId').value    = '';
+  document.getElementById('prName').value  = '';
   document.getElementById('prPrice').value = '';
-  document.getElementById('prCat').value = '';
+  document.getElementById('prCat').value   = '';
   document.getElementById('catPanel').style.display = 'none';
   document.getElementById('btnCatGear').style.color = 'var(--gray-500)';
+  document.getElementById('modalProductTitle').textContent = 'Nuevo producto';
+  document.getElementById('btnSaveProduct').textContent    = 'Guardar';
   openModal('modalProduct');
 }
 
-async function createProduct() {
-  var body = { name: document.getElementById('prName').value, price: parseFloat(document.getElementById('prPrice').value), category: document.getElementById('prCat').value };
+async function openEditProduct(id, name, price, category) {
+  await loadCategories();
+  document.getElementById('prId').value    = id;
+  document.getElementById('prName').value  = name;
+  document.getElementById('prPrice').value = price;
+  document.getElementById('prCat').value   = category;
+  document.getElementById('catPanel').style.display = 'none';
+  document.getElementById('btnCatGear').style.color = 'var(--gray-500)';
+  document.getElementById('modalProductTitle').textContent = 'Editar producto';
+  document.getElementById('btnSaveProduct').textContent    = 'Guardar cambios';
+  openModal('modalProduct');
+}
+
+async function saveProduct() {
+  var id    = document.getElementById('prId').value;
+  var body  = { name: document.getElementById('prName').value, price: parseFloat(document.getElementById('prPrice').value), category: document.getElementById('prCat').value };
   if (!body.name || !body.price) { toast('Nombre y precio son obligatorios', 'error'); return; }
-  var res = await fetch(API + '/products', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  var data = await res.json();
+  var url    = id ? (API + '/products/' + id) : (API + '/products');
+  var method = id ? 'PATCH' : 'POST';
+  var res    = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+  var data   = await res.json();
   if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Producto creado', 'success');
+  toast(id ? 'Producto actualizado' : 'Producto creado', 'success');
   closeModal('modalProduct');
   loadProducts();
 }
@@ -972,6 +1137,13 @@ async function deleteProduct(id) {
   if (!confirm('¿Desactivar este producto?')) return;
   await fetch(API + '/products/' + id, { method:'DELETE', headers: authHeaders() });
   toast('Producto desactivado', 'warning');
+  loadProducts();
+}
+
+async function reactivateProduct(id) {
+  var res = await fetch(API + '/products/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
+  if (!res.ok) { toast('Error al activar', 'error'); return; }
+  toast('Producto activado', 'success');
   loadProducts();
 }
 
@@ -1026,7 +1198,7 @@ async function loadRecharges() {
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
   tb.innerHTML = data.map(r => `
     <tr>
-      <td>${r.parent_id}</td>
+      <td>${r.parent ? r.parent.name : r.parent_id}</td>
       <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
       <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
       <td>${r.bankAccount ? r.bankAccount.bank : '—'}</td>
@@ -1063,7 +1235,7 @@ async function rejectRecharge(id) {
 async function loadBanks() {
   var data = await api('/bank-accounts');
   var tb = document.getElementById('banksTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cuentas</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin cuentas</td></tr>'; return; }
   tb.innerHTML = data.map(b => `
     <tr>
       <td><strong>${b.bank}</strong></td>
@@ -1072,15 +1244,47 @@ async function loadBanks() {
       <td><code>${b.number}</code></td>
       <td>${b.type}</td>
       <td><span class="badge ${b.active?'badge-success':'badge-danger'}">${b.active?'Activa':'Inactiva'}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteBank(${b.id})">Desactivar</button></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditBank(${b.id},'${b.bank.replace(/'/g,"\\'")}','${b.owner.replace(/'/g,"\\'")}','${(b.cedula||'').replace(/'/g,"\\'")}','${b.number.replace(/'/g,"\\'")}','${b.type}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBank(${b.id})">Desactivar</button>
+        </div>
+      </td>
     </tr>`).join('');
 }
 
-async function createBank() {
+function openNewBank() {
+  document.getElementById('bkId').value     = '';
+  document.getElementById('bkBank').value   = '';
+  document.getElementById('bkOwner').value  = '';
+  document.getElementById('bkCedula').value = '';
+  document.getElementById('bkNumber').value = '';
+  document.getElementById('bkType').value   = 'AHORROS';
+  document.getElementById('modalBankTitle').textContent = 'Nueva cuenta bancaria';
+  document.getElementById('btnSaveBank').textContent    = 'Guardar';
+  openModal('modalBank');
+}
+
+function openEditBank(id, bank, owner, cedula, number, type) {
+  document.getElementById('bkId').value     = id;
+  document.getElementById('bkBank').value   = bank;
+  document.getElementById('bkOwner').value  = owner;
+  document.getElementById('bkCedula').value = cedula;
+  document.getElementById('bkNumber').value = number;
+  document.getElementById('bkType').value   = type;
+  document.getElementById('modalBankTitle').textContent = 'Editar cuenta bancaria';
+  document.getElementById('btnSaveBank').textContent    = 'Guardar cambios';
+  openModal('modalBank');
+}
+
+async function saveBank() {
+  var id   = document.getElementById('bkId').value;
   var body = { bank: document.getElementById('bkBank').value, owner: document.getElementById('bkOwner').value, cedula: document.getElementById('bkCedula').value, number: document.getElementById('bkNumber').value, type: document.getElementById('bkType').value };
-  var res = await fetch(API + '/bank-accounts', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  if (!res.ok) { toast('Error al crear cuenta', 'error'); return; }
-  toast('Cuenta bancaria creada', 'success');
+  var url    = id ? (API + '/bank-accounts/' + id) : (API + '/bank-accounts');
+  var method = id ? 'PATCH' : 'POST';
+  var res    = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+  if (!res.ok) { toast('Error al guardar cuenta', 'error'); return; }
+  toast(id ? 'Cuenta actualizada' : 'Cuenta creada', 'success');
   closeModal('modalBank');
   loadBanks();
 }

@@ -95,6 +95,7 @@ Sale.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
 Sale.hasMany(SaleItem,  { foreignKey: 'sale_id', as: 'items' });
 SaleItem.belongsTo(Product,     { foreignKey: 'product_id', as: 'product' });
 Recharge.belongsTo(BankAccount, { foreignKey: 'bank_account_id', as: 'bankAccount' });
+Recharge.belongsTo(User,        { foreignKey: 'parent_id',       as: 'parent' });
 
 const Category = sequelize.define('Category', {
   id:   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
