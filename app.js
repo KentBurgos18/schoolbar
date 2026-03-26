@@ -3,7 +3,8 @@ const path    = require('path');
 const bcrypt  = require('bcryptjs');
 
 const { sequelize, User, Student, Product, BankAccount, Category } = require('./models');
-const { startDebtNotifierCron } = require('./services/DebtNotifier');
+const { startDebtNotifierCron }    = require('./services/DebtNotifier');
+const { startWeeklyReportCron }    = require('./services/WeeklyReportNotifier');
 
 const app  = express();
 const PORT = process.env.PORT || 3030;
@@ -133,6 +134,7 @@ async function initDb() {
 initDb()
   .then(() => {
     startDebtNotifierCron();
+    startWeeklyReportCron();
     app.listen(PORT, () => console.log(`SchoolBar en http://localhost:${PORT}`));
   })
   .catch(err => { console.error('Error al iniciar:', err); process.exit(1); });

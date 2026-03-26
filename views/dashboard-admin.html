@@ -176,7 +176,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite deuda</th><th>Hijos</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
                 <tbody id="parentsTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -310,12 +310,13 @@
           <!-- Notificaciones y envío manual -->
           <div style="display:flex;flex-direction:column;gap:16px">
 
+            <!-- Card: Notificaciones de deuda -->
             <div class="card">
-              <div class="card-header"><h3>Notificaciones semanales</h3></div>
+              <div class="card-header"><h3>Notificaciones de deuda</h3></div>
               <div class="card-body">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                   <div>
-                    <div style="font-weight:600;font-size:14px">Envío automático de deudas</div>
+                    <div style="font-weight:600;font-size:14px">Envío automático</div>
                     <div style="font-size:12px;color:var(--gray-500);margin-top:2px">Todos los lunes a las 08:00 (Guayaquil)</div>
                   </div>
                   <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">
@@ -325,11 +326,72 @@
                   </label>
                 </div>
                 <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:13px;color:var(--gray-600);margin-bottom:16px">
-                  <strong>¿Qué se envía?</strong> Un correo a cada padre que tenga deuda &gt; $0, con el detalle de lo que consumió su hijo/a durante la semana.
+                  <strong>¿Qué se envía?</strong> Un correo a cada padre con deuda &gt; $0, con el detalle de consumos de la semana.
                 </div>
                 <button class="btn btn-warning" style="width:100%" onclick="sendDebtNow()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   Enviar notificaciones ahora
+                </button>
+              </div>
+            </div>
+
+            <!-- Card: Resumen semanal de consumos -->
+            <div class="card">
+              <div class="card-header"><h3>Resumen semanal de consumos</h3></div>
+              <div class="card-body">
+                <!-- Toggle activar/desactivar -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                  <div>
+                    <div style="font-weight:600;font-size:14px">Envío automático a todos los padres</div>
+                    <div style="font-size:12px;color:var(--gray-500);margin-top:2px">Incluye solo padres cuyos hijos consumieron algo</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">
+                    <input type="checkbox" id="weeklyEnabled" style="opacity:0;width:0;height:0" onchange="toggleWeeklyReport()" />
+                    <span id="weeklyToggleTrack" style="position:absolute;inset:0;border-radius:99px;background:var(--gray-300);transition:.2s"></span>
+                    <span id="weeklyToggleThumb" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s"></span>
+                  </label>
+                </div>
+
+                <!-- Programación -->
+                <div style="background:var(--gray-50);border-radius:8px;padding:14px;margin-bottom:16px">
+                  <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Programación del envío</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div class="form-group" style="margin:0">
+                      <label class="form-label" style="font-size:12px">Día de la semana</label>
+                      <select id="weeklyDay" class="form-control form-select" style="font-size:13px">
+                        <option value="0">Domingo</option>
+                        <option value="1" selected>Lunes</option>
+                        <option value="2">Martes</option>
+                        <option value="3">Miércoles</option>
+                        <option value="4">Jueves</option>
+                        <option value="5">Viernes</option>
+                        <option value="6">Sábado</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                      <label class="form-label" style="font-size:12px">Hora del envío</label>
+                      <select id="weeklyHour" class="form-control form-select" style="font-size:13px">
+                        <option value="6">06:00</option>
+                        <option value="7">07:00</option>
+                        <option value="8" selected>08:00</option>
+                        <option value="9">09:00</option>
+                        <option value="10">10:00</option>
+                        <option value="12">12:00</option>
+                        <option value="14">14:00</option>
+                        <option value="16">16:00</option>
+                        <option value="18">18:00</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="saveWeeklySchedule()">Guardar programación</button>
+                </div>
+
+                <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:13px;color:var(--gray-600);margin-bottom:16px">
+                  <strong>¿Qué se envía?</strong> Un resumen con el listado de productos que consumió cada hijo/a, el total gastado y el saldo disponible.
+                </div>
+                <button class="btn btn-primary" style="width:100%" onclick="sendWeeklyNow()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Enviar resumen ahora
                 </button>
               </div>
             </div>
@@ -840,7 +902,7 @@ async function loadParents() {
       <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
       <td>${parseFloat(p.debt)>0?`<span class="debt-pill">$${parseFloat(p.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
       <td style="text-align:center">
-        <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar deuda' : 'Activar deuda'}">
+        <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar crédito' : 'Activar crédito'}">
           <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />
           <span class="toggle-slider"></span>
         </label>
@@ -858,7 +920,7 @@ async function loadParents() {
 async function toggleAllowDebt(id, value) {
   var res = await fetch(API + '/parents/' + id + '/allow-debt', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ allow_debt: value }) });
   if (!res.ok) { toast('Error al actualizar', 'error'); loadParents(); return; }
-  toast(value ? 'Deuda habilitada' : 'Deuda deshabilitada', value ? 'success' : 'warning');
+  toast(value ? 'Crédito habilitado' : 'Crédito deshabilitado', value ? 'success' : 'warning');
 }
 
 function openNewParent() {
@@ -1366,6 +1428,13 @@ async function loadEmailSettings() {
   var cb = document.getElementById('notifEnabled');
   cb.checked = enabled;
   updateToggleUI(enabled);
+
+  // Reporte semanal
+  var weeklyEnabled = data.weekly_report_enabled === 'true';
+  document.getElementById('weeklyEnabled').checked = weeklyEnabled;
+  updateWeeklyToggleUI(weeklyEnabled);
+  document.getElementById('weeklyDay').value  = data.weekly_report_day  || '1';
+  document.getElementById('weeklyHour').value = data.weekly_report_hour || '8';
 }
 
 function updateToggleUI(enabled) {
@@ -1419,6 +1488,45 @@ async function sendTestEmail() {
 async function sendDebtNow() {
   toast('Enviando notificaciones...', '');
   var res = await fetch(API + '/settings/email/send-debt-now', { method:'POST', headers:authHeaders() });
+  var data = await res.json();
+  toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+}
+
+function updateWeeklyToggleUI(enabled) {
+  var track = document.getElementById('weeklyToggleTrack');
+  var thumb = document.getElementById('weeklyToggleThumb');
+  track.style.background = enabled ? 'var(--success)' : 'var(--gray-300)';
+  thumb.style.left = enabled ? '22px' : '2px';
+}
+
+async function toggleWeeklyReport() {
+  var enabled = document.getElementById('weeklyEnabled').checked;
+  updateWeeklyToggleUI(enabled);
+  await fetch(API + '/settings/email', {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ weekly_report_enabled: String(enabled) })
+  });
+  toast(enabled ? 'Reporte semanal activado' : 'Reporte semanal desactivado', enabled ? 'success' : 'warning');
+}
+
+async function saveWeeklySchedule() {
+  var day  = document.getElementById('weeklyDay').value;
+  var hour = document.getElementById('weeklyHour').value;
+  var res  = await fetch(API + '/settings/email', {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ weekly_report_day: day, weekly_report_hour: hour })
+  });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  // Reprogramar el cron sin reiniciar
+  await fetch(API + '/settings/email/reschedule-weekly', { method:'POST', headers:authHeaders() });
+  var dayNames = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  toast('Programado para cada ' + dayNames[day] + ' a las ' + hour + ':00', 'success');
+}
+
+async function sendWeeklyNow() {
+  toast('Enviando resúmenes...', '');
+  var res  = await fetch(API + '/settings/email/send-weekly-now', { method:'POST', headers:authHeaders() });
   var data = await res.json();
   toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
 }

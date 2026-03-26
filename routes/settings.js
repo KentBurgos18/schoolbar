@@ -4,8 +4,13 @@ const { Setting } = require('../models');
 const auth = require('../middlewares/auth');
 const { verifyConnection, sendMail, debtEmailHtml } = require('../services/EmailService');
 const { sendDebtNotifications } = require('../services/DebtNotifier');
+const { sendWeeklyReports, startWeeklyReportCron } = require('../services/WeeklyReportNotifier');
 
-const SMTP_KEYS = ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url', 'email_notifications_enabled'];
+const SMTP_KEYS = [
+  'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url',
+  'email_notifications_enabled',
+  'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour'
+];
 
 // GET /api/settings/email  → leer configuración SMTP (sin la contraseña)
 router.get('/email', auth('ADMIN'), async (req, res) => {
@@ -22,10 +27,13 @@ router.get('/email', auth('ADMIN'), async (req, res) => {
 // POST /api/settings/email  → guardar configuración SMTP
 router.post('/email', auth('ADMIN'), async (req, res) => {
   try {
-    const allowed = ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url', 'email_notifications_enabled'];
+    const allowed = [
+      'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url',
+      'email_notifications_enabled',
+      'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour'
+    ];
     for (const key of allowed) {
       if (req.body[key] === undefined) continue;
-      // No sobreescribir la contraseña si se envía el placeholder
       if (key === 'smtp_pass' && req.body[key] === '••••••••') continue;
       await Setting.upsert({ key, value: req.body[key] });
     }
@@ -75,6 +83,29 @@ router.post('/email/send-debt-now', auth('ADMIN'), async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al enviar notificaciones: ' + err.message });
+  }
+});
+
+// POST /api/settings/email/send-weekly-now  → enviar resumen semanal manualmente
+router.post('/email/send-weekly-now', auth('ADMIN'), async (req, res) => {
+  try {
+    const result = await sendWeeklyReports();
+    if (result.disabled) return res.json({ message: 'El reporte semanal está deshabilitado. Actívalo en la configuración.' });
+    res.json({
+      message: `Reportes enviados: ${result.sent} | Omitidos (sin consumo o sin email): ${result.skipped} | Errores: ${result.errors}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar reportes: ' + err.message });
+  }
+});
+
+// POST /api/settings/email/reschedule-weekly  → reprogramar el cron semanal sin reiniciar
+router.post('/email/reschedule-weekly', auth('ADMIN'), async (req, res) => {
+  try {
+    await startWeeklyReportCron();
+    res.json({ message: 'Cron de reporte semanal reprogramado correctamente.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al reprogramar: ' + err.message });
   }
 });
 

@@ -126,4 +126,115 @@ function debtEmailHtml({ parentName, debt, children, appUrl }) {
 </html>`;
 }
 
-module.exports = { sendMail, verifyConnection, debtEmailHtml, getSmtpConfig };
+// Plantilla de reporte semanal de consumos
+function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl }) {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const dateRange = `${weekStart.toLocaleDateString('es-EC')} – ${weekEnd.toLocaleDateString('es-EC')}`;
+
+  const childBlocks = children.map(c => {
+    const itemRows = (c.items || []).map(i => `
+      <tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;font-size:13px">${i.name}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;font-size:13px;text-align:center">${i.qty}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f3f4f6;font-size:13px;text-align:right;color:#2563eb;font-weight:600">$${parseFloat(i.subtotal).toFixed(2)}</td>
+      </tr>`).join('');
+
+    return `
+    <div style="margin-bottom:20px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+      <div style="background:#f0f4ff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="color:#1e3a8a;font-size:14px">${c.name}</strong>
+          ${c.grade ? `<span style="color:#6b7280;font-size:12px;margin-left:6px">${c.grade}</span>` : ''}
+        </div>
+        <div style="font-size:13px;color:#374151">${c.sale_count} compra${c.sale_count !== 1 ? 's' : ''} &nbsp;·&nbsp; <strong style="color:#2563eb">$${parseFloat(c.total_consumed).toFixed(2)}</strong></div>
+      </div>
+      ${c.items && c.items.length ? `
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <thead>
+          <tr style="background:#fafafa">
+            <th style="padding:6px 10px;text-align:left;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase">Producto</th>
+            <th style="padding:6px 10px;text-align:center;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase">Cant.</th>
+            <th style="padding:6px 10px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase">Total</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>` : '<p style="padding:10px 16px;margin:0;font-size:13px;color:#9ca3af">Sin compras esta semana</p>'}
+    </div>`;
+  }).join('');
+
+  const totalConsumed = children.reduce((acc, c) => acc + c.total_consumed, 0);
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 0">
+    <tr><td align="center">
+      <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08)">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:28px 32px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800">SchoolBar</h1>
+            <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:14px">Resumen semanal de consumos</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px">
+            <p style="color:#374151;font-size:15px;margin:0 0 4px">Hola <strong>${parentName}</strong>,</p>
+            <p style="color:#6b7280;font-size:13px;margin:0 0 20px">Aquí tienes el resumen de lo que consumieron tus hijos esta semana.</p>
+
+            <!-- Periodo -->
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:13px;color:#0369a1">
+              📅 &nbsp;Período: <strong>${dateRange}</strong>
+            </div>
+
+            <!-- Resumen total + saldo -->
+            <div style="display:flex;gap:12px;margin-bottom:24px">
+              <div style="flex:1;background:#f0f4ff;border-radius:10px;padding:14px 18px;text-align:center">
+                <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Total consumido</div>
+                <div style="font-size:26px;font-weight:800;color:#2563eb;margin-top:4px">$${parseFloat(totalConsumed).toFixed(2)}</div>
+              </div>
+              <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:14px 18px;text-align:center">
+                <div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Saldo actual</div>
+                <div style="font-size:26px;font-weight:800;color:#16a34a;margin-top:4px">$${parseFloat(balance || 0).toFixed(2)}</div>
+              </div>
+            </div>
+
+            <!-- Detalle por hijo -->
+            <p style="color:#374151;font-size:14px;font-weight:700;margin:0 0 12px">Detalle por hijo/a:</p>
+            ${childBlocks}
+
+            <!-- CTA -->
+            <div style="text-align:center;margin:24px 0 8px">
+              <a href="${appUrl || '#'}/padres"
+                style="background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
+                Ver mi cuenta en SchoolBar
+              </a>
+            </div>
+
+            <p style="color:#9ca3af;font-size:12px;margin:16px 0 0;text-align:center">
+              Recibes este correo porque eres representante registrado en SchoolBar.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb">
+            <p style="color:#9ca3af;font-size:12px;margin:0">SchoolBar &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+module.exports = { sendMail, verifyConnection, debtEmailHtml, weeklyReportHtml, getSmtpConfig };
