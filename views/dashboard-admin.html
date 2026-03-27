@@ -839,8 +839,8 @@ async function api(path, opts) {
 }
 
 // ── Navigation ──
-var sections = ['overview','parents','cashiers','students','products','recharges','bankAccounts','sales','email'];
-var sectionTitles = { overview:'Resumen', parents:'Padres de familia', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', sales:'Ventas', email:'Correo y notificaciones' };
+var sections = ['overview','admins','parents','cashiers','students','products','recharges','bankAccounts','sales','email'];
+var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Padres de familia', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', sales:'Ventas', email:'Correo y notificaciones' };
 
 function showSection(id) {
   if (!sections.includes(id)) id = 'overview';
