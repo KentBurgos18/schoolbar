@@ -883,10 +883,12 @@ function logout() { localStorage.clear(); window.location.href = '/'; }
 
 // ── Overview ──
 async function loadOverview() {
-  var parents   = await api('/parents');
-  var students  = await api('/students');
-  var recharges = await api('/recharges');
-  var sales     = await api('/sales');
+  var [parents, students, recharges, sales] = await Promise.all([
+    api('/parents'),
+    api('/students'),
+    api('/recharges'),
+    api('/sales')
+  ]);
 
   if (parents)   document.getElementById('statParents').textContent = parents.length;
   if (students)  document.getElementById('statStudents').textContent = students.filter(s => s.active).length;
