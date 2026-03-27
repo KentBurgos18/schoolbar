@@ -5,6 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SchoolBar — Padre</title>
   <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    @media (max-width: 768px) {
+      /* Alerta de deuda: apilar texto y botón */
+      #debtAlert { flex-direction: column !important; align-items: flex-start !important; }
+      #debtAlert button { width: 100%; }
+      /* Grid de hijos: 1 columna */
+      #childrenGrid { grid-template-columns: 1fr !important; }
+      /* Tablas: texto compacto */
+      table { font-size: 12px; }
+      table th, table td { padding: 8px 8px !important; white-space: nowrap; }
+      /* Filtros de consumos: apilar */
+      #sec-consumptions .card-body { flex-direction: column !important; }
+      #sec-consumptions .card-body .form-group { min-width: unset !important; width: 100% !important; }
+      #sec-consumptions .card-body button { width: 100%; }
+      /* Sección de recarga: full width */
+      #sec-recharge > div { max-width: 100% !important; }
+    }
+    @media (max-width: 480px) {
+      /* Stats: reducir texto */
+      .stat-value { font-size: 22px !important; }
+      /* card-header: apilar si no caben */
+      .card-header { flex-wrap: wrap; gap: 8px; }
+      /* Detalle bancario: apilar número y botón de copiar */
+      .bank-copy-row { flex-direction: column !important; }
+    }
+  </style>
 </head>
 <body>
 <div class="shell">

@@ -95,7 +95,8 @@
       .pos-layout {
         grid-template-columns: 1fr;
         height: auto;
-        overflow-y: auto;
+        min-height: 100vh;
+        overflow-y: visible;
       }
       .pos-left { padding: 12px; }
       .pos-right {
@@ -103,14 +104,29 @@
         border-top: 2px solid var(--gray-200);
         height: auto;
         max-height: none;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        box-shadow: 0 -4px 16px rgba(0,0,0,.1);
       }
+      .cart-body { max-height: 240px; overflow-y: auto; }
       .product-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-      .cart-body { max-height: 260px; overflow-y: auto; }
+      /* Carrito colapsable en móvil: mostrar solo footer hasta que el usuario suba */
+      .cart-header { cursor: pointer; }
     }
     @media (max-width: 480px) {
-      .pos-topbar { padding: 0 12px; }
-      .pos-topbar .btn-exit { display: none; }
+      .pos-topbar { padding: 0 10px; }
+      .pos-topbar .cashier-info { display: none; }
+      .pos-topbar .btn-exit { font-size: 12px; padding: 5px 8px; }
       .product-grid { grid-template-columns: repeat(2, 1fr); }
+      .product-btn { padding: 10px 8px; }
+      .p-name  { font-size: 12px; }
+      .p-price { font-size: 15px; }
+      /* Tabs: reducir padding para caber más */
+      .sale-tab { padding: 0 10px; font-size: 11px; }
+      /* Resultados de búsqueda: más compactos */
+      .search-result-item { padding: 10px 12px; }
+      .search-result-item .sr-name { font-size: 13px; }
     }
     .cart-header {
       padding: 16px 20px;
