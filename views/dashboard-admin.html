@@ -893,9 +893,12 @@ async function loadOverview() {
   var pending = (recharges || []).filter(r => r.status === 'PENDING');
   document.getElementById('statPending').textContent = pending.length;
 
+  var badge = document.getElementById('pendingBadge');
   if (pending.length > 0) {
-    document.getElementById('pendingBadge').textContent = pending.length;
-    document.getElementById('pendingBadge').style.display = '';
+    badge.textContent = pending.length;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
   }
 
   var today = new Date().toISOString().split('T')[0];
