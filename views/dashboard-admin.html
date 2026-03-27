@@ -70,6 +70,10 @@
         Ventas
       </div>
       <div class="nav-section">Configuración</div>
+      <div class="nav-item" onclick="showSection('admins')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/><polyline points="16,11 18,13 22,9"/></svg>
+        Administradores
+      </div>
       <div class="nav-item" onclick="showSection('email')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Correo / Notificaciones
@@ -142,6 +146,27 @@
               <table id="overviewRechargesTable">
                 <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Ref.</th><th>Fecha</th><th>Acciones</th></tr></thead>
                 <tbody id="overviewRechargesTbody"><tr><td colspan="7" class="empty-state"><p>Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMINISTRADORES -->
+      <section id="sec-admins" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Administradores</h3>
+            <button class="btn btn-primary btn-sm" onclick="openNewAdmin()">+ Nuevo administrador</button>
+          </div>
+          <div class="card-body">
+            <div style="background:#fef9ec;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:16px">
+              Los administradores tienen acceso total al sistema. Añade solo personas de confianza.
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acciones</th></tr></thead>
+                <tbody id="adminsTbody"><tr><td colspan="4"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -538,6 +563,43 @@
   </div>
 </div>
 
+<!-- ── Modal: Administrador (crear/editar) ── -->
+<div class="modal-overlay" id="modalAdmin">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalAdminTitle">Nuevo administrador</h3>
+      <button class="btn-close" onclick="closeModal('modalAdmin')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="adId" />
+      <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="adName" class="form-control" placeholder="María López" /></div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="adEmail" class="form-control" placeholder="admin@colegio.com" /></div>
+      <div class="form-group" id="adPassGroup"><label class="form-label">Contraseña</label><input type="password" id="adPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
+
+      <!-- Cambiar contraseña (solo edición) -->
+      <div id="adChangePassSection" style="display:none;border-top:1px solid var(--gray-200);margin-top:4px;padding-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--gray-700)">Cambiar contraseña</span>
+          <button type="button" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--primary);font-family:inherit;padding:0" onclick="toggleAdminChangePass()">
+            <span id="adChangePassToggleLabel">+ Mostrar</span>
+          </button>
+        </div>
+        <div id="adChangePassFields" style="display:none">
+          <div class="form-group" style="margin-bottom:10px">
+            <label class="form-label">Nueva contraseña</label>
+            <input type="password" id="adNewPass" class="form-control" placeholder="mínimo 6 caracteres" autocomplete="new-password" />
+          </div>
+          <button type="button" class="btn btn-warning btn-sm" style="width:100%" onclick="changeAdminPassword()">Actualizar contraseña</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalAdmin')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveAdmin" onclick="saveAdmin()">Crear administrador</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal: Cajero (crear/editar) ── -->
 <div class="modal-overlay" id="modalCashier">
   <div class="modal">
@@ -767,6 +829,7 @@ function showSection(id) {
   document.getElementById('topbarTitle').textContent = sectionTitles[id] || id;
   window.location.hash = id;
   closeSidebar();
+  if (id === 'admins')       loadAdmins();
   if (id === 'cashiers')     loadCashiers();
   if (id === 'parents')      loadParents();
   if (id === 'students')     loadStudents();
@@ -834,6 +897,106 @@ function renderOverviewRecharges(recharges) {
         <button class="btn btn-danger btn-sm"  onclick="rejectRecharge(${r.id})">Rechazar</button>
       </td>
     </tr>`).join('');
+}
+
+// ── Admins ──
+async function loadAdmins() {
+  var data = await api('/auth/admins');
+  var tb = document.getElementById('adminsTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400)">Sin administradores</td></tr>'; return; }
+  var me = user.id;
+  tb.innerHTML = data.map(a => `
+    <tr>
+      <td><strong>${a.name}</strong> ${a.id == me ? '<span class="badge badge-gray" style="font-size:10px">Tú</span>' : ''}</td>
+      <td>${a.email}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(a.createdAt).toLocaleDateString('es-EC')}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditAdmin(${a.id},'${a.name.replace(/'/g,"\\'")}','${a.email}')">Editar</button>
+          ${a.id != me ? `<button class="btn btn-danger btn-sm" onclick="deleteAdmin(${a.id})">Eliminar</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openNewAdmin() {
+  document.getElementById('adId').value    = '';
+  document.getElementById('adName').value  = '';
+  document.getElementById('adEmail').value = '';
+  document.getElementById('adPass').value  = '';
+  document.getElementById('adPassGroup').style.display         = '';
+  document.getElementById('adChangePassSection').style.display = 'none';
+  document.getElementById('adChangePassFields').style.display  = 'none';
+  document.getElementById('adChangePassToggleLabel').textContent = '+ Mostrar';
+  document.getElementById('modalAdminTitle').textContent = 'Nuevo administrador';
+  document.getElementById('btnSaveAdmin').textContent    = 'Crear administrador';
+  openModal('modalAdmin');
+}
+
+function openEditAdmin(id, name, email) {
+  document.getElementById('adId').value    = id;
+  document.getElementById('adName').value  = name;
+  document.getElementById('adEmail').value = email;
+  document.getElementById('adNewPass').value = '';
+  document.getElementById('adPassGroup').style.display         = 'none';
+  document.getElementById('adChangePassSection').style.display = 'block';
+  document.getElementById('adChangePassFields').style.display  = 'none';
+  document.getElementById('adChangePassToggleLabel').textContent = '+ Mostrar';
+  document.getElementById('modalAdminTitle').textContent = 'Editar administrador';
+  document.getElementById('btnSaveAdmin').textContent    = 'Guardar cambios';
+  openModal('modalAdmin');
+}
+
+async function saveAdmin() {
+  var id = document.getElementById('adId').value;
+  if (id) {
+    var body = { name: document.getElementById('adName').value, email: document.getElementById('adEmail').value };
+    var res  = await fetch(API + '/auth/admins/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Administrador actualizado', 'success');
+  } else {
+    var body = { name: document.getElementById('adName').value, email: document.getElementById('adEmail').value, password: document.getElementById('adPass').value };
+    if (!body.name || !body.email || !body.password) { toast('Todos los campos son obligatorios', 'error'); return; }
+    var res  = await fetch(API + '/auth/register-admin', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Administrador creado', 'success');
+  }
+  closeModal('modalAdmin');
+  loadAdmins();
+}
+
+async function deleteAdmin(id) {
+  if (!confirm('¿Eliminar este administrador?')) return;
+  var res  = await fetch(API + '/auth/admins/' + id, { method:'DELETE', headers: authHeaders() });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Administrador eliminado', 'warning');
+  loadAdmins();
+}
+
+function toggleAdminChangePass() {
+  var fields = document.getElementById('adChangePassFields');
+  var label  = document.getElementById('adChangePassToggleLabel');
+  var hidden = fields.style.display === 'none';
+  fields.style.display = hidden ? 'block' : 'none';
+  label.textContent    = hidden ? '− Ocultar' : '+ Mostrar';
+  if (hidden) document.getElementById('adNewPass').focus();
+}
+
+async function changeAdminPassword() {
+  var id   = document.getElementById('adId').value;
+  var pass = document.getElementById('adNewPass').value;
+  if (!pass) { toast('Ingresa la nueva contraseña', 'error'); return; }
+  if (pass.length < 6) { toast('Mínimo 6 caracteres', 'error'); return; }
+  var res  = await fetch(API + '/auth/admins/' + id + '/password', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ password: pass }) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast(data.message, 'success');
+  document.getElementById('adNewPass').value = '';
+  document.getElementById('adChangePassFields').style.display = 'none';
+  document.getElementById('adChangePassToggleLabel').textContent = '+ Mostrar';
 }
 
 // ── Cashiers ──
@@ -1583,6 +1746,7 @@ var currentSection = 'overview';
 
 var sectionLoaders = {
   overview:     loadOverview,
+  admins:       loadAdmins,
   parents:      loadParents,
   students:     loadStudents,
   products:     loadProducts,

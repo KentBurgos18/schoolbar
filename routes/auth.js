@@ -90,6 +90,94 @@ router.delete('/cashiers/:id', async (req, res) => {
   }
 });
 
+// GET /api/auth/admins  → listar administradores
+router.get('/admins', async (req, res) => {
+  try {
+    const admins = await User.findAll({
+      where: { role: 'ADMIN' },
+      attributes: ['id', 'name', 'email', 'createdAt']
+    });
+    res.json(admins);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener administradores' });
+  }
+});
+
+// POST /api/auth/register-admin  → crear administrador
+router.post('/register-admin', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
+    if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hash, role: 'ADMIN' });
+    res.json({ id: user.id, name: user.name, email: user.email });
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError')
+      return res.status(400).json({ error: 'El correo ya está registrado' });
+    res.status(500).json({ error: 'Error al crear administrador' });
+  }
+});
+
+// PATCH /api/auth/admins/:id  → editar administrador
+router.patch('/admins/:id', async (req, res) => {
+  try {
+    const admin = await User.findOne({ where: { id: req.params.id, role: 'ADMIN' } });
+    if (!admin) return res.status(404).json({ error: 'Administrador no encontrado' });
+    const { name, email } = req.body;
+    await admin.update({ name, email });
+    res.json({ id: admin.id, name: admin.name, email: admin.email });
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError')
+      return res.status(400).json({ error: 'El correo ya está en uso' });
+    res.status(500).json({ error: 'Error al actualizar administrador' });
+  }
+});
+
+// PATCH /api/auth/admins/:id/password  → cambiar contraseña de administrador
+router.patch('/admins/:id/password', async (req, res) => {
+  try {
+    const admin = await User.findOne({ where: { id: req.params.id, role: 'ADMIN' } });
+    if (!admin) return res.status(404).json({ error: 'Administrador no encontrado' });
+    const { password } = req.body;
+    if (!password || password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const hash = await bcrypt.hash(password, 10);
+    await admin.update({ password: hash });
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
+  }
+});
+
+// DELETE /api/auth/admins/:id  → eliminar administrador (no puede eliminarse a sí mismo)
+router.delete('/admins/:id', async (req, res) => {
+  try {
+    // Obtener el admin autenticado desde el token
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    let requesterId = null;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, JWT_SECRET);
+      requesterId = decoded.id;
+    } catch {}
+
+    if (requesterId && String(requesterId) === String(req.params.id)) {
+      return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
+    }
+
+    const count = await User.count({ where: { role: 'ADMIN' } });
+    if (count <= 1) return res.status(400).json({ error: 'Debe existir al menos un administrador' });
+
+    const admin = await User.findOne({ where: { id: req.params.id, role: 'ADMIN' } });
+    if (!admin) return res.status(404).json({ error: 'Administrador no encontrado' });
+    await admin.destroy();
+    res.json({ message: 'Administrador eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar administrador' });
+  }
+});
+
 // GET /api/auth/cashiers  (solo admin)
 router.get('/cashiers', async (req, res) => {
   try {
