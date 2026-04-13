@@ -1,28 +1,77 @@
 const express = require('express');
 const router = express.Router();
-const { Recharge, User, BankAccount } = require('../models');
+const { Recharge, RechargeAllocation, User, Student, BankAccount } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../models');
 const auth     = require('../middlewares/auth');
 const EventBus = require('../services/EventBus');
 
-// POST /api/recharges  → padre solicita recarga
+// POST /api/recharges  → padre solicita recarga con allocations por hijo
 router.post('/', auth('PARENT'), async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const { amount, method, bank_account_id, receipt_ref } = req.body;
-    if (amount <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
+    const { amount, method, bank_account_id, receipt_ref, from_bank, receipt_image, allocations } = req.body;
+    // allocations: [{ student_id, amount }]
+
+    if (!amount || amount <= 0) { await t.rollback(); return res.status(400).json({ error: 'El monto debe ser mayor a 0' }); }
+    if (!allocations || !allocations.length) { await t.rollback(); return res.status(400).json({ error: 'Debes especificar cómo distribuir el monto entre tus hijos' }); }
+    if (method === 'TRANSFER') {
+      if (!from_bank || !from_bank.trim()) { await t.rollback(); return res.status(400).json({ error: 'Indica el banco desde el que realizas la transferencia' }); }
+      if (!receipt_image) { await t.rollback(); return res.status(400).json({ error: 'Debes subir la imagen del comprobante de transferencia' }); }
+    }
+
+    // Validar que la suma de allocations === amount
+    const total = allocations.reduce((s, a) => s + parseFloat(a.amount), 0);
+    if (Math.abs(total - parseFloat(amount)) > 0.01) {
+      await t.rollback();
+      return res.status(400).json({ error: `La suma de las asignaciones ($${total.toFixed(2)}) debe ser igual al monto total ($${parseFloat(amount).toFixed(2)})` });
+    }
+
+    // Validar que todos los student_id pertenecen a este padre
+    const students = await Student.findAll({
+      where: { parent_id: req.user.id, active: true },
+      transaction: t
+    });
+    const studentIds = students.map(s => s.id);
+    for (const a of allocations) {
+      if (!studentIds.includes(parseInt(a.student_id))) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Uno de los hijos no pertenece a tu cuenta' });
+      }
+      if (!a.amount || parseFloat(a.amount) < 0) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Todos los montos asignados deben ser mayores o iguales a 0' });
+      }
+    }
 
     const recharge = await Recharge.create({
       parent_id: req.user.id,
       amount,
       method,
       bank_account_id: method === 'TRANSFER' ? bank_account_id : null,
-      receipt_ref: method === 'TRANSFER' ? receipt_ref : null,
+      receipt_ref:   method === 'TRANSFER' ? receipt_ref   : null,
+      from_bank:     method === 'TRANSFER' ? from_bank     : null,
+      receipt_image: method === 'TRANSFER' ? receipt_image : null,
       status: 'PENDING'
-    });
+    }, { transaction: t });
+
+    // Crear allocations
+    for (const a of allocations) {
+      if (parseFloat(a.amount) > 0) {
+        await RechargeAllocation.create({
+          recharge_id: recharge.id,
+          student_id: parseInt(a.student_id),
+          amount: parseFloat(a.amount)
+        }, { transaction: t });
+      }
+    }
+
+    await t.commit();
     EventBus.emit('recharge:new', { id: recharge.id, amount: recharge.amount, method: recharge.method });
     res.json({ id: recharge.id, message: 'Solicitud enviada. Pendiente de aprobación.' });
   } catch (err) {
+    await t.rollback();
+    console.error(err);
     res.status(500).json({ error: 'Error al solicitar recarga' });
   }
 });
@@ -35,7 +84,10 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
       where,
       include: [
         { model: BankAccount, as: 'bankAccount', attributes: ['bank', 'number', 'owner'] },
-        { model: User, as: 'parent', attributes: ['id', 'name'] }
+        { model: User, as: 'parent', attributes: ['id', 'name'] },
+        { model: RechargeAllocation, as: 'allocations',
+          include: [{ model: Student, as: 'student', attributes: ['id', 'name', 'grade'] }]
+        }
       ],
       order: [['created_at', 'DESC']]
     });
@@ -49,49 +101,85 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
 router.patch('/:id/approve', auth('ADMIN'), async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    // Lock sin include (PostgreSQL no soporta FOR UPDATE con JOIN)
     const recharge = await Recharge.findByPk(req.params.id, { transaction: t, lock: true });
     if (!recharge) { await t.rollback(); return res.status(404).json({ error: 'Recarga no encontrada' }); }
     if (recharge.status !== 'PENDING') { await t.rollback(); return res.status(400).json({ error: 'Solo se pueden aprobar recargas pendientes' }); }
 
-    const parent = await User.findByPk(recharge.parent_id, { transaction: t, lock: true });
-    const amount   = parseFloat(recharge.amount);
-    const debt     = parseFloat(parent.debt);
-    const debtPaid = Math.min(debt, amount);
-    const added    = amount - debtPaid;
-    const newBalance = parseFloat(parent.balance) + added;
-    const newDebt    = debt - debtPaid;
+    // Cargar allocations por separado
+    const allocations = await RechargeAllocation.findAll({
+      where: { recharge_id: recharge.id },
+      transaction: t
+    });
 
-    await recharge.update({ status: 'APPROVED', approved_by: req.user.id, debt_paid: debtPaid }, { transaction: t });
-    await parent.update({ balance: newBalance, debt: newDebt }, { transaction: t });
+    let totalDebtPaid = 0;
+
+    // Aplicar cada allocation al saldo del estudiante
+    for (const alloc of allocations) {
+      const student = await Student.findByPk(alloc.student_id, { transaction: t, lock: true });
+      if (!student) continue;
+
+      const allocAmount = parseFloat(alloc.amount);
+      const studentDebt = parseFloat(student.debt);
+      const debtPaid    = Math.min(studentDebt, allocAmount);
+      const addedToBalance = allocAmount - debtPaid;
+
+      await student.update({
+        balance: parseFloat(student.balance) + addedToBalance,
+        debt:    studentDebt - debtPaid
+      }, { transaction: t });
+
+      totalDebtPaid += debtPaid;
+    }
+
+    await recharge.update({
+      status: 'APPROVED',
+      approved_by: req.user.id,
+      debt_paid: totalDebtPaid
+    }, { transaction: t });
 
     await t.commit();
-    EventBus.emit('recharge:approved', { id: recharge.id, new_balance: newBalance.toFixed(2) });
+    EventBus.emit('recharge:approved', { id: recharge.id });
     res.json({
-      message: 'Recarga aprobada',
-      new_balance: newBalance.toFixed(2),
-      debt_paid: debtPaid.toFixed(2),
-      added_to_balance: added.toFixed(2)
+      message: 'Recarga aprobada y saldos actualizados por hijo',
+      debt_paid: totalDebtPaid.toFixed(2)
     });
   } catch (err) {
     await t.rollback();
+    console.error(err);
     res.status(500).json({ error: 'Error al aprobar recarga' });
   }
 });
 
-// POST /api/recharges/admin-add  → admin recarga directamente a un padre (aprobado al instante)
+// POST /api/recharges/admin-add  → admin recarga directamente (aprobado al instante)
 router.post('/admin-add', auth('ADMIN'), async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { parent_id, amount, method, bank_account_id, receipt_ref } = req.body;
+    const { parent_id, method, bank_account_id, receipt_ref, allocations } = req.body;
     if (!parent_id) { await t.rollback(); return res.status(400).json({ error: 'Selecciona un padre' }); }
-    if (!amount || amount <= 0) { await t.rollback(); return res.status(400).json({ error: 'El monto debe ser mayor a 0' }); }
+    if (!allocations || !allocations.length) { await t.rollback(); return res.status(400).json({ error: 'Debes especificar las asignaciones por hijo' }); }
 
-    const parent = await User.findByPk(parent_id, { transaction: t, lock: true });
+    const parent = await User.findByPk(parent_id, { transaction: t });
     if (!parent || parent.role !== 'PARENT') { await t.rollback(); return res.status(404).json({ error: 'Padre no encontrado' }); }
+
+    // Validar allocations
+    const validAllocs = allocations.filter(a => parseFloat(a.amount) > 0);
+    if (!validAllocs.length) { await t.rollback(); return res.status(400).json({ error: 'Asigna un monto mayor a 0 en al menos un hijo' }); }
+
+    const students = await Student.findAll({ where: { parent_id, active: true }, transaction: t });
+    const studentIds = students.map(s => s.id);
+    for (const a of validAllocs) {
+      if (!studentIds.includes(parseInt(a.student_id))) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Uno de los hijos no pertenece a este padre' });
+      }
+    }
+
+    const totalAmount = validAllocs.reduce((s, a) => s + parseFloat(a.amount), 0);
 
     const recharge = await Recharge.create({
       parent_id,
-      amount,
+      amount: totalAmount,
       method: method || 'CASH',
       bank_account_id: method === 'TRANSFER' ? bank_account_id : null,
       receipt_ref: receipt_ref || null,
@@ -99,23 +187,41 @@ router.post('/admin-add', auth('ADMIN'), async (req, res) => {
       approved_by: req.user.id
     }, { transaction: t });
 
-    const debt     = parseFloat(parent.debt);
-    const debtPaid = Math.min(debt, parseFloat(amount));
-    const added    = parseFloat(amount) - debtPaid;
-    const newBalance = parseFloat(parent.balance) + added;
-    const newDebt    = debt - debtPaid;
+    let totalDebtPaid = 0;
 
-    await recharge.update({ debt_paid: debtPaid }, { transaction: t });
-    await parent.update({ balance: newBalance, debt: newDebt }, { transaction: t });
+    for (const a of validAllocs) {
+      await RechargeAllocation.create({
+        recharge_id: recharge.id,
+        student_id: parseInt(a.student_id),
+        amount: parseFloat(a.amount)
+      }, { transaction: t });
+
+      const student = await Student.findByPk(a.student_id, { transaction: t, lock: true });
+      const allocAmount = parseFloat(a.amount);
+      const studentDebt = parseFloat(student.debt);
+      const debtPaid    = Math.min(studentDebt, allocAmount);
+      const addedToBalance = allocAmount - debtPaid;
+
+      await student.update({
+        balance: parseFloat(student.balance) + addedToBalance,
+        debt:    studentDebt - debtPaid
+      }, { transaction: t });
+
+      totalDebtPaid += debtPaid;
+    }
+
+    await recharge.update({ debt_paid: totalDebtPaid }, { transaction: t });
 
     await t.commit();
-    EventBus.emit('recharge:approved', { id: recharge.id, new_balance: newBalance.toFixed(2) });
-    const msg = debtPaid > 0
-      ? `Recarga aplicada a ${parent.name}. Deuda descontada: $${debtPaid.toFixed(2)}. Saldo añadido: $${added.toFixed(2)}.`
-      : `Recarga de $${parseFloat(amount).toFixed(2)} aplicada a ${parent.name}.`;
-    res.json({ message: msg, new_balance: newBalance.toFixed(2), debt_paid: debtPaid.toFixed(2), added_to_balance: added.toFixed(2) });
+    EventBus.emit('recharge:approved', { id: recharge.id });
+    res.json({
+      message: `Recarga de $${totalAmount.toFixed(2)} aplicada a ${parent.name} distribuida entre ${validAllocs.length} hijo(s).`,
+      total: totalAmount.toFixed(2),
+      debt_paid: totalDebtPaid.toFixed(2)
+    });
   } catch (err) {
     await t.rollback();
+    console.error(err);
     res.status(500).json({ error: 'Error al aplicar recarga' });
   }
 });
@@ -136,12 +242,11 @@ router.patch('/:id/reject', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// PATCH /api/recharges/:id/pay-debt  → padre paga deuda (genera recarga de tipo deuda)
+// PATCH /api/recharges/pay-debt  → padre paga deuda
 router.patch('/pay-debt', auth('PARENT'), async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { amount, method, bank_account_id, receipt_ref } = req.body;
-    const parent = await User.findByPk(req.user.id, { transaction: t, lock: true });
+    const { amount, method, bank_account_id, receipt_ref, allocations } = req.body;
 
     const recharge = await Recharge.create({
       parent_id: req.user.id,
@@ -152,6 +257,18 @@ router.patch('/pay-debt', auth('PARENT'), async (req, res) => {
       status: 'PENDING',
       note: 'Pago de deuda'
     }, { transaction: t });
+
+    if (allocations && allocations.length) {
+      for (const a of allocations) {
+        if (parseFloat(a.amount) > 0) {
+          await RechargeAllocation.create({
+            recharge_id: recharge.id,
+            student_id: parseInt(a.student_id),
+            amount: parseFloat(a.amount)
+          }, { transaction: t });
+        }
+      }
+    }
 
     await t.commit();
     res.json({ id: recharge.id, message: 'Solicitud de pago de deuda enviada. Pendiente de aprobación.' });

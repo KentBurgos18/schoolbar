@@ -1,8 +1,26 @@
 const express = require('express');
 const router  = express.Router();
 const bcrypt  = require('bcryptjs');
+const XLSX    = require('xlsx');
 const { User, Student, Sale, SaleItem } = require('../models');
 const auth = require('../middlewares/auth');
+
+// GET /api/parents/template  → descarga plantilla Excel de padres
+router.get('/template', auth('ADMIN'), (req, res) => {
+  const headers = ['nombre', 'email', 'telefono', 'contraseña'];
+  const data    = [
+    ['Juan Pérez',   'juan@email.com',  '0991234567', 'miClave123'],
+    ['María García', 'maria@email.com', '0987654321', 'clave456'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+  ws['!cols'] = headers.map(() => ({ wch: 26 }));
+  const wb  = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Padres');
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla_padres.xlsx"');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(buf);
+});
 
 // GET /api/parents  → lista de padres (solo admin)
 router.get('/', auth('ADMIN'), async (req, res) => {
@@ -22,8 +40,8 @@ router.get('/', auth('ADMIN'), async (req, res) => {
 router.get('/me', auth('PARENT'), async (req, res) => {
   try {
     const parent = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt'],
-      include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade', 'qr_image'] }]
+      attributes: ['id', 'name', 'email', 'phone', 'allow_debt'],
+      include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade', 'qr_image', 'balance', 'debt'] }]
     });
     res.json(parent);
   } catch (err) {
@@ -98,6 +116,56 @@ router.patch('/:id/password', auth('ADMIN'), async (req, res) => {
     res.json({ message: 'Contraseña actualizada correctamente' });
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar contraseña' });
+  }
+});
+
+// POST /api/parents/bulk-import  → importación masiva de padres (xlsx base64)
+router.post('/bulk-import', auth('ADMIN'), async (req, res) => {
+  try {
+    const { fileBase64 } = req.body;
+    if (!fileBase64) return res.status(400).json({ error: 'No se recibió el archivo' });
+
+    // Parsear el xlsx en el servidor
+    const buf  = Buffer.from(fileBase64, 'base64');
+    const wb   = XLSX.read(buf, { type: 'buffer' });
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const raw  = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    const rows = raw.map(r => {
+      const obj = {};
+      Object.keys(r).forEach(k => { obj[k.trim().toLowerCase()] = String(r[k] ?? '').trim(); });
+      return obj;
+    }).filter(r => Object.values(r).some(v => v));
+
+    if (!rows.length) return res.status(400).json({ error: 'El archivo no tiene datos válidos' });
+
+    const results = [];
+    for (const row of rows) {
+      const nombre     = (row['nombre']    || '').trim();
+      const email      = (row['email']     || '').trim().toLowerCase();
+      const telefono   = (row['telefono']  || '').trim();
+      const password   = (row['contraseña'] || row['password'] || '').trim();
+
+      if (!nombre || !email || !password) {
+        results.push({ email: email || '?', status: 'error', message: 'Faltan campos obligatorios (nombre, email, contraseña)' });
+        continue;
+      }
+      try {
+        const exists = await User.findOne({ where: { email } });
+        if (exists) {
+          results.push({ email, status: 'error', message: 'El correo ya está registrado' });
+          continue;
+        }
+        const hash = await bcrypt.hash(password, 10);
+        await User.create({ name: nombre, email, phone: telefono || null, password: hash, role: 'PARENT' });
+        results.push({ email, status: 'ok', message: 'Creado correctamente' });
+      } catch (e) {
+        results.push({ email: email || '?', status: 'error', message: e.message });
+      }
+    }
+    res.json({ results });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error en importación masiva' });
   }
 });
 

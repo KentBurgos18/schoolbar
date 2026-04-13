@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { User, Student, Sale, Setting } = require('../models');
+const { User, Student, Sale, Setting, sequelize } = require('../models');
 const { sendMail, debtEmailHtml } = require('./EmailService');
 const { Op } = require('sequelize');
 
@@ -17,15 +17,24 @@ async function sendDebtNotifications() {
   const appUrlRow = await Setting.findOne({ where: { key: 'app_url' } });
   const appUrl = appUrlRow ? appUrlRow.value : '';
 
-  // Obtener padres con deuda
-  const parents = await User.findAll({
-    where: { role: 'PARENT', debt: { [Op.gt]: 0 } },
-    include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade'] }]
+  // Obtener estudiantes con deuda > 0, agrupados por padre
+  const studentsWithDebt = await Student.findAll({
+    where: { debt: { [Op.gt]: 0 }, active: true },
+    include: [{ model: User, as: 'parent', attributes: ['id', 'name', 'email'] }]
   });
 
-  if (!parents.length) {
-    console.log('[DebtNotifier] No hay padres con deuda. Nada que enviar.');
+  if (!studentsWithDebt.length) {
+    console.log('[DebtNotifier] No hay estudiantes con deuda. Nada que enviar.');
     return { sent: 0, skipped: 0, errors: 0 };
+  }
+
+  // Agrupar por padre
+  const parentMap = {};
+  for (const student of studentsWithDebt) {
+    const p = student.parent;
+    if (!p) continue;
+    if (!parentMap[p.id]) parentMap[p.id] = { ...p.dataValues, students: [] };
+    parentMap[p.id].students.push(student);
   }
 
   // Calcular consumos de la semana actual por hijo
@@ -35,10 +44,10 @@ async function sendDebtNotifications() {
 
   let sent = 0, skipped = 0, errors = 0;
 
-  for (const parent of parents) {
+  for (const parent of Object.values(parentMap)) {
     if (!parent.email) { skipped++; continue; }
 
-    // Consumos de esta semana por hijo
+    // Consumos de esta semana por hijo (solo los que tienen deuda)
     const children = await Promise.all(
       (parent.students || []).map(async (s) => {
         const sales = await Sale.findAll({
@@ -52,13 +61,16 @@ async function sendDebtNotifications() {
       })
     );
 
+    // Calcular deuda total del padre (suma de deudas de sus hijos con deuda)
+    const totalDebt = children.reduce((acc, c) => acc + parseFloat(c.debt || 0), 0);
+
     try {
       await sendMail({
         to: parent.email,
-        subject: `SchoolBar — Tienes una deuda de $${parseFloat(parent.debt).toFixed(2)} pendiente`,
+        subject: `SchoolBar — Tienes una deuda de $${totalDebt.toFixed(2)} pendiente`,
         html: debtEmailHtml({
           parentName: parent.name,
-          debt: parent.debt,
+          debt: totalDebt,
           children,
           appUrl
         })

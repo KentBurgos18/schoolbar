@@ -6,7 +6,7 @@
   <title>SchoolBar — Iniciar sesión</title>
   <link rel="stylesheet" href="/css/theme.css" />
   <style>
-    body { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    body { background: linear-gradient(135deg, #3D0E06 0%, #C0391F 60%, #E8A500 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
     @media (max-width: 480px) {
       .login-card { padding: 24px 20px; }
       .login-brand h1 { font-size: 24px; }
@@ -15,15 +15,9 @@
     .login-wrap { width: 100%; max-width: 400px; }
 
     .login-brand { text-align: center; margin-bottom: 32px; }
-    .login-brand .logo {
-      width: 64px; height: 64px; background: rgba(255,255,255,.15);
-      border-radius: 18px; display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px; backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,.2);
-    }
-    .login-brand .logo svg { width: 32px; height: 32px; color: #fff; }
-    .login-brand h1 { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
-    .login-brand p { color: rgba(255,255,255,.65); font-size: 14px; margin-top: 4px; }
+    .login-brand .logo { margin: 0 auto 12px; }
+    .login-brand .logo img { width: 150px; height: 150px; object-fit: contain; filter: drop-shadow(0 4px 16px rgba(0,0,0,.35)); }
+    .login-brand p { color: rgba(255,255,255,.70); font-size: 14px; margin-top: 2px; }
 
     .login-card {
       background: #fff; border-radius: 18px;
@@ -66,13 +60,8 @@
   <div class="login-wrap">
     <div class="login-brand">
       <div class="logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9,22 9,12 15,12 15,22"/>
-        </svg>
+        <img src="/logo.jpeg" alt="Glory's Snack" />
       </div>
-      <h1>SchoolBar</h1>
-      <p>Sistema de bar escolar</p>
     </div>
 
     <div class="login-card">

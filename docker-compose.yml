@@ -14,6 +14,7 @@ services:
       DB_PASS: schoolbar_pass
       JWT_SECRET: schoolbar_jwt_secret_change_in_prod
     volumes:
+      - ./app.js:/app/app.js
       - ./routes:/app/routes
       - ./models:/app/models
       - ./views:/app/views

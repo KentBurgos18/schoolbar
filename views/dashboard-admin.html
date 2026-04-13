@@ -5,20 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SchoolBar — Admin</title>
   <link rel="stylesheet" href="/css/theme.css" />
+  <script src="/js/xlsx.full.min.js"></script>
   <style>
     @media (max-width: 768px) {
-      /* Email: grids 2 col → 1 col */
-      #sec-email > div[style*="grid-template-columns:1fr 1fr"],
-      #sec-email > div[style*="grid-template-columns: 1fr 1fr"] {
-        display: flex !important; flex-direction: column;
-      }
-      /* Weekly schedule: 2 col → 1 col */
-      #weeklyDay, #weeklyHour { width: 100%; }
-      #sec-email div[style*="display:grid"][style*="1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-      }
       /* Sales stats: 3 col → 2 col */
-      #salesStatsGrid { grid-template-columns: 1fr 1fr !important; }
+      #salesStatsGrid { grid-template-columns: 1fr 1fr; }
       /* Botones de acción en tablas: scroll horizontal limpio */
       td > div[style*="display:flex"] { flex-wrap: nowrap; }
       /* Reducir padding de cards en móvil */
@@ -31,13 +22,24 @@
       table th, table td { padding: 8px 8px !important; white-space: nowrap; }
     }
     @media (max-width: 480px) {
-      /* Sales stats: 1 col en móvil pequeño */
-      #salesStatsGrid { grid-template-columns: 1fr !important; }
+      /* Sales stats: 1 col en móvil pequeño — ya cubierto por el breakpoint 600px */
       /* Stats del overview */
       .stat-value { font-size: 22px !important; }
       /* card-header: apilar título y botón si no caben */
       .card-header { flex-wrap: wrap; gap: 8px; }
     }
+    /* Sales stats grid */
+    #salesStatsGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+    /* Email section 2 cols */
+    #emailSectionGrid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    /* Weekly schedule 2 cols */
+    #weeklyScheduleGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 768px) {
+      #emailSectionGrid    { grid-template-columns: 1fr; }
+      #weeklyScheduleGrid  { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) { #salesStatsGrid { grid-template-columns: 1fr; } }
+
     /* Toggle switch */
     .toggle-switch { position:relative; display:inline-block; width:38px; height:22px; cursor:pointer; }
     .toggle-switch input { opacity:0; width:0; height:0; }
@@ -52,9 +54,12 @@
 
   <!-- ── Sidebar ── -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <h1>SchoolBar</h1>
-      <span>Panel de administración</span>
+    <div class="sidebar-brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/logo.jpeg" alt="Glory's Snack" style="width:42px;height:42px;object-fit:contain;border-radius:8px;flex-shrink:0" />
+      <div>
+        <h1 style="font-size:15px">Glory's Snack</h1>
+        <span>Panel de administración</span>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">Principal</div>
@@ -220,7 +225,11 @@
         <div class="card">
           <div class="card-header">
             <h3>Padres de familia</h3>
-            <button class="btn btn-primary btn-sm" onclick="openNewParent()">+ Nuevo padre</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('parents')">📥 Plantilla Excel</button>
+              <button class="btn btn-ghost btn-sm" onclick="triggerImport('parents')">📤 Importar Excel</button>
+              <button class="btn btn-primary btn-sm" onclick="openNewParent()">+ Nuevo padre</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="table-wrap">
@@ -238,7 +247,11 @@
         <div class="card">
           <div class="card-header">
             <h3>Estudiantes</h3>
-            <button class="btn btn-primary btn-sm" onclick="openStudentModal()">+ Nuevo estudiante</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('students')">📥 Plantilla Excel</button>
+              <button class="btn btn-ghost btn-sm" onclick="triggerImport('students')">📤 Importar Excel</button>
+              <button class="btn btn-primary btn-sm" onclick="openStudentModal()">+ Nuevo estudiante</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="table-wrap">
@@ -279,7 +292,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th><th>Aprobación</th></tr></thead>
+                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Comprobante</th><th>Estado</th><th>Fecha</th><th>Aprobación</th></tr></thead>
                 <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -307,7 +320,7 @@
 
       <!-- EMAIL / NOTIFICACIONES -->
       <section id="sec-email" style="display:none">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+        <div id="emailSectionGrid" style="align-items:start">
 
           <!-- Configuración SMTP -->
           <div class="card">
@@ -404,7 +417,7 @@
                 <!-- Programación -->
                 <div style="background:var(--gray-50);border-radius:8px;padding:14px;margin-bottom:16px">
                   <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Programación del envío</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div id="weeklyScheduleGrid">
                     <div class="form-group" style="margin:0">
                       <label class="form-label" style="font-size:12px">Día de la semana</label>
                       <select id="weeklyDay" class="form-control form-select" style="font-size:13px">
@@ -477,7 +490,7 @@
       <section id="sec-sales" style="display:none">
 
         <!-- Cards resumen -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px" id="salesStatsGrid">
+        <div id="salesStatsGrid">
           <!-- Hoy -->
           <div class="card">
             <div class="card-body" style="padding:20px">
@@ -546,6 +559,23 @@
   </main>
 </div><!-- /shell -->
 
+<!-- ── Modal: Ver comprobante ── -->
+<div class="modal-overlay" id="modalReceipt">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Comprobante de transferencia</h3>
+      <button class="btn-close" onclick="closeModal('modalReceipt')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="receiptModalImg" src="" style="max-width:100%;border-radius:10px;border:1px solid var(--gray-200)" />
+    </div>
+    <div class="modal-footer">
+      <a id="receiptDownloadLink" download="comprobante.jpg" class="btn btn-ghost">Descargar</a>
+      <button class="btn btn-primary" onclick="closeModal('modalReceipt')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal: Recarga directa ── -->
 <div class="modal-overlay" id="modalRecharge">
   <div class="modal">
@@ -556,13 +586,18 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Padre</label>
-        <select id="rcParent" class="form-control form-select"><option value="">Seleccionar padre...</option></select>
+        <select id="rcParent" class="form-control form-select" onchange="loadRcStudents()"><option value="">Seleccionar padre...</option></select>
       </div>
-      <div class="form-group">
-        <label class="form-label">Monto ($)</label>
-        <input type="number" id="rcAmount" class="form-control" placeholder="0.00" min="0.01" step="0.01" />
+      <!-- Allocations por hijo -->
+      <div id="rcAllocationsGroup" style="display:none">
+        <label class="form-label">Asignación por hijo ($)</label>
+        <div id="rcAllocationsContainer" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 10px;background:var(--gray-50);border-radius:8px">
+          <span style="color:var(--gray-600)">Total a recargar</span>
+          <strong id="rcAllocTotal">$0.00</strong>
+        </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-top:12px">
         <label class="form-label">Método de pago</label>
         <select id="rcMethod" class="form-control form-select" onchange="toggleRcTransfer()">
           <option value="CASH">Efectivo</option>
@@ -692,7 +727,28 @@
     <div class="modal-body">
       <input type="hidden" id="stId" />
       <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="stName" class="form-control" /></div>
-      <div class="form-group"><label class="form-label">Grado / Curso</label><input type="text" id="stGrade" class="form-control" placeholder="3ro bachillerato A" /></div>
+      <div class="form-group">
+        <label class="form-label">Grado / Curso</label>
+        <div style="display:flex;gap:8px">
+          <select id="stGradeLevel" class="form-control form-select" onchange="buildGrade()" style="flex:2">
+            <option value="">Seleccionar grado...</option>
+            <option>Inicial</option>
+            <option>Primero</option>
+            <option>Segundo</option>
+            <option>Tercero</option>
+            <option>Cuarto</option>
+            <option>Quinto</option>
+            <option>Sexto</option>
+            <option>Séptimo</option>
+          </select>
+          <select id="stGradeParallel" class="form-control form-select" onchange="buildGrade()" style="flex:1">
+            <option value="">Paralelo</option>
+            <option>A</option>
+            <option>B</option>
+          </select>
+        </div>
+        <input type="hidden" id="stGrade" />
+      </div>
       <div class="form-group">
         <label class="form-label">Padre / Madre</label>
         <select id="stParent" class="form-control form-select"><option value="">Seleccionar padre</option></select>
@@ -802,6 +858,41 @@
     <div class="modal-body" id="saleDetailBody"></div>
   </div>
 </div>
+
+<!-- ── Modal: Confirmación eliminar estudiante ── -->
+<div class="modal-overlay" id="modalConfirmDelete">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>Eliminar estudiante</h3>
+      <button class="btn-close" onclick="closeModal('modalConfirmDelete')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro de eliminar a <strong id="confirmDeleteName"></strong>?</p>
+      <p style="color:var(--danger);font-size:13px;margin-top:8px">⚠ Esta acción borrará al estudiante junto con todas sus ventas y asignaciones. No se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalConfirmDelete')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmDelete">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Resultados de importación masiva ── -->
+<div class="modal-overlay" id="modalImportResult">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Resultados de importación</h3>
+      <button class="btn-close" onclick="closeModal('modalImportResult')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="importResultBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modalImportResult')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Input CSV oculto -->
+<input type="file" id="csvFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleCsvImport(this)" />
 
 <!-- ── Toast ── -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -1240,15 +1331,42 @@ async function loadStudents() {
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditStudent(${s.id},'${s.name.replace(/'/g,"\\'")}','${s.grade||''}',${s.parent_id})">Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="toggleStudent(${s.id},${s.active})">${s.active?'Desactivar':'Activar'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStudentPermanent(${s.id},'${s.name.replace(/'/g,"\\'")}')">Eliminar</button>
         </div>
       </td>
     </tr>`).join('');
 }
 
+function buildGrade() {
+  var level    = document.getElementById('stGradeLevel').value;
+  var parallel = document.getElementById('stGradeParallel').value;
+  document.getElementById('stGrade').value = level && parallel ? level + ' ' + parallel : (level || '');
+}
+
+function setGradeSelects(grade) {
+  var grades = ['Inicial','Primero','Segundo','Tercero','Cuarto','Quinto','Sexto','Séptimo'];
+  var parallels = ['A','B'];
+  var level = '', parallel = '';
+  if (grade) {
+    var parts = grade.trim().split(' ');
+    var lastPart = parts[parts.length - 1];
+    if (parallels.includes(lastPart)) {
+      parallel = lastPart;
+      level = parts.slice(0, -1).join(' ');
+    } else {
+      level = grade;
+    }
+  }
+  document.getElementById('stGradeLevel').value    = grades.includes(level) ? level : '';
+  document.getElementById('stGradeParallel').value = parallel;
+  document.getElementById('stGrade').value = grade || '';
+}
+
 async function openStudentModal() {
   document.getElementById('stId').value = '';
   document.getElementById('stName').value = '';
+  document.getElementById('stGradeLevel').value = '';
+  document.getElementById('stGradeParallel').value = '';
   document.getElementById('stGrade').value = '';
   document.getElementById('modalStudentTitle').textContent = 'Nuevo estudiante';
   document.getElementById('btnSaveStudent').textContent = 'Guardar y generar QR';
@@ -1259,7 +1377,7 @@ async function openStudentModal() {
 async function openEditStudent(id, name, grade, parentId) {
   document.getElementById('stId').value = id;
   document.getElementById('stName').value = name;
-  document.getElementById('stGrade').value = grade;
+  setGradeSelects(grade);
   document.getElementById('modalStudentTitle').textContent = 'Editar estudiante';
   document.getElementById('btnSaveStudent').textContent = 'Guardar cambios';
   await fillParentSelect();
@@ -1286,8 +1404,6 @@ async function saveStudent() {
 }
 
 async function toggleStudent(id, active) {
-  var action = active ? 'desactivar' : 'activar';
-  if (!confirm('¿' + action.charAt(0).toUpperCase() + action.slice(1) + ' este estudiante?')) return;
   if (active) {
     await fetch(API + '/students/' + id, { method:'DELETE', headers: authHeaders() });
     toast('Estudiante desactivado', 'warning');
@@ -1296,6 +1412,24 @@ async function toggleStudent(id, active) {
     toast('Estudiante activado', 'success');
   }
   loadStudents();
+}
+
+function deleteStudentPermanent(id, name) {
+  document.getElementById('confirmDeleteName').textContent = name;
+  document.getElementById('btnConfirmDelete').onclick = async function() {
+    closeModal('modalConfirmDelete');
+    try {
+      var res  = await fetch(API + '/students/' + id + '/permanent', { method:'DELETE', headers: authHeaders() });
+      var data = await res.json();
+      if (!res.ok) { toast(data.error || 'Error al eliminar', 'error'); return; }
+      toast('Estudiante "' + name + '" eliminado', 'warning');
+      loadStudents();
+    } catch(e) {
+      toast('Error de conexión al eliminar', 'error');
+      console.error(e);
+    }
+  };
+  openModal('modalConfirmDelete');
 }
 
 async function viewQR(id, name) {
@@ -1454,7 +1588,7 @@ async function openRechargeModal() {
   var parents = await api('/parents');
   var sel = document.getElementById('rcParent');
   sel.innerHTML = '<option value="">Seleccionar padre...</option>';
-  (parents||[]).forEach(p => { var o = document.createElement('option'); o.value = p.id; o.textContent = p.name + ' — Saldo: $' + parseFloat(p.balance||0).toFixed(2); sel.appendChild(o); });
+  (parents||[]).forEach(p => { var o = document.createElement('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); });
 
   // Cargar cuentas bancarias
   var accounts = await api('/bank-accounts');
@@ -1462,11 +1596,50 @@ async function openRechargeModal() {
   selBank.innerHTML = '<option value="">Seleccionar cuenta...</option>';
   (accounts||[]).filter(a=>a.active).forEach(a => { var o = document.createElement('option'); o.value = a.id; o.textContent = a.bank + ' — ' + a.number; selBank.appendChild(o); });
 
-  document.getElementById('rcAmount').value = '';
   document.getElementById('rcMethod').value = 'CASH';
   document.getElementById('rcRef').value = '';
   document.getElementById('rcTransferFields').style.display = 'none';
+  document.getElementById('rcAllocationsGroup').style.display = 'none';
+  document.getElementById('rcAllocationsContainer').innerHTML = '';
   openModal('modalRecharge');
+}
+
+var rcStudents = [];
+
+async function loadRcStudents() {
+  var parentId = document.getElementById('rcParent').value;
+  var group = document.getElementById('rcAllocationsGroup');
+  var container = document.getElementById('rcAllocationsContainer');
+  if (!parentId) { group.style.display = 'none'; rcStudents = []; return; }
+
+  var allStudents = await api('/students');
+  rcStudents = (allStudents||[]).filter(s => String(s.parent_id) === String(parentId) && s.active !== false);
+
+  if (!rcStudents.length) {
+    group.style.display = '';
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">Este padre no tiene hijos registrados.</div>';
+    return;
+  }
+
+  container.innerHTML = rcStudents.map(s => `
+    <div style="display:flex;align-items:center;gap:10px">
+      <label style="flex:1;font-size:13.5px;font-weight:600;margin:0">
+        ${s.name}
+        <span style="font-size:11px;color:var(--gray-400);font-weight:400"> · Saldo: $${parseFloat(s.balance||0).toFixed(2)}${parseFloat(s.debt||0)>0?' · Deuda: $'+parseFloat(s.debt).toFixed(2):''}</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="color:var(--gray-500);font-size:13px">$</span>
+        <input type="number" id="rcAlloc_${s.id}" class="form-control" style="width:100px;text-align:right"
+          min="0" step="0.50" placeholder="0.00" value="0" oninput="updateRcAllocTotal()" />
+      </div>
+    </div>`).join('');
+  group.style.display = '';
+  updateRcAllocTotal();
+}
+
+function updateRcAllocTotal() {
+  var total = rcStudents.reduce((s, st) => s + (parseFloat(document.getElementById('rcAlloc_'+st.id)?.value)||0), 0);
+  document.getElementById('rcAllocTotal').textContent = '$' + total.toFixed(2);
 }
 
 function toggleRcTransfer() {
@@ -1475,15 +1648,23 @@ function toggleRcTransfer() {
 }
 
 async function applyRecharge() {
+  var parentId = document.getElementById('rcParent').value;
+  if (!parentId) { toast('Selecciona un padre', 'error'); return; }
+
+  var allocations = rcStudents.map(s => ({
+    student_id: s.id,
+    amount: parseFloat(document.getElementById('rcAlloc_'+s.id)?.value) || 0
+  })).filter(a => a.amount > 0);
+
+  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un hijo', 'error'); return; }
+
   var body = {
-    parent_id:      document.getElementById('rcParent').value,
-    amount:         parseFloat(document.getElementById('rcAmount').value),
-    method:         document.getElementById('rcMethod').value,
-    bank_account_id:document.getElementById('rcBankAccount').value || null,
-    receipt_ref:    document.getElementById('rcRef').value || null,
+    parent_id: parentId,
+    allocations,
+    method: document.getElementById('rcMethod').value,
+    bank_account_id: document.getElementById('rcBankAccount').value || null,
+    receipt_ref: document.getElementById('rcRef').value || null,
   };
-  if (!body.parent_id) { toast('Selecciona un padre', 'error'); return; }
-  if (!body.amount || body.amount <= 0) { toast('Ingresa un monto válido', 'error'); return; }
 
   var res = await fetch(API + '/recharges/admin-add', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
   var data = await res.json();
@@ -1494,20 +1675,31 @@ async function applyRecharge() {
 }
 
 async function loadRecharges() {
-  var data = await api('/recharges');
+  var data = await loadRechargesWithCache();
   var tb = document.getElementById('rechargesTbody');
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
-  tb.innerHTML = data.map(r => `
+  tb.innerHTML = data.map(r => {
+    var allocs = (r.allocations||[]).map(a => `${a.student?a.student.name:'?'}: $${parseFloat(a.amount).toFixed(2)}`).join(' · ');
+    return `
     <tr>
       <td>${r.parent ? r.parent.name : r.parent_id}</td>
-      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
+      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong><br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
       <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
-      <td>${r.bankAccount ? r.bankAccount.bank : '—'}</td>
+      <td>
+        ${r.bankAccount ? r.bankAccount.bank : '—'}
+        ${r.from_bank ? `<br/><span style="font-size:11px;color:var(--gray-400)">Desde: ${r.from_bank}</span>` : ''}
+      </td>
       <td>${r.receipt_ref || '—'}</td>
+      <td>
+        ${r.receipt_image
+          ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver comprobante</button>`
+          : '—'}
+      </td>
       <td>${statusBadge(r.status)}</td>
       <td style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
       <td>${r.status==='PENDING'?`<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>`:'—'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function statusBadge(s) {
@@ -1520,7 +1712,7 @@ async function approveRecharge(id) {
   var res = await fetch(API + '/recharges/' + id + '/approve', { method:'PATCH', headers: authHeaders() });
   var data = await res.json();
   if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Recarga aprobada. Nuevo saldo: $' + data.new_balance, 'success');
+  toast('Recarga aprobada y saldos actualizados.', 'success');
   loadOverview(); loadRecharges();
 }
 
@@ -1530,6 +1722,22 @@ async function rejectRecharge(id) {
   if (!res.ok) { toast('Error al rechazar', 'error'); return; }
   toast('Recarga rechazada', 'warning');
   loadOverview(); loadRecharges();
+}
+
+// Cache de recargas para ver el comprobante sin otra petición
+var _rechargesCache = [];
+async function loadRechargesWithCache() {
+  var data = await api('/recharges');
+  _rechargesCache = data || [];
+  return data;
+}
+
+function viewReceipt(id) {
+  var r = _rechargesCache.find(x => String(x.id) === String(id));
+  if (!r || !r.receipt_image) { toast('No hay comprobante disponible', 'error'); return; }
+  document.getElementById('receiptModalImg').src = r.receipt_image;
+  document.getElementById('receiptDownloadLink').href = r.receipt_image;
+  openModal('modalReceipt');
 }
 
 // ── Banks ──
@@ -1768,6 +1976,87 @@ async function sendWeeklyNow() {
   var res  = await fetch(API + '/settings/email/send-weekly-now', { method:'POST', headers:authHeaders() });
   var data = await res.json();
   toast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
+}
+
+// ── Importación masiva XLSX ──
+var _csvImportType = '';
+
+async function downloadTemplate(type) {
+  var url      = type === 'parents' ? '/api/parents/template' : '/api/students/template';
+  var filename = type === 'parents' ? 'plantilla_padres.xlsx'  : 'plantilla_estudiantes.xlsx';
+  try {
+    var res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) { toast('Error al generar plantilla', 'error'); return; }
+    var blob = await res.blob();
+    var a    = document.createElement('a');
+    a.href   = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    toast('Error al descargar plantilla', 'error');
+  }
+}
+
+function triggerImport(type) {
+  _csvImportType = type;
+  var input = document.getElementById('csvFileInput');
+  input.value = '';
+  input.click();
+}
+
+async function handleCsvImport(input) {
+  var file = input.files[0];
+  if (!file) return;
+  toast('Leyendo archivo...', '');
+  try {
+    // Leer el archivo como base64 y enviarlo al servidor para que lo procese
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload  = function(e) { resolve(e.target.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    var url = _csvImportType === 'parents'
+      ? '/api/parents/bulk-import'
+      : '/api/students/bulk-import';
+
+    toast('Procesando importación...', '');
+    var res  = await fetch(url, { method:'POST', headers: authHeaders(), body: JSON.stringify({ fileBase64: base64 }) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error en importación', 'error'); return; }
+
+    var results = data.results || [];
+    var ok  = results.filter(function(r) { return r.status === 'ok'; }).length;
+    var err = results.filter(function(r) { return r.status === 'error'; }).length;
+
+    document.getElementById('importResultBody').innerHTML =
+      '<div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">'
+      + '<span class="badge badge-success" style="font-size:14px;padding:6px 12px">✔ ' + ok + ' creado' + (ok!==1?'s':'') + '</span>'
+      + (err ? '<span class="badge badge-danger" style="font-size:14px;padding:6px 12px">✖ ' + err + ' error' + (err!==1?'es':'') + '</span>' : '')
+      + '</div>'
+      + '<div style="max-height:340px;overflow-y:auto">'
+      + '<table><thead><tr><th>Registro</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>'
+      + results.map(function(r) {
+          return '<tr>'
+            + '<td style="font-size:13px"><strong>' + (r.email || r.nombre || '?') + '</strong></td>'
+            + '<td><span class="badge ' + (r.status==='ok'?'badge-success':'badge-danger') + '">' + (r.status==='ok'?'OK':'Error') + '</span></td>'
+            + '<td style="font-size:12px;color:var(--gray-600)">' + r.message + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div>';
+
+    openModal('modalImportResult');
+    if (_csvImportType === 'parents') loadParents();
+    else loadStudents();
+
+  } catch(e) {
+    toast('Error al leer el archivo: ' + e.message, 'error');
+    console.error(e);
+  }
 }
 
 // ── SSE — tiempo real ──

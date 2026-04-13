@@ -6,12 +6,14 @@
   <title>SchoolBar — Padre</title>
   <link rel="stylesheet" href="/css/theme.css" />
   <style>
+    #childrenGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+    @media (max-width: 600px) { #childrenGrid { grid-template-columns: 1fr; } }
+
     @media (max-width: 768px) {
       /* Alerta de deuda: apilar texto y botón */
       #debtAlert { flex-direction: column !important; align-items: flex-start !important; }
       #debtAlert button { width: 100%; }
-      /* Grid de hijos: 1 columna */
-      #childrenGrid { grid-template-columns: 1fr !important; }
+      /* Grid de hijos: ya cubierto por breakpoint 600px */
       /* Tablas: texto compacto */
       table { font-size: 12px; }
       table th, table td { padding: 8px 8px !important; white-space: nowrap; }
@@ -37,9 +39,12 @@
 
   <!-- ── Sidebar ── -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <h1>SchoolBar</h1>
-      <span>Portal de padres</span>
+    <div class="sidebar-brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/logo.jpeg" alt="Glory's Snack" style="width:42px;height:42px;object-fit:contain;border-radius:8px;flex-shrink:0" />
+      <div>
+        <h1 style="font-size:15px">Glory's Snack</h1>
+        <span>Portal de padres</span>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">Mi cuenta</div>
@@ -103,7 +108,7 @@
             </div>
             <div>
               <div class="stat-value" id="homeBalance" style="color:var(--success)">$0.00</div>
-              <div class="stat-label">Saldo disponible</div>
+              <div class="stat-label">Saldo total (hijos)</div>
             </div>
           </div>
           <div class="stat-card">
@@ -112,7 +117,7 @@
             </div>
             <div>
               <div class="stat-value" id="homeDebt" style="color:var(--danger)">$0.00</div>
-              <div class="stat-label">Deuda pendiente</div>
+              <div class="stat-label">Deuda total (hijos)</div>
             </div>
           </div>
           <div class="stat-card">
@@ -163,7 +168,7 @@
 
       <!-- MIS HIJOS -->
       <section id="sec-children" style="display:none">
-        <div id="childrenGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+        <div id="childrenGrid"></div>
       </section>
 
       <!-- CONSUMOS -->
@@ -203,16 +208,12 @@
       <!-- RECARGAR SALDO -->
       <section id="sec-recharge" style="display:none">
         <div style="max-width:520px">
+          <!-- Saldos por hijo -->
           <div class="card" style="margin-bottom:16px">
-            <div class="card-body" style="display:flex;align-items:center;gap:16px">
-              <div>
-                <div style="font-size:13px;color:var(--gray-500)">Saldo actual</div>
-                <div class="balance-pill" id="rechargeSaldoActual">$0.00</div>
-              </div>
-              <div style="width:1px;height:40px;background:var(--gray-200)"></div>
-              <div>
-                <div style="font-size:13px;color:var(--gray-500)">Deuda</div>
-                <div class="debt-pill" id="rechargeDeudaActual">$0.00</div>
+            <div class="card-body">
+              <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px">Saldo actual por hijo</div>
+              <div id="rechargeStudentBalances" style="display:flex;flex-direction:column;gap:8px">
+                <div style="color:var(--gray-400);font-size:13px">Cargando...</div>
               </div>
             </div>
           </div>
@@ -220,9 +221,16 @@
           <div class="card">
             <div class="card-header"><h3>Solicitar recarga</h3></div>
             <div class="card-body">
+              <!-- Allocations por hijo -->
               <div class="form-group">
-                <label class="form-label">Monto a recargar ($)</label>
-                <input type="number" id="rAmount" class="form-control" step="0.50" min="1" placeholder="10.00" oninput="validateRechargeForm()" />
+                <label class="form-label">¿Cuánto le asignas a cada hijo? ($)</label>
+                <div id="allocationsContainer" style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px">
+                  <div style="color:var(--gray-400);font-size:13px">Cargando hijos...</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:8px;padding:8px 10px;background:var(--gray-50);border-radius:8px">
+                  <span style="color:var(--gray-600)">Total asignado</span>
+                  <strong id="allocTotal" style="color:var(--primary)">$0.00</strong>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">Método de pago</label>
@@ -233,6 +241,11 @@
               </div>
 
               <div id="transferFields" style="display:none">
+                <div class="form-group">
+                  <label class="form-label">Banco de origen <span style="color:var(--danger)">*</span></label>
+                  <input type="text" id="rFromBank" class="form-control" placeholder="Ej: Banco Pichincha, Banco Guayaquil..." oninput="validateRechargeForm()" />
+                  <div class="form-hint">Banco desde el que realizas la transferencia</div>
+                </div>
                 <div class="form-group">
                   <label class="form-label">Cuenta destino</label>
                   <select id="rBankAccount" class="form-control form-select" onchange="showBankDetail();validateRechargeForm()">
@@ -276,20 +289,24 @@
                   <input type="text" id="rRef" class="form-control" placeholder="Ej: 000123456" oninput="validateRechargeForm()" />
                   <div class="form-hint">Anota el número de comprobante de tu transferencia</div>
                 </div>
+                <div class="form-group">
+                  <label class="form-label">Imagen del comprobante <span style="color:var(--danger)">*</span></label>
+                  <label id="receiptUploadLabel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--gray-300);border-radius:10px;padding:20px;cursor:pointer;transition:border-color .15s;background:var(--gray-50)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="color:var(--gray-400)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span id="receiptUploadText" style="font-size:13px;color:var(--gray-500)">Toca para subir la imagen</span>
+                    <input type="file" id="rReceiptFile" accept="image/*" style="display:none" onchange="handleReceiptUpload(event)" />
+                  </label>
+                  <div id="receiptPreviewWrap" style="display:none;margin-top:10px;position:relative">
+                    <img id="receiptPreviewImg" style="width:100%;border-radius:8px;border:1px solid var(--gray-200);max-height:200px;object-fit:contain" />
+                    <button onclick="clearReceipt()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+                  </div>
+                </div>
               </div>
 
-              <!-- Preview descuento de deuda -->
-              <div id="debtPreview" style="display:none;background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13.5px;color:#92400e">
-                <div style="font-weight:700;margin-bottom:8px">⚠️ Tienes deuda pendiente</div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                  <span>Monto a recargar</span><strong id="dpAmount">$0.00</strong>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                  <span>Descuento por deuda</span><strong id="dpDebt" style="color:#dc2626">−$0.00</strong>
-                </div>
-                <div style="display:flex;justify-content:space-between;border-top:1px solid #fcd34d;padding-top:6px;margin-top:4px">
-                  <span style="font-weight:700">Saldo que recibirás</span><strong id="dpFinal" style="color:#15803d">$0.00</strong>
-                </div>
+              <!-- Preview deuda por hijo -->
+              <div id="debtPreview" style="display:none;background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13px;color:#92400e">
+                <div style="font-weight:700;margin-bottom:8px">Uno o más hijos tienen deuda pendiente</div>
+                <div id="debtPreviewRows" style="display:flex;flex-direction:column;gap:4px"></div>
               </div>
 
               <div style="background:var(--warning-light);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--warning);margin-bottom:16px">
@@ -398,15 +415,15 @@ async function loadHome() {
   var me = await api('/parents/me');
   if (!me) return;
 
-  user.balance = me.balance; user.debt = me.debt;
-  localStorage.setItem('sbUser', JSON.stringify(user));
+  var totalBalance = (me.students||[]).reduce((s,st)=>s+parseFloat(st.balance||0),0);
+  var totalDebt    = (me.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
 
-  document.getElementById('homeBalance').textContent   = '$'+parseFloat(me.balance).toFixed(2);
-  document.getElementById('homeDebt').textContent      = '$'+parseFloat(me.debt).toFixed(2);
-  document.getElementById('homeChildren').textContent  = (me.students||[]).length;
+  document.getElementById('homeBalance').textContent  = '$'+totalBalance.toFixed(2);
+  document.getElementById('homeDebt').textContent     = '$'+totalDebt.toFixed(2);
+  document.getElementById('homeChildren').textContent = (me.students||[]).length;
 
   var debtAlert = document.getElementById('debtAlert');
-  debtAlert.style.display = parseFloat(me.debt)>0 ? 'flex' : 'none';
+  debtAlert.style.display = totalDebt > 0 ? 'flex' : 'none';
 
   // Cargar últimas 5 ventas
   var sales = await api('/parents/me/consumptions');
@@ -448,7 +465,14 @@ async function loadChildren() {
       <div class="card-body" style="text-align:center">
         <div style="width:50px;height:50px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;font-weight:800;color:var(--primary)">${s.name[0].toUpperCase()}</div>
         <div style="font-size:17px;font-weight:700;margin-bottom:4px">${s.name}</div>
-        <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px">${s.grade||'Sin grado asignado'}</div>
+        <div style="font-size:13px;color:var(--gray-500);margin-bottom:12px">${s.grade||'Sin grado asignado'}</div>
+        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;color:var(--gray-500)">Saldo</div>
+            <div style="font-weight:700;color:var(--success)">$${parseFloat(s.balance||0).toFixed(2)}</div>
+          </div>
+          ${parseFloat(s.debt||0)>0?`<div><div style="font-size:11px;color:var(--gray-500)">Deuda</div><div style="font-weight:700;color:var(--danger)">$${parseFloat(s.debt).toFixed(2)}</div></div>`:''}
+        </div>
         ${s.qr_image ? `<img src="${s.qr_image}" class="qr-img" style="width:160px;height:160px;margin-bottom:12px"/>` : ''}
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="viewQR(${s.id},'${s.name}','${s.qr_image}')">Ver QR completo</button>
@@ -492,21 +516,36 @@ async function loadConsumptions() {
 }
 
 // ── Recharge ──
-var currentDebt = 0;
+var rechargeStudents = [];
 
 async function loadRechargeSection() {
   document.getElementById('rMethod').value = 'CASH';
   document.getElementById('transferFields').style.display = 'none';
-  document.getElementById('rAmount').value = '';
   document.getElementById('rRef').value = '';
   document.getElementById('debtPreview').style.display = 'none';
   validateRechargeForm();
+
   var me = await api('/parents/me');
-  if (me) {
-    currentDebt = parseFloat(me.debt) || 0;
-    document.getElementById('rechargeSaldoActual').textContent = '$'+parseFloat(me.balance).toFixed(2);
-    document.getElementById('rechargeDeudaActual').textContent = '$'+parseFloat(me.debt).toFixed(2);
+  rechargeStudents = (me && me.students) || [];
+
+  // Mostrar saldos actuales por hijo
+  var balDiv = document.getElementById('rechargeStudentBalances');
+  if (!rechargeStudents.length) {
+    balDiv.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
+  } else {
+    balDiv.innerHTML = rechargeStudents.map(s => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100)">
+        <span style="font-size:13.5px;font-weight:600">${s.name} <span style="font-weight:400;color:var(--gray-400);font-size:12px">${s.grade||''}</span></span>
+        <span style="display:flex;gap:12px">
+          <span style="color:var(--success);font-weight:700;font-size:13.5px">$${parseFloat(s.balance||0).toFixed(2)}</span>
+          ${parseFloat(s.debt||0)>0?`<span style="color:var(--danger);font-size:12px">Deuda: $${parseFloat(s.debt).toFixed(2)}</span>`:''}
+        </span>
+      </div>`).join('');
   }
+
+  // Renderizar inputs de allocation
+  renderAllocationInputs();
+
   var banks = await api('/bank-accounts');
   bankAccounts = banks || [];
   var sel = document.getElementById('rBankAccount');
@@ -514,32 +553,104 @@ async function loadRechargeSection() {
   bankAccounts.forEach(b => { var o=document.createElement('option'); o.value=b.id; o.textContent=b.bank+' — '+b.type+' '+b.number; sel.appendChild(o); });
 }
 
+function renderAllocationInputs() {
+  var container = document.getElementById('allocationsContainer');
+  if (!rechargeStudents.length) {
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
+    return;
+  }
+  container.innerHTML = rechargeStudents.map(s => `
+    <div style="display:flex;align-items:center;gap:10px">
+      <label style="flex:1;font-size:13.5px;font-weight:600;margin:0">${s.name}</label>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="color:var(--gray-500);font-size:13px">$</span>
+        <input type="number" id="alloc_${s.id}" class="form-control" style="width:100px;text-align:right"
+          min="0" step="0.50" placeholder="0.00" value="0"
+          oninput="updateAllocTotal()" />
+      </div>
+    </div>`).join('');
+  updateAllocTotal();
+}
+
+function updateAllocTotal() {
+  var total = rechargeStudents.reduce((s, st) => {
+    var v = parseFloat(document.getElementById('alloc_'+st.id)?.value) || 0;
+    return s + v;
+  }, 0);
+  document.getElementById('allocTotal').textContent = '$'+total.toFixed(2);
+
+  // Mostrar preview de deuda por hijo
+  var hasDebt = rechargeStudents.some(s => parseFloat(s.debt||0) > 0);
+  var preview = document.getElementById('debtPreview');
+  if (hasDebt && total > 0) {
+    var rows = rechargeStudents.filter(s => parseFloat(s.debt||0) > 0).map(s => {
+      var alloc = parseFloat(document.getElementById('alloc_'+s.id)?.value) || 0;
+      var debtPaid = Math.min(parseFloat(s.debt), alloc);
+      var added = alloc - debtPaid;
+      return `<div style="display:flex;justify-content:space-between;padding:3px 0">
+        <span>${s.name}</span>
+        <span>Deuda: -$${debtPaid.toFixed(2)} · Saldo nuevo: $${(parseFloat(s.balance||0)+added).toFixed(2)}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('debtPreviewRows').innerHTML = rows;
+    preview.style.display = '';
+  } else {
+    preview.style.display = 'none';
+  }
+
+  validateRechargeForm();
+}
+
 function toggleTransferFields() {
   var show = document.getElementById('rMethod').value === 'TRANSFER';
   document.getElementById('transferFields').style.display = show ? '' : 'none';
 }
 
-function validateRechargeForm() {
-  var amount  = parseFloat(document.getElementById('rAmount').value);
-  var method  = document.getElementById('rMethod').value;
-  var account = document.getElementById('rBankAccount').value;
-  var ref     = document.getElementById('rRef').value.trim();
-  var ok = amount > 0;
-  if (method === 'TRANSFER') ok = ok && !!account && !!ref;
-  document.getElementById('btnSubmitRecharge').disabled = !ok;
+var receiptBase64 = null;
 
-  // Preview descuento de deuda
-  var preview = document.getElementById('debtPreview');
-  if (amount > 0 && currentDebt > 0) {
-    var debtPaid = Math.min(currentDebt, amount);
-    var finalBalance = amount - debtPaid;
-    document.getElementById('dpAmount').textContent  = '$' + amount.toFixed(2);
-    document.getElementById('dpDebt').textContent    = '−$' + debtPaid.toFixed(2);
-    document.getElementById('dpFinal').textContent   = '$' + finalBalance.toFixed(2);
-    preview.style.display = '';
-  } else {
-    preview.style.display = 'none';
-  }
+function handleReceiptUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Comprimir imagen con Canvas
+    var img = new Image();
+    img.onload = function() {
+      var maxW = 1200, maxH = 900;
+      var w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      receiptBase64 = canvas.toDataURL('image/jpeg', 0.82);
+      document.getElementById('receiptPreviewImg').src = receiptBase64;
+      document.getElementById('receiptPreviewWrap').style.display = '';
+      document.getElementById('receiptUploadText').textContent = file.name;
+      validateRechargeForm();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReceipt() {
+  receiptBase64 = null;
+  document.getElementById('rReceiptFile').value = '';
+  document.getElementById('receiptPreviewWrap').style.display = 'none';
+  document.getElementById('receiptUploadText').textContent = 'Toca para subir la imagen';
+  validateRechargeForm();
+}
+
+function validateRechargeForm() {
+  var method   = document.getElementById('rMethod').value;
+  var account  = document.getElementById('rBankAccount').value;
+  var ref      = document.getElementById('rRef').value.trim();
+  var fromBank = document.getElementById('rFromBank')?.value.trim();
+  var total    = rechargeStudents.reduce((s, st) => s + (parseFloat(document.getElementById('alloc_'+st.id)?.value) || 0), 0);
+  var ok = total > 0;
+  if (method === 'TRANSFER') ok = ok && !!account && !!ref && !!fromBank && !!receiptBase64;
+  document.getElementById('btnSubmitRecharge').disabled = !ok;
 }
 
 function showBankDetail() {
@@ -568,19 +679,44 @@ function copyBankField(elementId, btnId) {
 }
 
 async function submitRecharge() {
-  var amount = parseFloat(document.getElementById('rAmount').value);
   var method = document.getElementById('rMethod').value;
-  if (!amount || amount<=0) { toast('Ingresa un monto válido', 'error'); return; }
   if (method==='TRANSFER' && !document.getElementById('rBankAccount').value) { toast('Selecciona una cuenta bancaria', 'error'); return; }
-  if (method==='TRANSFER' && !document.getElementById('rRef').value) { toast('Ingresa el número de referencia', 'error'); return; }
+  if (method==='TRANSFER' && !document.getElementById('rRef').value.trim()) { toast('Ingresa el número de referencia', 'error'); return; }
 
-  var body = { amount, method, bank_account_id: method==='TRANSFER'?parseInt(document.getElementById('rBankAccount').value):null, receipt_ref: method==='TRANSFER'?document.getElementById('rRef').value:null };
-  var res = await fetch(API+'/recharges', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
-  var data = await res.json();
-  if (!res.ok) { toast(data.error, 'error'); return; }
-  toast('Solicitud enviada. Pendiente de aprobación del administrador.', 'success');
-  document.getElementById('rAmount').value='';
+  var allocations = rechargeStudents.map(s => ({
+    student_id: s.id,
+    amount: parseFloat(document.getElementById('alloc_'+s.id)?.value) || 0
+  })).filter(a => a.amount > 0);
+
+  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un hijo', 'error'); return; }
+
+  var totalAmount = allocations.reduce((s,a) => s + a.amount, 0);
+
+  var body = {
+    amount: totalAmount,
+    method,
+    allocations,
+    bank_account_id: method==='TRANSFER' ? parseInt(document.getElementById('rBankAccount').value) : null,
+    receipt_ref:     method==='TRANSFER' ? document.getElementById('rRef').value.trim()    : null,
+    from_bank:       method==='TRANSFER' ? document.getElementById('rFromBank').value.trim() : null,
+    receipt_image:   method==='TRANSFER' ? receiptBase64 : null
+  };
+
+  var res, data;
+  try {
+    res  = await fetch(API+'/recharges', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    data = await res.json();
+  } catch(e) {
+    toast('Error de conexión al enviar la solicitud. Intenta de nuevo.', 'error');
+    return;
+  }
+  if (!res.ok) { toast(data.error || 'Error al enviar la solicitud', 'error'); return; }
+  toast('Solicitud enviada por $'+totalAmount.toFixed(2)+'. Pendiente de aprobación.', 'success');
   document.getElementById('rRef').value='';
+  if (document.getElementById('rFromBank')) document.getElementById('rFromBank').value='';
+  clearReceipt();
+  rechargeStudents.forEach(s => { var el=document.getElementById('alloc_'+s.id); if(el) el.value='0'; });
+  updateAllocTotal();
 }
 
 // ── My Recharges ──

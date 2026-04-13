@@ -21,11 +21,12 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
     if (!isFinalConsumer) {
       student = await Student.findOne({
         where: { qr_token, active: true },
-        transaction: t
+        transaction: t,
+        lock: true
       });
       if (!student) { await t.rollback(); return res.status(404).json({ error: 'Código QR no válido' }); }
 
-      parent = await User.findByPk(student.parent_id, { transaction: t, lock: true });
+      parent = await User.findByPk(student.parent_id, { transaction: t });
     }
 
     // Calcular total
@@ -43,8 +44,8 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
     let paidFromBalance = 0;
     let addedToDebt = 0;
 
-    if (!isFinalConsumer && method === 'BALANCE' && parent) {
-      const balance = parseFloat(parent.balance);
+    if (!isFinalConsumer && method === 'BALANCE' && student && parent) {
+      const balance = parseFloat(student.balance);
       if (balance >= total) {
         paidFromBalance = total;
       } else if (parent.allow_debt) {
@@ -77,12 +78,12 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       await SaleItem.create({ sale_id: sale.id, ...si }, { transaction: t });
     }
 
-    // Actualizar saldo y deuda del padre solo si pagó con BALANCE
-    if (!isFinalConsumer && method === 'BALANCE' && parent) {
-      const balance = parseFloat(parent.balance);
-      await parent.update({
+    // Actualizar saldo y deuda del estudiante solo si pagó con BALANCE
+    if (!isFinalConsumer && method === 'BALANCE' && student) {
+      const balance = parseFloat(student.balance);
+      await student.update({
         balance: Math.max(0, balance - total),
-        debt: parseFloat(parent.debt) + addedToDebt
+        debt: parseFloat(student.debt) + addedToDebt
       }, { transaction: t });
     }
 
@@ -107,15 +108,15 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       if (method === 'CASH') {
         response.paid_from_balance = '0.00';
         response.added_to_debt = '0.00';
-        response.parent_new_balance = parseFloat(parent.balance).toFixed(2);
+        response.student_new_balance = parseFloat(student.balance).toFixed(2);
         response.message = 'Venta procesada correctamente (efectivo).';
       } else {
-        const newBal = Math.max(0, parseFloat(parent.balance));
+        const newBal = Math.max(0, parseFloat(student.balance) - paidFromBalance);
         response.paid_from_balance = paidFromBalance.toFixed(2);
         response.added_to_debt = addedToDebt.toFixed(2);
-        response.parent_new_balance = newBal.toFixed(2);
+        response.student_new_balance = newBal.toFixed(2);
         response.message = addedToDebt > 0
-          ? `Saldo insuficiente. Se añadieron $${addedToDebt.toFixed(2)} a la deuda del padre.`
+          ? `Saldo insuficiente. Se añadieron $${addedToDebt.toFixed(2)} a la deuda del estudiante.`
           : 'Venta procesada correctamente.';
       }
     }

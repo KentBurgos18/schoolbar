@@ -10,8 +10,8 @@ const app  = express();
 const PORT = process.env.PORT || 3030;
 
 // ── Middlewares ──
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '8mb' }));
+app.use(express.urlencoded({ extended: true, limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Vistas ──
@@ -96,6 +96,42 @@ async function initDb() {
       END IF;
     END $$;
   `).catch(e => console.warn('migration cedula:', e.message));
+
+  // recharges: columna from_bank
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recharges' AND column_name='from_bank') THEN
+        ALTER TABLE recharges ADD COLUMN from_bank VARCHAR(100);
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration from_bank:', e.message));
+
+  // recharges: columna receipt_image
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recharges' AND column_name='receipt_image') THEN
+        ALTER TABLE recharges ADD COLUMN receipt_image TEXT;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration receipt_image:', e.message));
+
+  // students: columna balance
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='students' AND column_name='balance') THEN
+        ALTER TABLE students ADD COLUMN balance DECIMAL(10,2) NOT NULL DEFAULT 0;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration students.balance:', e.message));
+
+  // students: columna debt
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='students' AND column_name='debt') THEN
+        ALTER TABLE students ADD COLUMN debt DECIMAL(10,2) NOT NULL DEFAULT 0;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration students.debt:', e.message));
 
   console.log('Migraciones aplicadas.');
 

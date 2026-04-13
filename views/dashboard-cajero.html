@@ -12,7 +12,7 @@
     /* ── Topbar ── */
     .pos-topbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: 56px; background: #1e3a8a;
+      height: 56px; background: #1C0A04;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px; box-shadow: 0 2px 8px rgba(0,0,0,.2);
     }
@@ -89,6 +89,49 @@
     .search-result-item .sr-bal   { font-size: 13px; font-weight: 600; color: var(--success); }
     .search-empty { text-align:center; padding: 24px; color: var(--gray-400); font-size: 14px; }
 
+    /* ── Botón flotante carrito (solo móvil) ── */
+    .fab-cart {
+      display: none;
+      position: fixed; bottom: 24px; right: 20px; z-index: 200;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 99px; cursor: pointer;
+      padding: 13px 20px; font-family: inherit; font-size: 15px; font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0,0,0,.25);
+      align-items: center; gap: 10px;
+      transition: transform .15s, opacity .15s;
+    }
+    .fab-cart:active { transform: scale(.96); }
+    .fab-cart .fab-count {
+      background: #fff; color: var(--primary);
+      border-radius: 99px; padding: 2px 8px; font-size: 13px; font-weight: 800;
+    }
+
+    /* ── Drawer carrito (móvil) ── */
+    .cart-drawer-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300;
+    }
+    .cart-drawer-overlay.open { display: block; }
+    .cart-drawer {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 301;
+      background: #fff; border-radius: 20px 20px 0 0;
+      box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+      max-height: 88vh;
+    }
+    .cart-drawer.open { transform: translateY(0); }
+    .cart-drawer-handle {
+      width: 40px; height: 4px; background: var(--gray-300); border-radius: 99px;
+      margin: 12px auto 0; flex-shrink: 0;
+    }
+    .cart-drawer .cart-header {
+      padding: 12px 20px 14px; border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cart-drawer .cart-body  { flex: 1; overflow-y: auto; padding: 12px 20px; }
+    .cart-drawer .cart-footer { padding: 14px 20px 24px; border-top: 1px solid var(--gray-200); }
+
     /* ── Responsivo ── */
     @media (max-width: 768px) {
       .pos-topbar .brand span { display: none; }
@@ -98,21 +141,12 @@
         min-height: 100vh;
         overflow-y: visible;
       }
-      .pos-left { padding: 12px; }
-      .pos-right {
-        border-left: none;
-        border-top: 2px solid var(--gray-200);
-        height: auto;
-        max-height: none;
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-        box-shadow: 0 -4px 16px rgba(0,0,0,.1);
-      }
-      .cart-body { max-height: 240px; overflow-y: auto; }
+      .pos-left { padding: 12px; padding-bottom: 100px; }
+      /* Ocultar carrito lateral en móvil */
+      .pos-right { display: none; }
+      /* Mostrar botón flotante y drawer */
+      .fab-cart { display: flex; }
       .product-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-      /* Carrito colapsable en móvil: mostrar solo footer hasta que el usuario suba */
-      .cart-header { cursor: pointer; }
     }
     @media (max-width: 480px) {
       .pos-topbar { padding: 0 10px; }
@@ -122,9 +156,7 @@
       .product-btn { padding: 10px 8px; }
       .p-name  { font-size: 12px; }
       .p-price { font-size: 15px; }
-      /* Tabs: reducir padding para caber más */
       .sale-tab { padding: 0 10px; font-size: 11px; }
-      /* Resultados de búsqueda: más compactos */
       .search-result-item { padding: 10px 12px; }
       .search-result-item .sr-name { font-size: 13px; }
     }
@@ -244,7 +276,10 @@
 
   <!-- ── Topbar ── -->
   <div class="pos-topbar">
-    <div class="brand">SchoolBar <span style="font-weight:400;font-size:14px;opacity:.6">— Punto de venta</span></div>
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/logo.jpeg" alt="Glory's Snack" style="width:36px;height:36px;object-fit:contain;border-radius:6px" />
+      <span>Glory's Snack <span style="font-weight:400;font-size:14px;opacity:.6">— Punto de venta</span></span>
+    </div>
     <div class="topbar-right">
       <span class="cashier-info" id="cashierInfo"></span>
       <button class="btn-new" onclick="addSaleTab()">+ Nueva venta</button>
@@ -413,6 +448,63 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- ── Botón flotante carrito (móvil) ── -->
+  <button class="fab-cart" id="fabCart" onclick="openCartDrawer()">
+    🛒 <span id="fabTotal">$0.00</span>
+    <span class="fab-count" id="fabCount">0</span>
+  </button>
+
+  <!-- ── Drawer carrito (móvil) ── -->
+  <div class="cart-drawer-overlay" id="cartDrawerOverlay" onclick="closeCartDrawer()"></div>
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-drawer-handle"></div>
+    <div class="cart-header">
+      <h3>Carrito</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="clearCart()">Limpiar</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeCartDrawer()">✕</button>
+      </div>
+    </div>
+    <div class="cart-body">
+      <div id="cartItemsDrawer"></div>
+    </div>
+    <div class="cart-footer">
+      <div id="cartSummaryDrawer" style="display:none">
+        <div class="total-row">
+          <span>Total</span>
+          <span id="totalAmtDrawer">$0.00</span>
+        </div>
+        <div class="payment-selector" id="paymentSelectorDrawer">
+          <label>Método de pago</label>
+          <div class="payment-options">
+            <button class="payment-opt selected" id="payOptCashDrawer" onclick="selectPaymentDrawer('CASH')">
+              <span class="pay-icon">💵</span> Efectivo
+            </button>
+            <button class="payment-opt" id="payOptBalanceDrawer" onclick="selectPaymentDrawer('BALANCE')">
+              <span class="pay-icon">💳</span> Saldo escolar
+            </button>
+          </div>
+        </div>
+        <div class="balance-preview" id="balancePreviewDrawer" style="display:none">
+          <div class="balance-preview-row">
+            <span>Del saldo</span>
+            <strong style="color:#16a34a" id="previewBalanceDrawer">$0.00</strong>
+          </div>
+          <div class="balance-preview-row">
+            <span>A deuda</span>
+            <strong id="previewDebtDrawer">$0.00</strong>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <input type="text" id="saleNoteDrawer" class="form-control" placeholder="Nota (opcional)" />
+        </div>
+      </div>
+      <button class="btn-process" id="btnProcessDrawer" onclick="processSale(true)" disabled>
+        Cobrar
+      </button>
+    </div>
+  </div>
+
 <script>
 var API   = '/api';
 var token = localStorage.getItem('sbToken');
@@ -505,11 +597,14 @@ function restoreState(id) {
   // Restaurar UI
   if (isFinalConsumer) {
     showFinalConsumerBanner();
+    document.getElementById('productsCard').style.display = '';
   } else if (currentStudent) {
     showStudentBanner(currentStudent);
+    document.getElementById('productsCard').style.display = '';
   } else {
     showScannerCard();
   }
+  if (allProducts.length) renderProducts(activeCat === 'all' ? allProducts : allProducts.filter(p => p.category === activeCat));
   renderCart();
   if (document.getElementById('saleNote')) document.getElementById('saleNote').value = s.note || '';
 }
@@ -553,12 +648,14 @@ function switchTab(tab, btn) {
 }
 
 // ── Consumidor final ──
-function selectFinalConsumer() {
+async function selectFinalConsumer() {
   isFinalConsumer = true;
   currentStudent = null;
   paymentMethod = 'CASH';
   showFinalConsumerBanner();
-  loadProducts();
+  await loadProducts();
+  await new Promise(function(r) { setTimeout(r, 350); });
+  document.getElementById('productsCard').style.display = '';
   renderCart();
   toast('Consumidor final seleccionado', 'success');
 }
@@ -573,22 +670,21 @@ function showFinalConsumerBanner() {
   document.getElementById('stSaldo').style.display = 'none';
   banner.style.display = '';
   document.getElementById('scannerCard').style.display = 'none';
-  document.getElementById('productsCard').style.display = '';
+  // productsCard lo muestra selectFinalConsumer después del delay anti-ghost
 }
 
 function showStudentBanner(data) {
-  var banner = document.getElementById('studentBanner');
   var inner = document.getElementById('bannerInner');
   inner.className = 'student-banner';
   document.getElementById('stName').textContent = data.name;
   document.getElementById('stGrade').textContent = data.grade || '';
   document.getElementById('stParent').textContent = 'Padre/Madre: ' + (data.parent ? data.parent.name : '—');
   document.getElementById('stSaldo').style.display = '';
-  document.getElementById('stBalance').textContent = '$' + parseFloat(data.parent.balance).toFixed(2);
-  document.getElementById('stDebt').textContent = '$' + parseFloat(data.parent.debt).toFixed(2);
-  banner.style.display = '';
+  document.getElementById('stBalance').textContent = '$' + parseFloat(data.balance||0).toFixed(2);
+  document.getElementById('stDebt').textContent = '$' + parseFloat(data.debt||0).toFixed(2);
+  document.getElementById('studentBanner').style.display = '';
   document.getElementById('scannerCard').style.display = 'none';
-  document.getElementById('productsCard').style.display = '';
+  // productsCard lo muestra loadStudent después del delay anti-ghost
 }
 
 function showScannerCard() {
@@ -634,7 +730,7 @@ async function doSearch() {
         '<div class="sr-name">' + s.name + '</div>' +
         '<div class="sr-grade">' + (s.grade || 'Sin grado') + ' · Padre: ' + (s.parent ? s.parent.name : '—') + '</div>' +
       '</div>' +
-      '<div class="sr-bal">$' + parseFloat(s.parent ? s.parent.balance : 0).toFixed(2) + '</div>' +
+      '<div class="sr-bal">$' + parseFloat(s.balance||0).toFixed(2) + '</div>' +
     '</div>';
   }).join('');
 }
@@ -675,13 +771,30 @@ function stopScanner() {
 
 
 async function loadStudent(qrToken) {
+  // Ocultar scanner inmediatamente y mostrar loading
+  document.getElementById('scannerCard').style.display = 'none';
+  document.getElementById('studentBanner').style.display = '';
+  document.getElementById('bannerInner').className = 'student-banner';
+  document.getElementById('stName').textContent = 'Identificando...';
+  document.getElementById('stGrade').textContent = '';
+  document.getElementById('stParent').textContent = '';
+  document.getElementById('stSaldo').style.display = 'none';
+  document.getElementById('productsCard').style.display = 'none';
+
   var data = await api('/students/scan/' + qrToken);
-  if (!data || data.error) { toast(data?.error || 'QR no válido', 'error'); return; }
+  if (!data || data.error) {
+    toast(data?.error || 'QR no válido', 'error');
+    showScannerCard();
+    return;
+  }
   currentStudent = data;
   isFinalConsumer = false;
-  paymentMethod = 'BALANCE'; // Default para estudiantes
+  paymentMethod = 'BALANCE';
   showStudentBanner(data);
   await loadProducts();
+  // Esperar 350ms antes de mostrar productos para evitar ghost clicks
+  await new Promise(function(r) { setTimeout(r, 350); });
+  document.getElementById('productsCard').style.display = '';
   renderCart();
   toast('✅ ' + data.name + ' identificado', 'success');
 }
@@ -736,25 +849,77 @@ function changeQty(id, d) {
 
 function clearCart() { cart = []; renderCart(); }
 
-// ── Payment method ──
-function selectPayment(method) {
-  if (isFinalConsumer && method === 'BALANCE') return;
-  paymentMethod = method;
-  renderCart();
+// ── Drawer carrito (móvil) ──
+function openCartDrawer() {
+  document.getElementById('cartDrawerOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  syncDrawer();
+}
+function closeCartDrawer() {
+  document.getElementById('cartDrawerOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
 }
 
-function renderCart() {
-  var el = document.getElementById('cartItems');
-  var total = cart.reduce(function(a, i) { return a + i.price * i.quantity; }, 0);
+function selectPaymentDrawer(method) {
+  selectPayment(method);
+  syncDrawer();
+}
 
+function syncDrawer() {
+  var total = cart.reduce(function(a,i){ return a + i.price*i.quantity; }, 0);
+  var itemsHtml = buildCartItemsHtml();
+
+  // drawer items
+  var elD = document.getElementById('cartItemsDrawer');
   if (!cart.length) {
-    el.innerHTML = '<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Carrito vacío</p></div>';
-    document.getElementById('cartSummary').style.display = 'none';
-    document.getElementById('btnProcess').disabled = true;
-    return;
+    elD.innerHTML = '<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Carrito vacío</p></div>';
+    document.getElementById('cartSummaryDrawer').style.display = 'none';
+    document.getElementById('btnProcessDrawer').disabled = true;
+  } else {
+    elD.innerHTML = itemsHtml;
+    document.getElementById('cartSummaryDrawer').style.display = '';
+    document.getElementById('totalAmtDrawer').textContent = '$' + total.toFixed(2);
   }
 
-  el.innerHTML = cart.map(function(i) {
+  // FAB
+  var totalItems = cart.reduce(function(a,i){ return a+i.quantity; }, 0);
+  document.getElementById('fabCount').textContent = totalItems;
+  document.getElementById('fabTotal').textContent = '$' + total.toFixed(2);
+  document.getElementById('fabCart').style.display = (totalItems > 0 || (currentStudent||isFinalConsumer)) ? 'flex' : 'none';
+
+  // Payment drawer
+  var payOptCashD    = document.getElementById('payOptCashDrawer');
+  var payOptBalanceD = document.getElementById('payOptBalanceDrawer');
+  if (isFinalConsumer) {
+    paymentMethod = 'CASH';
+    payOptCashD.classList.add('selected'); payOptBalanceD.classList.add('disabled'); payOptBalanceD.classList.remove('selected');
+  } else if (currentStudent) {
+    payOptBalanceD.classList.remove('disabled');
+    payOptCashD.classList.toggle('selected', paymentMethod==='CASH');
+    payOptBalanceD.classList.toggle('selected', paymentMethod==='BALANCE');
+  } else {
+    payOptCashD.classList.add('selected'); payOptBalanceD.classList.add('disabled'); payOptBalanceD.classList.remove('selected');
+  }
+
+  // Balance preview drawer
+  if (currentStudent && paymentMethod === 'BALANCE' && cart.length) {
+    var bal = parseFloat(currentStudent.balance||0);
+    var fromBal = Math.min(bal, total); var toDebt = Math.max(0, total - bal);
+    document.getElementById('balancePreviewDrawer').style.display = '';
+    document.getElementById('previewBalanceDrawer').textContent = '$' + fromBal.toFixed(2);
+    var debtElD = document.getElementById('previewDebtDrawer');
+    debtElD.textContent = '$' + toDebt.toFixed(2);
+    debtElD.style.color = toDebt > 0 ? 'var(--danger)' : 'var(--gray-400)';
+  } else {
+    document.getElementById('balancePreviewDrawer').style.display = 'none';
+  }
+
+  var hasClient = currentStudent || isFinalConsumer;
+  document.getElementById('btnProcessDrawer').disabled = !hasClient || !cart.length;
+}
+
+function buildCartItemsHtml() {
+  return cart.map(function(i) {
     return '<div class="cart-item">' +
       '<div>' +
         '<div style="font-weight:600;font-size:14px">' + i.name + '</div>' +
@@ -770,34 +935,49 @@ function renderCart() {
       '</div>' +
     '</div>';
   }).join('');
+}
 
+// ── Payment method ──
+function selectPayment(method) {
+  if (isFinalConsumer && method === 'BALANCE') return;
+  paymentMethod = method;
+  renderCart();
+}
+
+function renderCart() {
+  var el = document.getElementById('cartItems');
+  var total = cart.reduce(function(a, i) { return a + i.price * i.quantity; }, 0);
+
+  if (!cart.length) {
+    el.innerHTML = '<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Carrito vacío</p></div>';
+    document.getElementById('cartSummary').style.display = 'none';
+    document.getElementById('btnProcess').disabled = true;
+    syncDrawer();
+    return;
+  }
+
+  el.innerHTML = buildCartItemsHtml();
   document.getElementById('cartSummary').style.display = '';
   document.getElementById('totalAmt').textContent = '$' + total.toFixed(2);
 
   // Payment selector
-  var payOptCash = document.getElementById('payOptCash');
+  var payOptCash    = document.getElementById('payOptCash');
   var payOptBalance = document.getElementById('payOptBalance');
-
   if (isFinalConsumer) {
     paymentMethod = 'CASH';
-    payOptCash.classList.add('selected');
-    payOptBalance.classList.add('disabled');
-    payOptBalance.classList.remove('selected');
+    payOptCash.classList.add('selected'); payOptBalance.classList.add('disabled'); payOptBalance.classList.remove('selected');
   } else if (currentStudent) {
     payOptBalance.classList.remove('disabled');
     payOptCash.classList.toggle('selected', paymentMethod === 'CASH');
     payOptBalance.classList.toggle('selected', paymentMethod === 'BALANCE');
   } else {
-    payOptCash.classList.add('selected');
-    payOptBalance.classList.add('disabled');
-    payOptBalance.classList.remove('selected');
+    payOptCash.classList.add('selected'); payOptBalance.classList.add('disabled'); payOptBalance.classList.remove('selected');
   }
 
-  // Balance preview (solo si paga con saldo escolar)
+  // Balance preview
   if (currentStudent && paymentMethod === 'BALANCE') {
-    var bal = parseFloat(currentStudent.parent.balance);
-    var fromBal = Math.min(bal, total);
-    var toDebt  = Math.max(0, total - bal);
+    var bal = parseFloat(currentStudent.balance||0);
+    var fromBal = Math.min(bal, total); var toDebt = Math.max(0, total - bal);
     document.getElementById('balancePreview').style.display = '';
     document.getElementById('previewBalance').textContent = '$' + fromBal.toFixed(2);
     var debtEl = document.getElementById('previewDebt');
@@ -809,17 +989,19 @@ function renderCart() {
 
   var hasClient = currentStudent || isFinalConsumer;
   document.getElementById('btnProcess').disabled = !hasClient || !cart.length;
+  syncDrawer();
 }
 
 // ── Procesar venta ──
-async function processSale() {
+async function processSale(fromDrawer) {
   if ((!currentStudent && !isFinalConsumer) || !cart.length) return;
-  var btn = document.getElementById('btnProcess');
+  var btn    = document.getElementById(fromDrawer ? 'btnProcessDrawer' : 'btnProcess');
+  var noteEl = document.getElementById(fromDrawer ? 'saleNoteDrawer'   : 'saleNote');
   btn.disabled = true; btn.textContent = 'Procesando...';
 
   var body = {
     items: cart.map(function(i) { return { product_id: i.product_id, quantity: i.quantity }; }),
-    note: document.getElementById('saleNote').value,
+    note: noteEl.value,
     payment_method: paymentMethod,
     customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : 'STUDENT'
   };
@@ -834,6 +1016,7 @@ async function processSale() {
   btn.textContent = 'Cobrar';
 
   if (!res.ok) { toast(data.error, 'error'); btn.disabled = false; return; }
+  closeCartDrawer();
 
   var hasDebt = parseFloat(data.added_to_debt) > 0;
   var isCash = data.payment_method === 'CASH';
@@ -847,7 +1030,7 @@ async function processSale() {
   if (!isCash) {
     resultHtml += '<div class="sale-result-row"><span>Pagado del saldo</span><strong style="color:#16a34a">$' + data.paid_from_balance + '</strong></div>' +
       '<div class="sale-result-row"><span>Añadido a deuda</span><strong style="color:' + (hasDebt ? 'var(--danger)' : 'var(--gray-400)') + '">$' + data.added_to_debt + '</strong></div>' +
-      '<div class="sale-result-row"><span>Nuevo saldo del padre</span><strong>$' + data.parent_new_balance + '</strong></div>';
+      '<div class="sale-result-row"><span>Nuevo saldo del estudiante</span><strong>$' + data.student_new_balance + '</strong></div>';
   }
 
   resultHtml += '</div>';
@@ -861,6 +1044,7 @@ async function processSale() {
   cart = [];
   currentStudent = null;
   isFinalConsumer = false;
+  syncDrawer();
 }
 
 // Init: crear primera pestaña

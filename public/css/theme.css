@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --primary:       #2563eb;
-  --primary-dark:  #1d4ed8;
-  --primary-light: #eff6ff;
+  --primary:       #C0391F;
+  --primary-dark:  #A02E18;
+  --primary-light: #FFF0ED;
   --success:       #16a34a;
   --success-light: #f0fdf4;
   --danger:        #dc2626;
   --danger-light:  #fef2f2;
-  --warning:       #d97706;
-  --warning-light: #fffbeb;
+  --warning:       #E8A500;
+  --warning-light: #FFFBE6;
   --gray-50:       #f9fafb;
   --gray-100:      #f3f4f6;
   --gray-200:      #e5e7eb;
@@ -47,7 +47,7 @@ body {
 
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--gray-900);
+  background: #1C0A04;
   color: #fff;
   display: flex;
   flex-direction: column;

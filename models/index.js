@@ -32,6 +32,8 @@ const Student = sequelize.define('Student', {
   qr_image:  { type: DataTypes.TEXT },
   parent_id: { type: DataTypes.INTEGER, allowNull: false },
   active:    { type: DataTypes.BOOLEAN, defaultValue: true },
+  balance:   { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  debt:      { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
 }, { tableName: 'students', underscored: true });
 
 const Product = sequelize.define('Product', {
@@ -73,6 +75,8 @@ const Recharge = sequelize.define('Recharge', {
   status:          { type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED'), defaultValue: 'PENDING' },
   bank_account_id: { type: DataTypes.INTEGER },
   receipt_ref:     { type: DataTypes.STRING(100) },
+  from_bank:       { type: DataTypes.STRING(100) },
+  receipt_image:   { type: DataTypes.TEXT },
   approved_by:     { type: DataTypes.INTEGER },
   debt_paid:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   note:            { type: DataTypes.STRING(255) },
@@ -88,14 +92,12 @@ const BankAccount = sequelize.define('BankAccount', {
   active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, { tableName: 'bank_accounts', underscored: true });
 
-// ── Asociaciones ──
-Student.belongsTo(User, { foreignKey: 'parent_id', as: 'parent' });
-User.hasMany(Student,   { foreignKey: 'parent_id', as: 'students' });
-Sale.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
-Sale.hasMany(SaleItem,  { foreignKey: 'sale_id', as: 'items' });
-SaleItem.belongsTo(Product,     { foreignKey: 'product_id', as: 'product' });
-Recharge.belongsTo(BankAccount, { foreignKey: 'bank_account_id', as: 'bankAccount' });
-Recharge.belongsTo(User,        { foreignKey: 'parent_id',       as: 'parent' });
+const RechargeAllocation = sequelize.define('RechargeAllocation', {
+  id:          { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  recharge_id: { type: DataTypes.INTEGER, allowNull: false },
+  student_id:  { type: DataTypes.INTEGER, allowNull: false },
+  amount:      { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+}, { tableName: 'recharge_allocations', underscored: true });
 
 const Category = sequelize.define('Category', {
   id:   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -116,6 +118,17 @@ const PasswordReset = sequelize.define('PasswordReset', {
   used:       { type: DataTypes.BOOLEAN, defaultValue: false },
 }, { tableName: 'password_resets', underscored: true });
 
+// ── Asociaciones ──
+Student.belongsTo(User, { foreignKey: 'parent_id', as: 'parent' });
+User.hasMany(Student,   { foreignKey: 'parent_id', as: 'students' });
+Sale.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
+Sale.hasMany(SaleItem,  { foreignKey: 'sale_id', as: 'items' });
+SaleItem.belongsTo(Product,     { foreignKey: 'product_id', as: 'product' });
+Recharge.belongsTo(BankAccount, { foreignKey: 'bank_account_id', as: 'bankAccount' });
+Recharge.belongsTo(User,        { foreignKey: 'parent_id',       as: 'parent' });
+Recharge.hasMany(RechargeAllocation,   { foreignKey: 'recharge_id', as: 'allocations' });
+RechargeAllocation.belongsTo(Recharge, { foreignKey: 'recharge_id', as: 'recharge' });
+RechargeAllocation.belongsTo(Student,  { foreignKey: 'student_id',  as: 'student' });
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, BankAccount, Category, Setting, PasswordReset };
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset };
