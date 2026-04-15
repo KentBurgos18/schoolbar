@@ -309,9 +309,9 @@ tbody tr:hover td { background: var(--gray-50); }
   /* Forms */
   .form-row-2 { grid-template-columns: 1fr; }
 
-  /* Modal full-screen en móvil */
-  .modal-overlay { padding: 0; align-items: flex-end; }
-  .modal { border-radius: 18px 18px 0 0; max-width: 100%; max-height: 92vh; overflow-y: auto; }
+  /* Modal centrado en móvil con scroll interno */
+  .modal-overlay { padding: 12px; align-items: center; }
+  .modal { border-radius: 14px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
 
   /* Toasts más anchos */
   .toast { min-width: 0; width: calc(100vw - 32px); }
