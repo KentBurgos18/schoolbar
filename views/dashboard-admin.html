@@ -7,26 +7,37 @@
   <link rel="stylesheet" href="/css/theme.css" />
   <script src="/js/xlsx.full.min.js"></script>
   <style>
-    @media (max-width: 768px) {
-      /* Sales stats: 3 col → 2 col */
-      #salesStatsGrid { grid-template-columns: 1fr 1fr; }
-      /* Botones de acción en tablas: scroll horizontal limpio */
-      td > div[style*="display:flex"] { flex-wrap: nowrap; }
-      /* Reducir padding de cards en móvil */
-      .card-body { padding: 12px !important; }
-      /* Modal: padding reducido */
-      .modal-body { padding: 16px !important; }
-      .modal-footer { padding: 12px 16px !important; }
-      /* Tablas: texto más pequeño para caber en pantalla */
+    /* Columnas ocultas en móvil */
+    @media (max-width: 640px) {
+      th.hm, td.hm { display: none !important; }
+
+      /* Tablas: fuente pequeña, sin whitespace forzado */
       table { font-size: 12px; }
-      table th, table td { padding: 8px 8px !important; white-space: nowrap; }
-    }
-    @media (max-width: 480px) {
-      /* Sales stats: 1 col en móvil pequeño — ya cubierto por el breakpoint 600px */
-      /* Stats del overview */
+      table th, table td { padding: 7px 6px !important; }
+
+      /* Botones de acción más compactos */
+      td > div[style*="display:flex"] { gap: 4px !important; }
+      .btn-sm { padding: 4px 8px !important; font-size: 11px !important; }
+
+      /* Cards */
+      .card-body { padding: 10px !important; }
+      .card-header { flex-wrap: wrap; gap: 6px; padding: 12px !important; }
+      .card-header h3 { font-size: 14px !important; }
+      .card-header > div { flex-wrap: wrap; gap: 4px; }
+
+      /* Modales */
+      .modal-body { padding: 14px !important; }
+      .modal-footer { padding: 10px 14px !important; gap: 8px !important; }
+
+      /* Sales stats */
+      #salesStatsGrid { grid-template-columns: 1fr 1fr; }
+
+      /* stat-value más compacto */
       .stat-value { font-size: 22px !important; }
-      /* card-header: apilar título y botón si no caben */
-      .card-header { flex-wrap: wrap; gap: 8px; }
+      .stat-card { padding: 14px !important; }
+    }
+    @media (max-width: 380px) {
+      #salesStatsGrid { grid-template-columns: 1fr; }
     }
     /* Sales stats grid */
     #salesStatsGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
@@ -212,7 +223,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acceso</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Registrado</th><th class="hm">Acceso</th><th>Acciones</th></tr></thead>
                 <tbody id="cashiersTbody"><tr><td colspan="5"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -234,7 +245,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Saldo</th><th>Deuda</th><th>Permite crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Teléfono</th><th>Saldo</th><th>Deuda</th><th class="hm">Crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
                 <tbody id="parentsTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -256,7 +267,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Grado</th><th>Padre</th><th>Estado</th><th>QR</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Grado</th><th class="hm">Padre</th><th>Estado</th><th class="hm">QR</th><th>Acciones</th></tr></thead>
                 <tbody id="studentsTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -292,7 +303,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Comprobante</th><th>Estado</th><th>Fecha</th><th>Aprobación</th></tr></thead>
+                <thead><tr><th>Padre</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th class="hm">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
                 <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -310,7 +321,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Banco</th><th>Titular</th><th>Cédula</th><th>Número</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Banco</th><th class="hm">Titular</th><th class="hm">Cédula</th><th>Número</th><th class="hm">Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
                 <tbody id="banksTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -1028,8 +1039,8 @@ async function loadAdmins() {
   tb.innerHTML = data.map(a => `
     <tr>
       <td><strong>${a.name}</strong> ${a.id == me ? '<span class="badge badge-gray" style="font-size:10px">Tú</span>' : ''}</td>
-      <td>${a.email}</td>
-      <td style="font-size:12px;color:var(--gray-500)">${new Date(a.createdAt).toLocaleDateString('es-EC')}</td>
+      <td class="hm">${a.email}</td>
+      <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(a.createdAt).toLocaleDateString('es-EC')}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditAdmin(${a.id},'${a.name.replace(/'/g,"\\'")}','${a.email}')">Editar</button>
@@ -1128,9 +1139,9 @@ async function loadCashiers() {
   tb.innerHTML = data.map(c => `
     <tr>
       <td><strong>${c.name}</strong></td>
-      <td>${c.email}</td>
-      <td style="font-size:12px;color:var(--gray-500)">${new Date(c.createdAt).toLocaleDateString('es-EC')}</td>
-      <td><a href="/cajero" target="_blank" class="btn btn-ghost btn-sm">Abrir POS</a></td>
+      <td class="hm">${c.email}</td>
+      <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(c.createdAt).toLocaleDateString('es-EC')}</td>
+      <td class="hm"><a href="/cajero" target="_blank" class="btn btn-ghost btn-sm">Abrir POS</a></td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditCashier(${c.id},'${c.name.replace(/'/g,"\\'")}','${c.email}')">Editar</button>
@@ -1197,11 +1208,11 @@ async function loadParents() {
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong></td>
-      <td>${p.email}</td>
-      <td>${p.phone || '—'}</td>
+      <td class="hm">${p.email}</td>
+      <td class="hm">${p.phone || '—'}</td>
       <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
       <td>${parseFloat(p.debt)>0?`<span class="debt-pill">$${parseFloat(p.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
-      <td style="text-align:center">
+      <td class="hm" style="text-align:center">
         <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar crédito' : 'Activar crédito'}">
           <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />
           <span class="toggle-slider"></span>
@@ -1325,14 +1336,14 @@ async function loadStudents() {
     <tr>
       <td><strong>${s.name}</strong></td>
       <td>${s.grade || '—'}</td>
-      <td>${s.parent ? s.parent.name : '—'}</td>
+      <td class="hm">${s.parent ? s.parent.name : '—'}</td>
       <td>
         <span class="badge ${s.active?'badge-success':'badge-danger'}" onclick="toggleStudentActive(${s.id},${s.active})"
           style="cursor:pointer;user-select:none" title="Clic para ${s.active?'desactivar':'activar'}">
           ${s.active?'Activo':'Inactivo'}
         </span>
       </td>
-      <td><button class="btn btn-ghost btn-sm" onclick="viewQR(${s.id},'${s.name}')">Ver QR</button></td>
+      <td class="hm"><button class="btn btn-ghost btn-sm" onclick="viewQR(${s.id},'${s.name}')">Ver QR</button></td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditStudent(${s.id},'${s.name.replace(/'/g,"\\'")}','${s.grade||''}',${s.parent_id})">Editar</button>
@@ -1699,19 +1710,19 @@ async function loadRecharges() {
     <tr>
       <td>${r.parent ? r.parent.name : r.parent_id}</td>
       <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong><br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
-      <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
-      <td>
+      <td class="hm">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
+      <td class="hm">
         ${r.bankAccount ? r.bankAccount.bank : '—'}
         ${r.from_bank ? `<br/><span style="font-size:11px;color:var(--gray-400)">Desde: ${r.from_bank}</span>` : ''}
       </td>
-      <td>${r.receipt_ref || '—'}</td>
-      <td>
+      <td class="hm">${r.receipt_ref || '—'}</td>
+      <td class="hm">
         ${r.receipt_image
           ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver comprobante</button>`
           : '—'}
       </td>
       <td>${statusBadge(r.status)}</td>
-      <td style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+      <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
       <td>${r.status==='PENDING'?`<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>`:'—'}</td>
     </tr>`;
   }).join('');
@@ -1763,10 +1774,10 @@ async function loadBanks() {
   tb.innerHTML = data.map(b => `
     <tr>
       <td><strong>${b.bank}</strong></td>
-      <td>${b.owner}</td>
-      <td><code>${b.cedula || '—'}</code></td>
+      <td class="hm">${b.owner}</td>
+      <td class="hm"><code>${b.cedula || '—'}</code></td>
       <td><code>${b.number}</code></td>
-      <td>${b.type}</td>
+      <td class="hm">${b.type}</td>
       <td><span class="badge ${b.active?'badge-success':'badge-danger'}">${b.active?'Activa':'Inactiva'}</span></td>
       <td>
         <div style="display:flex;gap:6px">
@@ -1852,8 +1863,8 @@ async function loadSales() {
       <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
       <td style="color:var(--success)">$${parseFloat(s.paid_from_balance).toFixed(2)}</td>
       <td style="color:var(--danger)">$${parseFloat(s.added_to_debt).toFixed(2)}</td>
-      <td>${s.cashier_id}</td>
-      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
+      <td class="hm">${s.cashier_id}</td>
+      <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="viewSale(${s.id})">Ver</button></td>
     </tr>`).join('');
 }
