@@ -1326,7 +1326,12 @@ async function loadStudents() {
       <td><strong>${s.name}</strong></td>
       <td>${s.grade || '—'}</td>
       <td>${s.parent ? s.parent.name : '—'}</td>
-      <td><span class="badge ${s.active?'badge-success':'badge-danger'}">${s.active?'Activo':'Inactivo'}</span></td>
+      <td>
+        <span class="badge ${s.active?'badge-success':'badge-danger'}" onclick="toggleStudentActive(${s.id},${s.active})"
+          style="cursor:pointer;user-select:none" title="Clic para ${s.active?'desactivar':'activar'}">
+          ${s.active?'Activo':'Inactivo'}
+        </span>
+      </td>
       <td><button class="btn btn-ghost btn-sm" onclick="viewQR(${s.id},'${s.name}')">Ver QR</button></td>
       <td>
         <div style="display:flex;gap:6px">
@@ -1411,6 +1416,16 @@ async function toggleStudent(id, active) {
     await fetch(API + '/students/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
     toast('Estudiante activado', 'success');
   }
+  loadStudents();
+}
+
+async function toggleStudentActive(id, currentActive) {
+  var newState = !currentActive;
+  var res = newState
+    ? await fetch(API + '/students/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) })
+    : await fetch(API + '/students/' + id, { method:'DELETE', headers: authHeaders() });
+  if (!res.ok) { toast('Error al cambiar estado', 'error'); return; }
+  toast(newState ? 'Estudiante activado' : 'Estudiante desactivado', newState ? 'success' : 'warning');
   loadStudents();
 }
 
