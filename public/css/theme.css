@@ -290,6 +290,9 @@ tbody tr:hover td { background: var(--gray-50); }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  /* Evitar overflow horizontal en toda la página */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+
   /* Sidebar */
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.25); }
@@ -310,8 +313,26 @@ tbody tr:hover td { background: var(--gray-50); }
   .form-row-2 { grid-template-columns: 1fr; }
 
   /* Modal centrado en móvil con scroll interno */
-  .modal-overlay { padding: 12px; align-items: center; }
-  .modal { border-radius: 14px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-overlay {
+    padding: 16px;
+    align-items: center;
+    width: 100vw;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+  }
+  .modal {
+    border-radius: 14px;
+    width: 100%;
+    max-width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+  .modal-footer { flex-wrap: wrap; gap: 8px; }
+  .modal-footer .btn { flex: 1; min-width: 120px; justify-content: center; }
+  .modal-body { padding: 16px; }
+  .modal-header { padding: 16px; }
 
   /* Toasts más anchos */
   .toast { min-width: 0; width: calc(100vw - 32px); }
