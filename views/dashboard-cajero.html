@@ -673,6 +673,11 @@ async function selectFinalConsumer() {
   topbarToast('✓ Consumidor final');
 }
 
+function scrollToTop() {
+  document.querySelector('.pos-left').scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function showFinalConsumerBanner() {
   var banner = document.getElementById('studentBanner');
   var inner = document.getElementById('bannerInner');
@@ -683,7 +688,7 @@ function showFinalConsumerBanner() {
   document.getElementById('stSaldo').style.display = 'none';
   banner.style.display = '';
   document.getElementById('scannerCard').style.display = 'none';
-  // productsCard lo muestra selectFinalConsumer después del delay anti-ghost
+  scrollToTop();
 }
 
 function showStudentBanner(data) {
@@ -697,7 +702,7 @@ function showStudentBanner(data) {
   document.getElementById('stDebt').textContent = '$' + parseFloat(data.debt||0).toFixed(2);
   document.getElementById('studentBanner').style.display = '';
   document.getElementById('scannerCard').style.display = 'none';
-  // productsCard lo muestra loadStudent después del delay anti-ghost
+  scrollToTop();
 }
 
 function showScannerCard() {
