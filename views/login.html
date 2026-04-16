@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SchoolBar — Iniciar sesión</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Glory's Snack" />
+  <link rel="apple-touch-icon" href="/logo.jpeg" />
   <link rel="stylesheet" href="/css/theme.css" />
   <style>
     body { background: linear-gradient(135deg, #3D0E06 0%, #C0391F 60%, #E8A500 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -189,6 +195,11 @@
         btn.disabled = false;
         if (btn.style.display !== 'none') btn.textContent = 'Enviar enlace de recuperación';
       }
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
   </script>
 </body>
