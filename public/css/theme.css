@@ -107,12 +107,12 @@ body {
   background: #fff; border-bottom: 1px solid var(--gray-200);
   padding: 0 28px; height: 60px;
   display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 50;
+  position: fixed; top: 0; left: var(--sidebar-w); right: 0; z-index: 50;
 }
 .topbar-title { font-size: 17px; font-weight: 700; color: var(--gray-900); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 
-.content { padding: 28px; flex: 1; }
+.content { padding: 28px; padding-top: calc(60px + 28px); flex: 1; }
 
 /* ── Cards ── */
 .card {
@@ -300,6 +300,10 @@ tbody tr:hover td { background: var(--gray-50); }
   .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.25); }
   .main { margin-left: 0; }
   .btn-hamburger { display: flex; align-items: center; justify-content: center; }
+
+  /* Topbar fijo desde el borde izquierdo en móvil */
+  .topbar { left: 0; padding: 0 16px; }
+  .content { padding: 16px; padding-top: calc(60px + 16px); }
 
   /* Topbar */
   .topbar { padding: 0 16px; }
