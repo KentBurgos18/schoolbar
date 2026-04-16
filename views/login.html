@@ -111,7 +111,8 @@
 
     </div>
 
-    <p class="footer-note">SchoolBar &copy; 2025 &mdash; Acceso seguro</p>
+    <p class="footer-note">SchoolBar &copy; <span id="footerYear"></span> &mdash; Acceso seguro</p>
+    <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
   </div>
 
   <script>
