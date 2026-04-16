@@ -298,7 +298,9 @@ tbody tr:hover td { background: var(--gray-50); }
   /* Sidebar */
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.25); }
-  .main { margin-left: 0; }
+  /* overflow-x:hidden en .main evita scroll horizontal de página
+     sin bloquear el scroll de los table-wrap internos */
+  .main { margin-left: 0; overflow-x: hidden; }
   .btn-hamburger { display: flex; align-items: center; justify-content: center; }
 
   /* Topbar fijo desde el borde izquierdo en móvil */
