@@ -351,5 +351,5 @@ tbody tr:hover td { background: var(--gray-50); }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
-  .content { padding: 12px; }
+  .content { padding: 12px; padding-top: calc(60px + 12px); }
 }
