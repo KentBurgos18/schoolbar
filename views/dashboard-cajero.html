@@ -1065,5 +1065,7 @@ async function processSale(fromDrawer) {
 // Init: crear primera pestaña
 addSaleTab();
 </script>
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>
