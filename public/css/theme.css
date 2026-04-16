@@ -297,6 +297,11 @@ tbody tr:hover td { background: var(--gray-50); }
   th.hm, td.hm { display: none !important; }
 }
 
+/* ── Evitar zoom en inputs en iOS (font-size < 16px dispara zoom) ── */
+@media (max-width: 768px) {
+  .form-control, input, select, textarea { font-size: 16px !important; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   /* Sidebar */
