@@ -282,6 +282,7 @@
     </div>
     <div class="topbar-right">
       <span class="cashier-info" id="cashierInfo"></span>
+      <span id="topbarMsg" style="display:none;background:rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.3);transition:opacity .3s"></span>
       <button class="btn-new" onclick="addSaleTab()">+ Nueva venta</button>
       <button class="btn-exit" onclick="logout()">Cerrar sesión</button>
     </div>
@@ -530,6 +531,18 @@ function toast(msg, type) {
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
+var _topbarTimer = null;
+function topbarToast(msg) {
+  var el = document.getElementById('topbarMsg');
+  el.textContent = msg;
+  el.style.display = '';
+  el.style.opacity = '1';
+  if (_topbarTimer) clearTimeout(_topbarTimer);
+  _topbarTimer = setTimeout(function() {
+    el.style.opacity = '0';
+    setTimeout(function() { el.style.display = 'none'; el.style.opacity = '1'; }, 300);
+  }, 1400);
+}
 
 // ══════════════════════════════════════════════════════
 // ══  MULTI-TAB SALES SYSTEM
@@ -657,7 +670,7 @@ async function selectFinalConsumer() {
   await new Promise(function(r) { setTimeout(r, 350); });
   document.getElementById('productsCard').style.display = '';
   renderCart();
-  toast('Consumidor final seleccionado', 'success');
+  topbarToast('✓ Consumidor final');
 }
 
 function showFinalConsumerBanner() {
@@ -796,7 +809,7 @@ async function loadStudent(qrToken) {
   await new Promise(function(r) { setTimeout(r, 350); });
   document.getElementById('productsCard').style.display = '';
   renderCart();
-  toast('✅ ' + data.name + ' identificado', 'success');
+  topbarToast('✓ ' + data.name);
 }
 
 // ── Products ──

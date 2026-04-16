@@ -703,6 +703,13 @@
       <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="cName" class="form-control" placeholder="María López" /></div>
       <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="cEmail" class="form-control" placeholder="cajero@escuela.com" /></div>
       <div class="form-group" id="cPassGroup"><label class="form-label">Contraseña</label><input type="password" id="cPass" class="form-control" placeholder="Mínimo 6 caracteres" /></div>
+      <div id="cChangePassSection" style="display:none;margin-top:8px">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="toggleCashierChangePass()" id="btnToggleCashierPass">🔑 Cambiar contraseña</button>
+        <div id="cChangePassFields" style="display:none;margin-top:10px">
+          <div class="form-group"><label class="form-label">Nueva contraseña</label><input type="password" id="cNewPass" class="form-control" placeholder="Mínimo 6 caracteres" /></div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="changeCashierPassword()">Actualizar contraseña</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalCashier')">Cancelar</button>
@@ -1180,6 +1187,9 @@ function openNewCashier() {
   document.getElementById('cEmail').value = '';
   document.getElementById('cPass').value = '';
   document.getElementById('cPassGroup').style.display = '';
+  document.getElementById('cChangePassSection').style.display = 'none';
+  document.getElementById('cChangePassFields').style.display = 'none';
+  document.getElementById('cNewPass').value = '';
   document.getElementById('modalCashierTitle').textContent = 'Nuevo cajero';
   document.getElementById('btnSaveCashier').textContent = 'Crear cajero';
   openModal('modalCashier');
@@ -1191,9 +1201,37 @@ function openEditCashier(id, name, email) {
   document.getElementById('cEmail').value = email;
   document.getElementById('cPass').value = '';
   document.getElementById('cPassGroup').style.display = 'none';
+  document.getElementById('cChangePassSection').style.display = '';
+  document.getElementById('cChangePassFields').style.display = 'none';
+  document.getElementById('cNewPass').value = '';
   document.getElementById('modalCashierTitle').textContent = 'Editar cajero';
   document.getElementById('btnSaveCashier').textContent = 'Guardar cambios';
   openModal('modalCashier');
+}
+
+function toggleCashierChangePass() {
+  const fields = document.getElementById('cChangePassFields');
+  const btn = document.getElementById('btnToggleCashierPass');
+  const visible = fields.style.display !== 'none';
+  fields.style.display = visible ? 'none' : '';
+  btn.textContent = visible ? '🔑 Cambiar contraseña' : '✕ Cancelar cambio';
+  if (!visible) document.getElementById('cNewPass').focus();
+}
+
+async function changeCashierPassword() {
+  const id = document.getElementById('cId').value;
+  const password = document.getElementById('cNewPass').value.trim();
+  if (!password || password.length < 6) { toast('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
+  const res = await fetch(`/api/auth/cashiers/${id}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ password })
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast('Contraseña actualizada correctamente', 'success');
+  document.getElementById('cNewPass').value = '';
+  toggleCashierChangePass();
 }
 
 async function saveCashier() {

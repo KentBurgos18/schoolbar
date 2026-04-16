@@ -78,6 +78,22 @@ router.patch('/cashiers/:id', async (req, res) => {
   }
 });
 
+// PATCH /api/auth/cashiers/:id/password  → cambiar contraseña de cajero
+router.patch('/cashiers/:id/password', auth('ADMIN'), async (req, res) => {
+  try {
+    const cashier = await User.findOne({ where: { id: req.params.id, role: 'CASHIER' } });
+    if (!cashier) return res.status(404).json({ error: 'Cajero no encontrado' });
+    const { password } = req.body;
+    if (!password || password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash(password, 10);
+    await cashier.update({ password: hash });
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
+  }
+});
+
 // DELETE /api/auth/cashiers/:id  → eliminar cajero
 router.delete('/cashiers/:id', async (req, res) => {
   try {
