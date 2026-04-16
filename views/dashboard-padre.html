@@ -9,6 +9,8 @@
     #childrenGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
     @media (max-width: 600px) { #childrenGrid { grid-template-columns: 1fr; } }
 
+    .cons-filter { display:flex; flex-direction:column; gap:10px; }
+
     @media (max-width: 768px) {
       /* Alerta de deuda: apilar texto y botón */
       #debtAlert { flex-direction: column !important; align-items: flex-start !important; }
@@ -17,10 +19,8 @@
       /* Tablas: texto compacto */
       table { font-size: 12px; }
       table th, table td { padding: 8px 8px !important; white-space: nowrap; }
-      /* Filtros de consumos: apilar */
-      #sec-consumptions .card-body { flex-direction: column !important; }
-      #sec-consumptions .card-body .form-group { min-width: unset !important; width: 100% !important; }
-      #sec-consumptions .card-body button { width: 100%; }
+      /* Filtros de consumos */
+      .cons-filter-btn { width: 100%; }
       /* Sección de recarga: full width */
       #sec-recharge > div { max-width: 100% !important; }
     }
@@ -173,23 +173,23 @@
 
       <!-- CONSUMOS -->
       <section id="sec-consumptions" style="display:none">
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-            <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <div class="card" style="margin-bottom:16px;overflow:hidden">
+          <div class="card-body cons-filter">
+            <div class="form-group" style="margin:0;width:100%">
               <label class="form-label">Hijo/a</label>
               <select id="filterChild" class="form-control form-select">
                 <option value="">Todos</option>
               </select>
             </div>
-            <div class="form-group" style="margin:0;flex:1;min-width:130px">
-              <label class="form-label">Desde</label>
-              <input type="date" id="consFrom" class="form-control" />
+            <div style="display:flex;gap:12px;width:100%">
+              <label class="form-label" style="flex:1;margin:0">Desde</label>
+              <label class="form-label" style="flex:1;margin:0">Hasta</label>
             </div>
-            <div class="form-group" style="margin:0;flex:1;min-width:130px">
-              <label class="form-label">Hasta</label>
-              <input type="date" id="consTo" class="form-control" />
+            <div style="display:flex;gap:12px;width:100%">
+              <input type="date" id="consFrom" class="form-control" style="flex:1;width:400px;min-width:0;height:42px;padding:10px 12px" />
+              <input type="date" id="consTo"   class="form-control" style="flex:1;width:400px;min-width:0;height:42px;padding:10px 12px" />
             </div>
-            <button class="btn btn-primary" onclick="loadConsumptions()">Filtrar</button>
+            <button class="btn btn-primary cons-filter-btn" onclick="loadConsumptions()">Filtrar</button>
           </div>
         </div>
         <div class="card">
