@@ -147,7 +147,7 @@
         </div>
 
         <!-- Deuda alert -->
-        <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px">
           <div>
             <strong style="color:var(--danger)">Tienes una deuda pendiente</strong>
             <p style="font-size:13px;color:var(--danger);margin-top:2px">Tu saldo fue insuficiente en compras recientes. Por favor realiza el pago.</p>
@@ -363,6 +363,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+// Activar transición del sidebar solo después del primer paint (evita flash al cargar)
+requestAnimationFrame(function() { setTimeout(function() { document.body.classList.add('sidebar-ready'); }, 50); });
+
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');

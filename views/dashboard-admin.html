@@ -944,6 +944,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+// Activar transición del sidebar solo después del primer paint (evita flash al cargar)
+requestAnimationFrame(function() { setTimeout(function() { document.body.classList.add('sidebar-ready'); }, 50); });
+
 // ── Sidebar móvil ──
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
