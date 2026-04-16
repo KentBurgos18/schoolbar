@@ -3,10 +3,11 @@ const router = express.Router();
 const { BankAccount } = require('../models');
 const auth = require('../middlewares/auth');
 
-// GET /api/bank-accounts  → todos los roles pueden ver las cuentas activas
+// GET /api/bank-accounts  → admin ve todas, padre solo las activas
 router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
   try {
-    const accounts = await BankAccount.findAll({ where: { active: true } });
+    const where = req.user.role === 'ADMIN' ? {} : { active: true };
+    const accounts = await BankAccount.findAll({ where });
     res.json(accounts);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener cuentas bancarias' });
@@ -29,8 +30,10 @@ router.patch('/:id', auth('ADMIN'), async (req, res) => {
   try {
     const account = await BankAccount.findByPk(req.params.id);
     if (!account) return res.status(404).json({ error: 'Cuenta no encontrada' });
-    const { bank, owner, cedula, number, type } = req.body;
-    await account.update({ bank, owner, cedula, number, type });
+    const { bank, owner, cedula, number, type, active } = req.body;
+    const fields = { bank, owner, cedula, number, type };
+    if (active !== undefined) fields.active = active;
+    await account.update(fields);
     res.json(account);
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar cuenta' });

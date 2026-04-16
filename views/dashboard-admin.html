@@ -184,7 +184,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table id="overviewRechargesTable">
-                <thead><tr><th>Padre</th><th>Monto</th><th>Método</th><th>Cuenta</th><th>Ref.</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Padre</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Ref.</th><th class="hm">Fecha</th><th>Acciones</th></tr></thead>
                 <tbody id="overviewRechargesTbody"><tr><td colspan="7" class="empty-state"><p>Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -205,7 +205,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Registrado</th><th>Acciones</th></tr></thead>
                 <tbody id="adminsTbody"><tr><td colspan="4"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -1019,13 +1019,15 @@ function renderOverviewRecharges(recharges) {
     <tr>
       <td><strong>${r.parent_id}</strong></td>
       <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
-      <td><span class="badge ${r.method==='TRANSFER'?'badge-primary':'badge-gray'}">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</span></td>
-      <td>${r.bankAccount ? r.bankAccount.bank + '<br><small>' + r.bankAccount.number + '</small>' : '—'}</td>
-      <td>${r.receipt_ref || '—'}</td>
-      <td style="color:var(--gray-500);font-size:12px">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
-      <td style="display:flex;gap:6px">
-        <button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button>
-        <button class="btn btn-danger btn-sm"  onclick="rejectRecharge(${r.id})">Rechazar</button>
+      <td class="hm"><span class="badge ${r.method==='TRANSFER'?'badge-primary':'badge-gray'}">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</span></td>
+      <td class="hm">${r.bankAccount ? r.bankAccount.bank + '<br><small>' + r.bankAccount.number + '</small>' : '—'}</td>
+      <td class="hm">${r.receipt_ref || '—'}</td>
+      <td class="hm" style="color:var(--gray-500);font-size:12px">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button>
+          <button class="btn btn-danger btn-sm"  onclick="rejectRecharge(${r.id})">Rechazar</button>
+        </div>
       </td>
     </tr>`).join('');
 }
@@ -1778,12 +1780,16 @@ async function loadBanks() {
       <td class="hm"><code>${b.cedula || '—'}</code></td>
       <td><code>${b.number}</code></td>
       <td class="hm">${b.type}</td>
-      <td><span class="badge ${b.active?'badge-success':'badge-danger'}">${b.active?'Activa':'Inactiva'}</span></td>
       <td>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="openEditBank(${b.id},'${b.bank.replace(/'/g,"\\'")}','${b.owner.replace(/'/g,"\\'")}','${(b.cedula||'').replace(/'/g,"\\'")}','${b.number.replace(/'/g,"\\'")}','${b.type}')">Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteBank(${b.id})">Desactivar</button>
-        </div>
+        <span class="badge ${b.active?'badge-success':'badge-danger'}"
+          onclick="toggleBankActive(${b.id},${b.active})"
+          style="cursor:pointer;user-select:none"
+          title="${b.active?'Clic para desactivar':'Clic para activar'}">
+          ${b.active?'Activa':'Inactiva'}
+        </span>
+      </td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openEditBank(${b.id},'${b.bank.replace(/'/g,"\\'")}','${b.owner.replace(/'/g,"\\'")}','${(b.cedula||'').replace(/'/g,"\\'")}','${b.number.replace(/'/g,"\\'")}','${b.type}')">Editar</button>
       </td>
     </tr>`).join('');
 }
@@ -1825,9 +1831,23 @@ async function saveBank() {
 }
 
 async function deleteBank(id) {
-  if (!confirm('¿Desactivar esta cuenta?')) return;
   await fetch(API + '/bank-accounts/' + id, { method:'DELETE', headers: authHeaders() });
   toast('Cuenta desactivada', 'warning');
+  loadBanks();
+}
+
+async function toggleBankActive(id, currentActive) {
+  if (currentActive) {
+    // Desactivar
+    var res = await fetch(API + '/bank-accounts/' + id, { method:'DELETE', headers: authHeaders() });
+    if (!res.ok) { toast('Error al desactivar cuenta', 'error'); return; }
+    toast('Cuenta desactivada', 'warning');
+  } else {
+    // Activar — PATCH con active: true
+    var res = await fetch(API + '/bank-accounts/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
+    if (!res.ok) { toast('Error al activar cuenta', 'error'); return; }
+    toast('Cuenta activada', 'success');
+  }
   loadBanks();
 }
 
