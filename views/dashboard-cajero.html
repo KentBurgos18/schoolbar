@@ -663,7 +663,6 @@ async function selectFinalConsumer() {
   await new Promise(function(r) { setTimeout(r, 350); });
   document.getElementById('productsCard').style.display = '';
   renderCart();
-  toast('✓ Consumidor final', 'success');
 }
 
 function scrollToTop() {
@@ -807,7 +806,6 @@ async function loadStudent(qrToken) {
   await new Promise(function(r) { setTimeout(r, 350); });
   document.getElementById('productsCard').style.display = '';
   renderCart();
-  toast('✓ ' + data.name, 'success');
 }
 
 // ── Products ──
