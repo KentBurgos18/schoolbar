@@ -5,6 +5,7 @@ const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
 const { User, PasswordReset, Setting } = require('../models');
 const { sendMail } = require('../services/EmailService');
+const auth     = require('../middlewares/auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'schoolbar_jwt_secret';
 
