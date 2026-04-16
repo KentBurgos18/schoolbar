@@ -86,7 +86,7 @@ router.patch('/:id', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// DELETE /api/products/:id  (soft delete)
+// DELETE /api/products/:id  (soft delete → desactivar)
 router.delete('/:id', auth('ADMIN'), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -95,6 +95,18 @@ router.delete('/:id', auth('ADMIN'), async (req, res) => {
     res.json({ message: 'Producto desactivado' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar producto' });
+  }
+});
+
+// DELETE /api/products/:id/permanent  (hard delete)
+router.delete('/:id/permanent', auth('ADMIN'), async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+    await product.destroy();
+    res.json({ message: 'Producto eliminado definitivamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar producto. Puede tener ventas asociadas.' });
   }
 });
 

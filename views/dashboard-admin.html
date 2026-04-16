@@ -1558,11 +1558,18 @@ async function loadProducts() {
       <td><strong>${p.name}</strong></td>
       <td><span class="badge badge-gray">${p.category || '—'}</span></td>
       <td><strong>$${parseFloat(p.price).toFixed(2)}</strong></td>
-      <td><span class="badge ${p.active?'badge-success':'badge-danger'}">${p.active?'Activo':'Inactivo'}</span></td>
+      <td>
+        <span class="badge ${p.active?'badge-success':'badge-danger'}"
+          onclick="toggleProductActive(${p.id},${p.active})"
+          style="cursor:pointer;user-select:none"
+          title="Clic para ${p.active?'desactivar':'activar'}">
+          ${p.active?'Activo':'Inactivo'}
+        </span>
+      </td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditProduct(${p.id},'${p.name.replace(/'/g,"\\'")}',${p.price},'${(p.category||'').replace(/'/g,"\\'")}')">Editar</button>
-          ${p.active ? `<button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Desactivar</button>` : `<button class="btn btn-success btn-sm" onclick="reactivateProduct(${p.id})">Activar</button>`}
+          <button class="btn btn-danger btn-sm" onclick="deleteProductPermanent(${p.id},'${p.name.replace(/'/g,"\\'")}')">Eliminar</button>
         </div>
       </td>
     </tr>`).join('');
@@ -1608,18 +1615,32 @@ async function saveProduct() {
   loadProducts();
 }
 
-async function deleteProduct(id) {
-  if (!confirm('¿Desactivar este producto?')) return;
-  await fetch(API + '/products/' + id, { method:'DELETE', headers: authHeaders() });
-  toast('Producto desactivado', 'warning');
+async function toggleProductActive(id, currentActive) {
+  if (currentActive) {
+    var res = await fetch(API + '/products/' + id, { method:'DELETE', headers: authHeaders() });
+    if (!res.ok) { toast('Error al desactivar producto', 'error'); return; }
+    toast('Producto desactivado', 'warning');
+  } else {
+    var res = await fetch(API + '/products/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
+    if (!res.ok) { toast('Error al activar producto', 'error'); return; }
+    toast('Producto activado', 'success');
+  }
   loadProducts();
 }
 
-async function reactivateProduct(id) {
-  var res = await fetch(API + '/products/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ active: true }) });
-  if (!res.ok) { toast('Error al activar', 'error'); return; }
-  toast('Producto activado', 'success');
-  loadProducts();
+function deleteProductPermanent(id, name) {
+  document.getElementById('confirmDeleteName').textContent = name;
+  document.getElementById('btnConfirmDelete').onclick = async function() {
+    closeModal('modalConfirmDelete');
+    try {
+      var res = await fetch(API + '/products/' + id + '/permanent', { method:'DELETE', headers: authHeaders() });
+      var data = await res.json();
+      if (!res.ok) { toast(data.error || 'Error al eliminar', 'error'); return; }
+      toast('Producto "' + name + '" eliminado', 'warning');
+      loadProducts();
+    } catch(e) { toast('Error de conexión al eliminar', 'error'); }
+  };
+  openModal('modalConfirmDelete');
 }
 
 // ── Recharges ──
