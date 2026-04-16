@@ -50,8 +50,13 @@
       .modal-body { padding: 14px !important; }
       .modal-footer { padding: 10px 14px !important; gap: 8px !important; }
 
-      /* Sales stats: 1 columna en móvil */
-      #salesStatsGrid { grid-template-columns: 1fr; gap: 10px; }
+      /* Sales stats: 3 columnas compactas en móvil */
+      #salesStatsGrid { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+      #salesStatsGrid .card-body { padding: 10px 8px !important; }
+      #salesStatsGrid .card-body > div:first-child { font-size: 10px !important; margin-bottom: 4px !important; }
+      #salesStatsGrid [id^="statCard"][id$="Total"] { font-size: 16px !important; }
+      #salesStatsGrid [id^="statCard"][id$="Count"] { font-size: 11px !important; }
+      #salesStatsGrid .card-body > div:last-child { flex-direction: column; gap: 2px !important; margin-top: 4px !important; font-size: 10px !important; }
 
       /* Stat cards compactas */
       .stat-value { font-size: 22px !important; }
