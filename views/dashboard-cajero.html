@@ -966,7 +966,8 @@ function syncDrawer() {
   var totalItems = cart.reduce(function(a,i){ return a+i.quantity; }, 0);
   document.getElementById('fabCount').textContent = totalItems;
   document.getElementById('fabTotal').textContent = '$' + total.toFixed(2);
-  document.getElementById('fabCart').style.display = (totalItems > 0 || (currentStudent||isFinalConsumer)) ? 'flex' : 'none';
+  var isMobile = window.innerWidth <= 768;
+  document.getElementById('fabCart').style.display = (isMobile && (totalItems > 0 || (currentStudent||isFinalConsumer))) ? 'flex' : 'none';
 
   // Payment drawer
   var payOptCashD    = document.getElementById('payOptCashDrawer');
