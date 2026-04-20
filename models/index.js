@@ -136,6 +136,4 @@ RechargeAllocation.belongsTo(Student,  { foreignKey: 'student_id',  as: 'student
 RechargeAllocation.belongsTo(User, { foreignKey: 'user_id', as: 'teacher' });
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-sequelize.sync({ alter: true }).catch(err => console.error('Sync error:', err));
-
 module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset };
