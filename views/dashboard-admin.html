@@ -738,6 +738,13 @@
       <div class="form-group" id="pPassGroup"><label class="form-label">Contraseña temporal</label><input type="password" id="pPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
       <div class="form-group"><label class="form-label">Teléfono</label><input type="text" id="pPhone" class="form-control" placeholder="09xxxxxxxx" /></div>
 
+      <div class="form-group" style="margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500">
+          <input type="checkbox" id="pIsTeacher" style="width:16px;height:16px;cursor:pointer" />
+          Es profesor/a — puede consumir en el bar con QR propio
+        </label>
+      </div>
+
       <!-- Cambiar contraseña (solo en modo edición) -->
       <div id="pChangePassSection" style="display:none;border-top:1px solid var(--gray-200);margin-top:4px;padding-top:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1277,7 +1284,7 @@ async function loadParents() {
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
-      <td><strong>${p.name}</strong></td>
+      <td><strong>${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
       <td class="hm">${p.email}</td>
       <td class="hm">${p.phone || '—'}</td>
       <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
@@ -1291,7 +1298,7 @@ async function loadParents() {
       <td>${(p.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
       <td>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="openEditParent(${p.id},'${p.name.replace(/'/g,"\\'")}','${p.email}','${p.phone||''}')">Editar</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditParent(${p.id},'${p.name.replace(/'/g,"\\'")}','${p.email}','${p.phone||''}',${!!p.is_teacher})">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="deleteParent(${p.id})">Eliminar</button>
         </div>
       </td>
@@ -1310,6 +1317,7 @@ function openNewParent() {
   document.getElementById('pEmail').value = '';
   document.getElementById('pPass').value  = '';
   document.getElementById('pPhone').value = '';
+  document.getElementById('pIsTeacher').checked = false;
   document.getElementById('pPassGroup').style.display        = '';
   document.getElementById('pChangePassSection').style.display = 'none';
   document.getElementById('pChangePassFields').style.display  = 'none';
@@ -1319,12 +1327,13 @@ function openNewParent() {
   openModal('modalParent');
 }
 
-function openEditParent(id, name, email, phone) {
+function openEditParent(id, name, email, phone, isTeacher) {
   document.getElementById('pId').value    = id;
   document.getElementById('pName').value  = name;
   document.getElementById('pEmail').value = email;
   document.getElementById('pPass').value  = '';
   document.getElementById('pPhone').value = phone;
+  document.getElementById('pIsTeacher').checked = !!isTeacher;
   document.getElementById('pNewPass').value = '';
   document.getElementById('pPassGroup').style.display         = 'none';
   document.getElementById('pChangePassSection').style.display = 'block';
@@ -1361,7 +1370,7 @@ async function changeParentPassword() {
 async function saveParent() {
   var id = document.getElementById('pId').value;
   if (id) {
-    var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, phone: document.getElementById('pPhone').value };
+    var body = { name: document.getElementById('pName').value, email: document.getElementById('pEmail').value, phone: document.getElementById('pPhone').value, is_teacher: document.getElementById('pIsTeacher').checked };
     var res = await fetch(API + '/parents/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
     var data = await res.json();
     if (!res.ok) { toast(data.error, 'error'); return; }

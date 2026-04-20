@@ -2,6 +2,8 @@ const express = require('express');
 const router  = express.Router();
 const bcrypt  = require('bcryptjs');
 const XLSX    = require('xlsx');
+const QRCode  = require('qrcode');
+const crypto  = require('crypto');
 const { User, Student, Sale, SaleItem } = require('../models');
 const auth = require('../middlewares/auth');
 
@@ -27,7 +29,7 @@ router.get('/', auth('ADMIN'), async (req, res) => {
   try {
     const parents = await User.findAll({
       where: { role: 'PARENT' },
-      attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt', 'allow_debt'],
+      attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt', 'allow_debt', 'is_teacher'],
       include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade'] }]
     });
     res.json(parents);
@@ -40,7 +42,7 @@ router.get('/', auth('ADMIN'), async (req, res) => {
 router.get('/me', auth('PARENT'), async (req, res) => {
   try {
     const parent = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'phone', 'allow_debt'],
+      attributes: ['id', 'name', 'email', 'phone', 'allow_debt', 'is_teacher', 'balance', 'debt', 'qr_image'],
       include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade', 'qr_image', 'balance', 'debt'] }]
     });
     res.json(parent);
@@ -82,9 +84,19 @@ router.patch('/:id', async (req, res) => {
   try {
     const parent = await User.findOne({ where: { id: req.params.id, role: 'PARENT' } });
     if (!parent) return res.status(404).json({ error: 'Padre no encontrado' });
-    const { name, email, phone } = req.body;
-    await parent.update({ name, email, phone });
-    res.json({ id: parent.id, name: parent.name, email: parent.email, phone: parent.phone });
+    const { name, email, phone, is_teacher } = req.body;
+    const updates = { name, email, phone };
+    if (is_teacher !== undefined) {
+      updates.is_teacher = is_teacher;
+      if (is_teacher && !parent.qr_token) {
+        const token = crypto.randomUUID();
+        const qr_image = await QRCode.toDataURL(token);
+        updates.qr_token = token;
+        updates.qr_image = qr_image;
+      }
+    }
+    await parent.update(updates);
+    res.json({ id: parent.id, name: parent.name, email: parent.email, phone: parent.phone, is_teacher: parent.is_teacher });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError')
       return res.status(400).json({ error: 'El correo ya está en uso' });
@@ -178,6 +190,19 @@ router.patch('/:id/allow-debt', auth('ADMIN'), async (req, res) => {
     res.json({ allow_debt: parent.allow_debt });
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar configuración' });
+  }
+});
+
+// GET /api/parents/me/teacher-stats → balance y deuda del profesor autenticado
+router.get('/me/teacher-stats', auth('PARENT'), async (req, res) => {
+  try {
+    const me = await User.findByPk(req.user.id, {
+      attributes: ['id', 'name', 'balance', 'debt', 'is_teacher', 'qr_image']
+    });
+    if (!me || !me.is_teacher) return res.status(403).json({ error: 'No eres profesor' });
+    res.json(me);
+  } catch (err) {
+    res.status(500).json({ error: 'Error' });
   }
 });
 

@@ -27,21 +27,20 @@ router.post('/', auth('PARENT'), async (req, res) => {
       return res.status(400).json({ error: `La suma de las asignaciones ($${total.toFixed(2)}) debe ser igual al monto total ($${parseFloat(amount).toFixed(2)})` });
     }
 
-    // Validar que todos los student_id pertenecen a este padre
-    const students = await Student.findAll({
-      where: { parent_id: req.user.id, active: true },
-      transaction: t
-    });
+    // Validate allocations: student_id must belong to parent OR user_id must be self (teacher)
+    const students = await Student.findAll({ where: { parent_id: req.user.id, active: true }, transaction: t });
     const studentIds = students.map(s => s.id);
+    const authenticatedUser = await User.findByPk(req.user.id, { transaction: t });
+
     for (const a of allocations) {
-      if (!studentIds.includes(parseInt(a.student_id))) {
-        await t.rollback();
-        return res.status(400).json({ error: 'Uno de los hijos no pertenece a tu cuenta' });
+      if (a.user_id) {
+        // Teacher self-allocation
+        if (parseInt(a.user_id) !== req.user.id) { await t.rollback(); return res.status(400).json({ error: 'Solo puedes recargar tu propio saldo' }); }
+        if (!authenticatedUser.is_teacher) { await t.rollback(); return res.status(400).json({ error: 'Solo los profesores pueden recargar su propio saldo' }); }
+      } else {
+        if (!studentIds.includes(parseInt(a.student_id))) { await t.rollback(); return res.status(400).json({ error: 'Uno de los hijos no pertenece a tu cuenta' }); }
       }
-      if (!a.amount || parseFloat(a.amount) < 0) {
-        await t.rollback();
-        return res.status(400).json({ error: 'Todos los montos asignados deben ser mayores o iguales a 0' });
-      }
+      if (!a.amount || parseFloat(a.amount) < 0) { await t.rollback(); return res.status(400).json({ error: 'Todos los montos deben ser mayores o iguales a 0' }); }
     }
 
     const recharge = await Recharge.create({
@@ -58,11 +57,11 @@ router.post('/', auth('PARENT'), async (req, res) => {
     // Crear allocations
     for (const a of allocations) {
       if (parseFloat(a.amount) > 0) {
-        await RechargeAllocation.create({
-          recharge_id: recharge.id,
-          student_id: parseInt(a.student_id),
-          amount: parseFloat(a.amount)
-        }, { transaction: t });
+        if (a.user_id) {
+          await RechargeAllocation.create({ recharge_id: recharge.id, user_id: parseInt(a.user_id), student_id: null, amount: parseFloat(a.amount) }, { transaction: t });
+        } else {
+          await RechargeAllocation.create({ recharge_id: recharge.id, student_id: parseInt(a.student_id), amount: parseFloat(a.amount) }, { transaction: t });
+        }
       }
     }
 
@@ -86,7 +85,10 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
         { model: BankAccount, as: 'bankAccount', attributes: ['bank', 'number', 'owner'] },
         { model: User, as: 'parent', attributes: ['id', 'name'] },
         { model: RechargeAllocation, as: 'allocations',
-          include: [{ model: Student, as: 'student', attributes: ['id', 'name', 'grade'] }]
+          include: [
+            { model: Student, as: 'student', attributes: ['id', 'name', 'grade'], required: false },
+            { model: User, as: 'teacher', attributes: ['id', 'name'], required: false }
+          ]
         }
       ],
       order: [['created_at', 'DESC']]
@@ -114,22 +116,28 @@ router.patch('/:id/approve', auth('ADMIN'), async (req, res) => {
 
     let totalDebtPaid = 0;
 
-    // Aplicar cada allocation al saldo del estudiante
+    // Aplicar cada allocation al saldo del estudiante o profesor
     for (const alloc of allocations) {
-      const student = await Student.findByPk(alloc.student_id, { transaction: t, lock: true });
-      if (!student) continue;
-
       const allocAmount = parseFloat(alloc.amount);
-      const studentDebt = parseFloat(student.debt);
-      const debtPaid    = Math.min(studentDebt, allocAmount);
-      const addedToBalance = allocAmount - debtPaid;
-
-      await student.update({
-        balance: parseFloat(student.balance) + addedToBalance,
-        debt:    studentDebt - debtPaid
-      }, { transaction: t });
-
-      totalDebtPaid += debtPaid;
+      if (alloc.user_id) {
+        // Teacher self-allocation
+        const teacherUser = await User.findByPk(alloc.user_id, { transaction: t, lock: true });
+        if (!teacherUser) continue;
+        const userDebt       = parseFloat(teacherUser.debt);
+        const debtPaid       = Math.min(userDebt, allocAmount);
+        const addedToBalance = allocAmount - debtPaid;
+        await teacherUser.update({ balance: parseFloat(teacherUser.balance) + addedToBalance, debt: userDebt - debtPaid }, { transaction: t });
+        totalDebtPaid += debtPaid;
+      } else {
+        // Student allocation
+        const student = await Student.findByPk(alloc.student_id, { transaction: t, lock: true });
+        if (!student) continue;
+        const studentDebt    = parseFloat(student.debt);
+        const debtPaid       = Math.min(studentDebt, allocAmount);
+        const addedToBalance = allocAmount - debtPaid;
+        await student.update({ balance: parseFloat(student.balance) + addedToBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        totalDebtPaid += debtPaid;
+      }
     }
 
     await recharge.update({
@@ -169,7 +177,12 @@ router.post('/admin-add', auth('ADMIN'), async (req, res) => {
     const students = await Student.findAll({ where: { parent_id, active: true }, transaction: t });
     const studentIds = students.map(s => s.id);
     for (const a of validAllocs) {
-      if (!studentIds.includes(parseInt(a.student_id))) {
+      if (a.user_id) {
+        if (parseInt(a.user_id) !== parseInt(parent_id)) {
+          await t.rollback();
+          return res.status(400).json({ error: 'El user_id de la asignación no corresponde a este padre' });
+        }
+      } else if (!studentIds.includes(parseInt(a.student_id))) {
         await t.rollback();
         return res.status(400).json({ error: 'Uno de los hijos no pertenece a este padre' });
       }
@@ -190,24 +203,24 @@ router.post('/admin-add', auth('ADMIN'), async (req, res) => {
     let totalDebtPaid = 0;
 
     for (const a of validAllocs) {
-      await RechargeAllocation.create({
-        recharge_id: recharge.id,
-        student_id: parseInt(a.student_id),
-        amount: parseFloat(a.amount)
-      }, { transaction: t });
-
-      const student = await Student.findByPk(a.student_id, { transaction: t, lock: true });
       const allocAmount = parseFloat(a.amount);
-      const studentDebt = parseFloat(student.debt);
-      const debtPaid    = Math.min(studentDebt, allocAmount);
-      const addedToBalance = allocAmount - debtPaid;
-
-      await student.update({
-        balance: parseFloat(student.balance) + addedToBalance,
-        debt:    studentDebt - debtPaid
-      }, { transaction: t });
-
-      totalDebtPaid += debtPaid;
+      if (a.user_id) {
+        await RechargeAllocation.create({ recharge_id: recharge.id, user_id: parseInt(a.user_id), student_id: null, amount: allocAmount }, { transaction: t });
+        const teacherUser = await User.findByPk(a.user_id, { transaction: t, lock: true });
+        const userDebt       = parseFloat(teacherUser.debt);
+        const debtPaid       = Math.min(userDebt, allocAmount);
+        const addedToBalance = allocAmount - debtPaid;
+        await teacherUser.update({ balance: parseFloat(teacherUser.balance) + addedToBalance, debt: userDebt - debtPaid }, { transaction: t });
+        totalDebtPaid += debtPaid;
+      } else {
+        await RechargeAllocation.create({ recharge_id: recharge.id, student_id: parseInt(a.student_id), amount: allocAmount }, { transaction: t });
+        const student = await Student.findByPk(a.student_id, { transaction: t, lock: true });
+        const studentDebt    = parseFloat(student.debt);
+        const debtPaid       = Math.min(studentDebt, allocAmount);
+        const addedToBalance = allocAmount - debtPaid;
+        await student.update({ balance: parseFloat(student.balance) + addedToBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        totalDebtPaid += debtPaid;
+      }
     }
 
     await recharge.update({ debt_paid: totalDebtPaid }, { transaction: t });
@@ -261,11 +274,11 @@ router.patch('/pay-debt', auth('PARENT'), async (req, res) => {
     if (allocations && allocations.length) {
       for (const a of allocations) {
         if (parseFloat(a.amount) > 0) {
-          await RechargeAllocation.create({
-            recharge_id: recharge.id,
-            student_id: parseInt(a.student_id),
-            amount: parseFloat(a.amount)
-          }, { transaction: t });
+          if (a.user_id) {
+            await RechargeAllocation.create({ recharge_id: recharge.id, user_id: parseInt(a.user_id), student_id: null, amount: parseFloat(a.amount) }, { transaction: t });
+          } else {
+            await RechargeAllocation.create({ recharge_id: recharge.id, student_id: parseInt(a.student_id), amount: parseFloat(a.amount) }, { transaction: t });
+          }
         }
       }
     }

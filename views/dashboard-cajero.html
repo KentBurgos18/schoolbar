@@ -197,6 +197,14 @@
     .consumer-banner .st-name { font-size: 20px; font-weight: 800; color: #1d4ed8; }
     .consumer-banner .st-grade { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
 
+    /* ── Profesor banner ── */
+    .teacher-banner {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 2px solid #93c5fd; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .teacher-banner .st-name { font-size: 20px; font-weight: 800; color: #1e40af; }
+
     /* ── Scanner ── */
     .scanner-wrap {
       background: #0f172a; border-radius: 14px; padding: 24px;
@@ -741,6 +749,15 @@ async function doSearch() {
   }
 
   el.innerHTML = data.map(function(s) {
+    if (s.type === 'teacher') {
+      return '<div class="search-result-item" onclick="selectTeacherFromSearch(' + JSON.stringify(s).replace(/"/g, '&quot;') + ')">' +
+        '<div>' +
+          '<div class="sr-name">' + s.name + '</div>' +
+          '<div class="sr-grade" style="color:#1d4ed8">👨‍🏫 Profesor · Saldo: $' + parseFloat(s.balance||0).toFixed(2) + '</div>' +
+        '</div>' +
+        '<div class="sr-bal" style="color:' + (parseFloat(s.debt||0)>0?'var(--danger)':'var(--success)') + '">$' + parseFloat(s.balance||0).toFixed(2) + '</div>' +
+      '</div>';
+    }
     return '<div class="search-result-item" onclick="selectStudentFromSearch(\'' + s.qr_token + '\')">' +
       '<div>' +
         '<div class="sr-name">' + s.name + '</div>' +
@@ -755,6 +772,51 @@ async function selectStudentFromSearch(qrToken) {
   document.getElementById('searchName').value = '';
   document.getElementById('searchResults').innerHTML = '';
   await loadStudent(qrToken);
+}
+
+async function selectTeacherFromSearch(teacher) {
+  document.getElementById('searchName').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  await loadTeacher(teacher);
+}
+
+async function loadTeacher(teacherData) {
+  document.getElementById('scannerCard').style.display = 'none';
+  document.getElementById('studentBanner').style.display = '';
+  document.getElementById('bannerInner').className = 'teacher-banner';
+  document.getElementById('stName').textContent = 'Identificando...';
+  document.getElementById('stGrade').textContent = '';
+  document.getElementById('stParent').textContent = '';
+  document.getElementById('stSaldo').style.display = 'none';
+  document.getElementById('productsCard').style.display = 'none';
+
+  // If called from scan (only has qr_token), fetch full data; if from search, data is complete
+  var data = teacherData;
+  if (!data.type) {
+    data = await api('/students/scan/' + teacherData.qr_token);
+    if (!data || data.error) { toast(data && data.error ? data.error : 'QR no válido', 'error'); showScannerCard(); return; }
+  }
+
+  currentStudent = Object.assign({}, data, { customer_type: 'TEACHER' });
+  isFinalConsumer = false;
+  paymentMethod = 'BALANCE';
+
+  // Show teacher banner
+  document.getElementById('bannerInner').className = 'teacher-banner';
+  document.getElementById('stName').textContent = data.name;
+  document.getElementById('stGrade').textContent = '👨‍🏫 Profesor';
+  document.getElementById('stParent').textContent = '';
+  document.getElementById('stSaldo').style.display = '';
+  document.getElementById('stBalance').textContent = '$' + parseFloat(data.balance||0).toFixed(2);
+  document.getElementById('stDebt').textContent = '$' + parseFloat(data.debt||0).toFixed(2);
+  document.getElementById('studentBanner').style.display = '';
+  document.getElementById('scannerCard').style.display = 'none';
+  scrollToTop();
+
+  await loadProducts();
+  await new Promise(function(r) { setTimeout(r, 350); });
+  document.getElementById('productsCard').style.display = '';
+  renderCart();
 }
 
 // ── Scanner ──
@@ -801,6 +863,10 @@ async function loadStudent(qrToken) {
   if (!data || data.error) {
     toast(data?.error || 'QR no válido', 'error');
     showScannerCard();
+    return;
+  }
+  if (data && data.type === 'teacher') {
+    await loadTeacher(data);
     return;
   }
   currentStudent = data;
@@ -1014,24 +1080,40 @@ async function processSale(fromDrawer) {
   var noteEl = document.getElementById(fromDrawer ? 'saleNoteDrawer'   : 'saleNote');
   btn.disabled = true; btn.textContent = 'Procesando...';
 
-  var body = {
-    items: cart.map(function(i) { return { product_id: i.product_id, quantity: i.quantity }; }),
-    note: noteEl.value,
-    payment_method: paymentMethod,
-    customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : 'STUDENT'
-  };
-
-  if (currentStudent) body.qr_token = currentStudent.qr_token;
+  var cartItems = cart.map(function(i) { return { product_id: i.product_id, quantity: i.quantity }; });
+  var noteVal = noteEl.value;
+  var saleBody;
+  if (currentStudent && currentStudent.customer_type === 'TEACHER') {
+    saleBody = {
+      customer_type: 'TEACHER',
+      teacher_user_id: currentStudent.id,
+      items: cartItems,
+      note: noteVal,
+      payment_method: paymentMethod
+    };
+  } else if (isFinalConsumer) {
+    saleBody = { customer_type: 'FINAL_CONSUMER', items: cartItems, note: noteVal };
+  } else {
+    saleBody = { qr_token: currentStudent.qr_token, items: cartItems, note: noteVal, payment_method: paymentMethod };
+  }
 
   var res = await fetch(API + '/sales', {
     method: 'POST', headers: authHeaders(),
-    body: JSON.stringify(body)
+    body: JSON.stringify(saleBody)
   });
   var data = await res.json();
   btn.textContent = 'Cobrar';
 
   if (!res.ok) { toast(data.error, 'error'); btn.disabled = false; return; }
   closeCartDrawer();
+
+  // Update teacher banner balance if it was a teacher sale
+  if (currentStudent && currentStudent.customer_type === 'TEACHER') {
+    currentStudent.balance = parseFloat(data.student_new_balance || 0);
+    currentStudent.debt = parseFloat(data.added_to_debt || 0) + parseFloat(currentStudent.debt || 0);
+    if (document.getElementById('stBalance')) document.getElementById('stBalance').textContent = '$' + parseFloat(currentStudent.balance).toFixed(2);
+    if (document.getElementById('stDebt')) document.getElementById('stDebt').textContent = '$' + parseFloat(currentStudent.debt).toFixed(2);
+  }
 
   var hasDebt = parseFloat(data.added_to_debt) > 0;
   var isCash = data.payment_method === 'CASH';
@@ -1045,13 +1127,13 @@ async function processSale(fromDrawer) {
   if (!isCash) {
     resultHtml += '<div class="sale-result-row"><span>Pagado del saldo</span><strong style="color:#16a34a">$' + data.paid_from_balance + '</strong></div>' +
       '<div class="sale-result-row"><span>Añadido a deuda</span><strong style="color:' + (hasDebt ? 'var(--danger)' : 'var(--gray-400)') + '">$' + data.added_to_debt + '</strong></div>' +
-      '<div class="sale-result-row"><span>Nuevo saldo del estudiante</span><strong>$' + data.student_new_balance + '</strong></div>';
+      '<div class="sale-result-row"><span>Nuevo saldo</span><strong>$' + data.student_new_balance + '</strong></div>';
   }
 
   resultHtml += '</div>';
 
   if (hasDebt) {
-    resultHtml += '<div class="debt-alert">⚠️ Saldo insuficiente — el monto restante fue añadido a la deuda del padre.</div>';
+    resultHtml += '<div class="debt-alert">⚠️ Saldo insuficiente — el monto restante fue añadido a la deuda.</div>';
   }
 
   document.getElementById('resultBody').innerHTML = resultHtml;

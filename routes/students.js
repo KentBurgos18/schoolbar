@@ -39,15 +39,28 @@ router.get('/search', auth('CASHIER', 'ADMIN'), async (req, res) => {
     const { Op } = require('sequelize');
     const q = (req.query.q || '').trim();
     if (!q) return res.json([]);
+
     const students = await Student.findAll({
       where: { name: { [Op.iLike]: `%${q}%` }, active: true },
       attributes: ['id', 'name', 'grade', 'qr_token', 'balance', 'debt'],
       include: [{ model: User, as: 'parent', attributes: ['id', 'name', 'allow_debt'] }],
-      limit: 8
+      limit: 6
     });
-    res.json(students);
+
+    const teachers = await User.findAll({
+      where: { name: { [Op.iLike]: `%${q}%` }, role: 'PARENT', is_teacher: true },
+      attributes: ['id', 'name', 'qr_token', 'balance', 'debt', 'allow_debt'],
+      limit: 4
+    });
+
+    const result = [
+      ...students.map(s => ({ ...s.toJSON(), type: 'student' })),
+      ...teachers.map(t => ({ ...t.toJSON(), type: 'teacher' }))
+    ];
+
+    res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Error al buscar estudiantes' });
+    res.status(500).json({ error: 'Error al buscar' });
   }
 });
 
@@ -186,15 +199,22 @@ router.post('/bulk-import', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /api/students/scan/:token  → usado por el cajero para identificar al estudiante
+// GET /api/students/scan/:token  → usado por el cajero para identificar al estudiante o profesor
 router.get('/scan/:token', auth('CASHIER', 'ADMIN'), async (req, res) => {
   try {
     const student = await Student.findOne({
       where: { qr_token: req.params.token, active: true },
       include: [{ model: User, as: 'parent', attributes: ['id', 'name', 'allow_debt'] }]
     });
-    if (!student) return res.status(404).json({ error: 'Código QR no válido' });
-    res.json(student);
+    if (student) return res.json({ ...student.toJSON(), type: 'student' });
+
+    const teacher = await User.findOne({
+      where: { qr_token: req.params.token, role: 'PARENT', is_teacher: true },
+      attributes: ['id', 'name', 'qr_token', 'balance', 'debt', 'allow_debt', 'is_teacher']
+    });
+    if (teacher) return res.json({ ...teacher.toJSON(), type: 'teacher' });
+
+    return res.status(404).json({ error: 'Código QR no válido' });
   } catch (err) {
     res.status(500).json({ error: 'Error al escanear QR' });
   }

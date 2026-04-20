@@ -9,27 +9,27 @@ const EventBus = require('../services/EventBus');
 router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { qr_token, items, note, payment_method, customer_type } = req.body;
-    // items: [{ product_id, quantity }]
-
+    const { qr_token, teacher_user_id, items, note, payment_method, customer_type } = req.body;
     const isFinalConsumer = customer_type === 'FINAL_CONSUMER';
+    const isTeacher       = customer_type === 'TEACHER';
     const method = isFinalConsumer ? 'CASH' : (payment_method || 'BALANCE');
 
     let student = null;
+    let teacher = null;
     let parent  = null;
 
-    if (!isFinalConsumer) {
-      student = await Student.findOne({
-        where: { qr_token, active: true },
-        transaction: t,
-        lock: true
+    if (isTeacher) {
+      teacher = await User.findOne({
+        where: { id: teacher_user_id, role: 'PARENT', is_teacher: true },
+        transaction: t, lock: true
       });
+      if (!teacher) { await t.rollback(); return res.status(404).json({ error: 'Profesor no encontrado' }); }
+    } else if (!isFinalConsumer) {
+      student = await Student.findOne({ where: { qr_token, active: true }, transaction: t, lock: true });
       if (!student) { await t.rollback(); return res.status(404).json({ error: 'Código QR no válido' }); }
-
       parent = await User.findByPk(student.parent_id, { transaction: t });
     }
 
-    // Calcular total
     let total = 0;
     const saleItems = [];
     for (const item of items) {
@@ -40,50 +40,58 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       saleItems.push({ product_id: product.id, name: product.name, price: product.price, quantity: item.quantity, subtotal });
     }
 
-    // Determinar pago según tipo de cliente y método
     let paidFromBalance = 0;
     let addedToDebt = 0;
 
-    if (!isFinalConsumer && method === 'BALANCE' && student && parent) {
+    if (isTeacher && method === 'BALANCE') {
+      const balance = parseFloat(teacher.balance);
+      if (balance >= total) {
+        paidFromBalance = total;
+      } else if (teacher.allow_debt) {
+        paidFromBalance = balance;
+        addedToDebt = total - balance;
+      } else {
+        await t.rollback();
+        return res.status(400).json({ error: `Saldo insuficiente ($${balance.toFixed(2)}) y este profesor no tiene habilitada la deuda.` });
+      }
+    } else if (!isFinalConsumer && !isTeacher && method === 'BALANCE' && student && parent) {
       const balance = parseFloat(student.balance);
       if (balance >= total) {
         paidFromBalance = total;
       } else if (parent.allow_debt) {
-        // Saldo insuficiente pero tiene deuda permitida
         paidFromBalance = balance;
         addedToDebt = total - balance;
       } else {
-        // Saldo insuficiente y no se permite endeudar
         await t.rollback();
         return res.status(400).json({ error: `Saldo insuficiente ($${balance.toFixed(2)}) y este padre no tiene habilitada la deuda.` });
       }
     }
-    // CASH (estudiante o consumidor final): no toca saldo ni deuda
 
-    // Crear venta
     const sale = await Sale.create({
-      student_id: student ? student.id : null,
-      parent_id: parent ? parent.id : null,
-      cashier_id: req.user.id,
+      student_id:        (isTeacher || isFinalConsumer) ? null : student.id,
+      parent_id:         isTeacher ? teacher.id : (parent ? parent.id : null),
+      cashier_id:        req.user.id,
       total,
       paid_from_balance: paidFromBalance,
-      added_to_debt: addedToDebt,
-      payment_method: method,
-      customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : 'STUDENT',
+      added_to_debt:     addedToDebt,
+      payment_method:    method,
+      customer_type:     isFinalConsumer ? 'FINAL_CONSUMER' : (isTeacher ? 'TEACHER' : 'STUDENT'),
       note
     }, { transaction: t });
 
-    // Items
     for (const si of saleItems) {
       await SaleItem.create({ sale_id: sale.id, ...si }, { transaction: t });
     }
 
-    // Actualizar saldo y deuda del estudiante solo si pagó con BALANCE
-    if (!isFinalConsumer && method === 'BALANCE' && student) {
-      const balance = parseFloat(student.balance);
+    if (isTeacher && method === 'BALANCE') {
+      await teacher.update({
+        balance: Math.max(0, parseFloat(teacher.balance) - total),
+        debt:    parseFloat(teacher.debt) + addedToDebt
+      }, { transaction: t });
+    } else if (!isFinalConsumer && !isTeacher && method === 'BALANCE' && student) {
       await student.update({
-        balance: Math.max(0, balance - total),
-        debt: parseFloat(student.debt) + addedToDebt
+        balance: Math.max(0, parseFloat(student.balance) - total),
+        debt:    parseFloat(student.debt) + addedToDebt
       }, { transaction: t });
     }
 
@@ -94,17 +102,24 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       sale_id: sale.id,
       total: total.toFixed(2),
       payment_method: method,
-      customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : 'STUDENT',
+      customer_type: isFinalConsumer ? 'FINAL_CONSUMER' : (isTeacher ? 'TEACHER' : 'STUDENT'),
     };
 
     if (isFinalConsumer) {
       response.student = 'Consumidor final';
       response.paid_from_balance = '0.00';
       response.added_to_debt = '0.00';
-      response.parent_new_balance = '—';
       response.message = 'Venta procesada correctamente (efectivo).';
+    } else if (isTeacher) {
+      const newBal = Math.max(0, parseFloat(teacher.balance) - paidFromBalance);
+      response.student = teacher.name;
+      response.paid_from_balance = paidFromBalance.toFixed(2);
+      response.added_to_debt = addedToDebt.toFixed(2);
+      response.student_new_balance = newBal.toFixed(2);
+      response.message = addedToDebt > 0
+        ? `Saldo insuficiente. Se añadieron $${addedToDebt.toFixed(2)} a la deuda del profesor.`
+        : 'Venta procesada correctamente.';
     } else {
-      response.student = student.name;
       if (method === 'CASH') {
         response.paid_from_balance = '0.00';
         response.added_to_debt = '0.00';
@@ -119,6 +134,7 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
           ? `Saldo insuficiente. Se añadieron $${addedToDebt.toFixed(2)} a la deuda del estudiante.`
           : 'Venta procesada correctamente.';
       }
+      response.student = student.name;
     }
 
     res.json(response);

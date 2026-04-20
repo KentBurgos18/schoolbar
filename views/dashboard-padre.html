@@ -146,6 +146,16 @@
           </div>
         </div>
 
+        <!-- QR del profesor (solo visible si es profesor) -->
+        <div id="teacherQRCard" style="display:none;margin-bottom:16px" class="card">
+          <div class="card-header"><h3>📱 Mi código QR</h3></div>
+          <div class="card-body" style="text-align:center">
+            <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">El cajero puede escanear este código para identificarte como consumidor del bar.</p>
+            <img id="teacherQRImg" src="" alt="QR Profesor" style="width:200px;height:200px;border-radius:12px;border:2px solid var(--gray-200)" />
+            <p style="font-size:12px;color:var(--gray-400);margin-top:8px">Solo visible para profesores registrados</p>
+          </div>
+        </div>
+
         <!-- Deuda alert -->
         <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px">
           <div>
@@ -425,7 +435,9 @@ async function loadHome() {
   if (!me) return;
 
   var totalBalance = (me.students||[]).reduce((s,st)=>s+parseFloat(st.balance||0),0);
-  var totalDebt    = (me.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
+  var childrenDebt = (me.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
+  var teacherDebt  = me.is_teacher ? parseFloat(me.debt || 0) : 0;
+  var totalDebt    = childrenDebt + teacherDebt;
 
   document.getElementById('homeBalance').textContent  = '$'+totalBalance.toFixed(2);
   document.getElementById('homeDebt').textContent     = '$'+totalDebt.toFixed(2);
@@ -433,6 +445,17 @@ async function loadHome() {
 
   var debtAlert = document.getElementById('debtAlert');
   debtAlert.style.display = totalDebt > 0 ? 'flex' : 'none';
+
+  // Show teacher QR if is_teacher
+  var qrCard = document.getElementById('teacherQRCard');
+  if (qrCard) {
+    if (me.is_teacher && me.qr_image) {
+      qrCard.style.display = '';
+      document.getElementById('teacherQRImg').src = me.qr_image;
+    } else {
+      qrCard.style.display = 'none';
+    }
+  }
 
   // Cargar últimas 5 ventas
   var sales = await api('/parents/me/consumptions');
@@ -526,6 +549,7 @@ async function loadConsumptions() {
 
 // ── Recharge ──
 var rechargeStudents = [];
+var meData = null;
 
 async function loadRechargeSection() {
   document.getElementById('rMethod').value = 'CASH';
@@ -535,14 +559,32 @@ async function loadRechargeSection() {
   validateRechargeForm();
 
   var me = await api('/parents/me');
+  meData = me;
   rechargeStudents = (me && me.students) || [];
 
   // Mostrar saldos actuales por hijo
   var balDiv = document.getElementById('rechargeStudentBalances');
-  if (!rechargeStudents.length) {
+  var teacherRowHtml = '';
+  if (me && me.is_teacher) {
+    teacherRowHtml = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+        <div>
+          <div style="font-weight:700;font-size:14px">👨‍🏫 Mi saldo (Profesor)</div>
+          <div style="font-size:12px;color:var(--gray-500)">
+            Saldo: <strong>$${parseFloat(me.balance||0).toFixed(2)}</strong>
+            ${parseFloat(me.debt||0)>0 ? '· <span style="color:var(--danger)">Deuda: $'+parseFloat(me.debt||0).toFixed(2)+'</span>' : ''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:var(--gray-500)">$</span>
+          <input type="number" id="alloc_teacher" min="0" step="0.01" value="0" class="form-control" style="width:100px" oninput="updateAllocTotal()" />
+        </div>
+      </div>`;
+  }
+  if (!rechargeStudents.length && !teacherRowHtml) {
     balDiv.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
   } else {
-    balDiv.innerHTML = rechargeStudents.map(s => `
+    balDiv.innerHTML = teacherRowHtml + rechargeStudents.map(s => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100)">
         <span style="font-size:13.5px;font-weight:600">${s.name} <span style="font-weight:400;color:var(--gray-400);font-size:12px">${s.grade||''}</span></span>
         <span style="display:flex;gap:12px">
@@ -582,16 +624,18 @@ function renderAllocationInputs() {
 }
 
 function updateAllocTotal() {
+  var teacherAlloc = parseFloat(document.getElementById('alloc_teacher')?.value || 0) || 0;
   var total = rechargeStudents.reduce((s, st) => {
     var v = parseFloat(document.getElementById('alloc_'+st.id)?.value) || 0;
     return s + v;
-  }, 0);
+  }, 0) + teacherAlloc;
   document.getElementById('allocTotal').textContent = '$'+total.toFixed(2);
 
   // Mostrar preview de deuda por hijo
   var hasDebt = rechargeStudents.some(s => parseFloat(s.debt||0) > 0);
+  var hasTeacherDebt = meData && meData.is_teacher && parseFloat(meData.debt||0) > 0;
   var preview = document.getElementById('debtPreview');
-  if (hasDebt && total > 0) {
+  if ((hasDebt || hasTeacherDebt) && total > 0) {
     var rows = rechargeStudents.filter(s => parseFloat(s.debt||0) > 0).map(s => {
       var alloc = parseFloat(document.getElementById('alloc_'+s.id)?.value) || 0;
       var debtPaid = Math.min(parseFloat(s.debt), alloc);
@@ -600,8 +644,14 @@ function updateAllocTotal() {
         <span>${s.name}</span>
         <span>Deuda: -$${debtPaid.toFixed(2)} · Saldo nuevo: $${(parseFloat(s.balance||0)+added).toFixed(2)}</span>
       </div>`;
-    }).join('');
-    document.getElementById('debtPreviewRows').innerHTML = rows;
+    });
+    if (hasTeacherDebt && teacherAlloc > 0) {
+      var tDebt = parseFloat(meData.debt);
+      var tPaid = Math.min(tDebt, teacherAlloc);
+      var tNew = teacherAlloc - tPaid;
+      rows.unshift('<div style="display:flex;justify-content:space-between;padding:3px 0"><span>👨‍🏫 ' + meData.name + '</span><span>Deuda: -$' + tPaid.toFixed(2) + ' · Saldo nuevo: $' + (parseFloat(meData.balance||0) + tNew).toFixed(2) + '</span></div>');
+    }
+    document.getElementById('debtPreviewRows').innerHTML = rows.join('');
     preview.style.display = '';
   } else {
     preview.style.display = 'none';
@@ -657,6 +707,7 @@ function validateRechargeForm() {
   var ref      = document.getElementById('rRef').value.trim();
   var fromBank = document.getElementById('rFromBank')?.value.trim();
   var total    = rechargeStudents.reduce((s, st) => s + (parseFloat(document.getElementById('alloc_'+st.id)?.value) || 0), 0);
+  total += parseFloat(document.getElementById('alloc_teacher')?.value || 0) || 0;
   var ok = total > 0;
   if (method === 'TRANSFER') ok = ok && !!account && !!ref && !!fromBank && !!receiptBase64;
   document.getElementById('btnSubmitRecharge').disabled = !ok;
@@ -697,7 +748,13 @@ async function submitRecharge() {
     amount: parseFloat(document.getElementById('alloc_'+s.id)?.value) || 0
   })).filter(a => a.amount > 0);
 
-  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un hijo', 'error'); return; }
+  // Add teacher self-allocation if applicable
+  var teacherInput = document.getElementById('alloc_teacher');
+  if (teacherInput && meData && meData.is_teacher && parseFloat(teacherInput.value) > 0) {
+    allocations.push({ user_id: meData.id, amount: parseFloat(teacherInput.value) });
+  }
+
+  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un destinatario', 'error'); return; }
 
   var totalAmount = allocations.reduce((s,a) => s + a.amount, 0);
 
@@ -725,6 +782,8 @@ async function submitRecharge() {
   if (document.getElementById('rFromBank')) document.getElementById('rFromBank').value='';
   clearReceipt();
   rechargeStudents.forEach(s => { var el=document.getElementById('alloc_'+s.id); if(el) el.value='0'; });
+  var teacherEl = document.getElementById('alloc_teacher');
+  if (teacherEl) teacherEl.value = '0';
   updateAllocTotal();
 }
 

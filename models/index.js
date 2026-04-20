@@ -22,6 +22,9 @@ const User = sequelize.define('User', {
   balance:    { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   debt:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   allow_debt: { type: DataTypes.BOOLEAN, defaultValue: true },
+  is_teacher: { type: DataTypes.BOOLEAN, defaultValue: false },
+  qr_token:   { type: DataTypes.UUID, allowNull: true },
+  qr_image:   { type: DataTypes.TEXT, allowNull: true },
 }, { tableName: 'users', underscored: true });
 
 const Student = sequelize.define('Student', {
@@ -53,7 +56,7 @@ const Sale = sequelize.define('Sale', {
   paid_from_balance: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   added_to_debt:     { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   payment_method:    { type: DataTypes.ENUM('BALANCE', 'CASH'), defaultValue: 'BALANCE' },
-  customer_type:     { type: DataTypes.ENUM('STUDENT', 'FINAL_CONSUMER'), defaultValue: 'STUDENT' },
+  customer_type:     { type: DataTypes.ENUM('STUDENT', 'FINAL_CONSUMER', 'TEACHER'), defaultValue: 'STUDENT' },
   note:              { type: DataTypes.STRING(255) },
 }, { tableName: 'sales', underscored: true });
 
@@ -95,7 +98,8 @@ const BankAccount = sequelize.define('BankAccount', {
 const RechargeAllocation = sequelize.define('RechargeAllocation', {
   id:          { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   recharge_id: { type: DataTypes.INTEGER, allowNull: false },
-  student_id:  { type: DataTypes.INTEGER, allowNull: false },
+  student_id:  { type: DataTypes.INTEGER, allowNull: true },
+  user_id:     { type: DataTypes.INTEGER, allowNull: true },
   amount:      { type: DataTypes.DECIMAL(10, 2), allowNull: false },
 }, { tableName: 'recharge_allocations', underscored: true });
 
@@ -129,6 +133,9 @@ Recharge.belongsTo(User,        { foreignKey: 'parent_id',       as: 'parent' })
 Recharge.hasMany(RechargeAllocation,   { foreignKey: 'recharge_id', as: 'allocations' });
 RechargeAllocation.belongsTo(Recharge, { foreignKey: 'recharge_id', as: 'recharge' });
 RechargeAllocation.belongsTo(Student,  { foreignKey: 'student_id',  as: 'student' });
+RechargeAllocation.belongsTo(User, { foreignKey: 'user_id', as: 'teacher' });
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+sequelize.sync({ alter: true }).catch(err => console.error('Sync error:', err));
 
 module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset };
