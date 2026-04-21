@@ -135,6 +135,54 @@ async function initDb() {
     END $$;
   `).catch(e => console.warn('migration students.debt:', e.message));
 
+  // recharge_allocations: student_id nullable (para recargas de profesor)
+  await sequelize.query(`
+    ALTER TABLE recharge_allocations ALTER COLUMN student_id DROP NOT NULL;
+  `).catch(() => {});
+
+  // recharge_allocations: columna user_id (para recargas de profesor)
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recharge_allocations' AND column_name='user_id') THEN
+        ALTER TABLE recharge_allocations ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration recharge_allocations.user_id:', e.message));
+
+  // users: columnas de profesor (is_teacher, qr_token, qr_image)
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_teacher') THEN
+        ALTER TABLE users ADD COLUMN is_teacher BOOLEAN NOT NULL DEFAULT FALSE;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration users.is_teacher:', e.message));
+
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='qr_token') THEN
+        ALTER TABLE users ADD COLUMN qr_token UUID;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration users.qr_token:', e.message));
+
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='qr_image') THEN
+        ALTER TABLE users ADD COLUMN qr_image TEXT;
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration users.qr_image:', e.message));
+
+  // sales: columna customer_type — agregar valor TEACHER al enum si no existe
+  await sequelize.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='TEACHER' AND enumtypid = (SELECT oid FROM pg_type WHERE typname='enum_sales_customer_type')) THEN
+        ALTER TYPE "enum_sales_customer_type" ADD VALUE 'TEACHER';
+      END IF;
+    END $$;
+  `).catch(e => console.warn('migration enum TEACHER:', e.message));
+
   console.log('Migraciones aplicadas.');
 
   // Migración: crear categorías a partir de productos existentes si la tabla está vacía
