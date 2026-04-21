@@ -182,17 +182,21 @@ router.get('/stats', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /api/sales?parent_id=&student_id=&from=&to=
+// GET /api/sales?parent_id=&student_id=&from=&to=&customer_type=&payment_method=&cashier_id=&search=&limit=
 router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
   try {
-    const { parent_id, student_id, from, to } = req.query;
+    const { parent_id, student_id, from, to, customer_type, payment_method, cashier_id, search, limit } = req.query;
     const { Op } = require('sequelize');
     const where = {};
 
     if (req.user.role === 'PARENT') where.parent_id = req.user.id;
     else if (parent_id) where.parent_id = parent_id;
 
-    if (student_id) where.student_id = student_id;
+    if (student_id)      where.student_id      = student_id;
+    if (customer_type)   where.customer_type   = customer_type;
+    if (payment_method)  where.payment_method  = payment_method;
+    if (cashier_id)      where.cashier_id      = cashier_id;
+
     if (from || to) {
       where.created_at = {};
       if (from) where.created_at[Op.gte] = new Date(from);
@@ -203,12 +207,29 @@ router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
       where,
       include: [
         { model: Student, as: 'student', attributes: ['id', 'name', 'grade'] },
+        { model: User,    as: 'cashier', attributes: ['id', 'name'] },
+        { model: User,    as: 'parent',  attributes: ['id', 'name', 'is_teacher'] },
         { model: SaleItem, as: 'items' }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      limit: limit ? parseInt(limit) : 500
     });
-    res.json(sales);
+
+    // Filtro por nombre (cliente) — post-query porque es multi-modelo
+    let result = sales;
+    if (search) {
+      const q = search.toLowerCase();
+      result = sales.filter(s => {
+        const studentName = s.student?.name?.toLowerCase() || '';
+        const parentName  = s.parent?.name?.toLowerCase()  || '';
+        const cashierName = s.cashier?.name?.toLowerCase() || '';
+        return studentName.includes(q) || parentName.includes(q) || cashierName.includes(q);
+      });
+    }
+
+    res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error al obtener ventas' });
   }
 });
