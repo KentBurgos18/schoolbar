@@ -126,8 +126,8 @@ const PasswordReset = sequelize.define('PasswordReset', {
 Student.belongsTo(User, { foreignKey: 'parent_id', as: 'parent' });
 User.hasMany(Student,   { foreignKey: 'parent_id', as: 'students' });
 Sale.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
-Sale.belongsTo(User,    { foreignKey: 'cashier_id', as: 'cashier' });
-Sale.belongsTo(User,    { foreignKey: 'parent_id',  as: 'parent'  });
+Sale.belongsTo(User,    { foreignKey: 'cashier_id', as: 'cashier', constraints: false });
+Sale.belongsTo(User,    { foreignKey: 'parent_id',  as: 'parent',  constraints: false });
 Sale.hasMany(SaleItem,  { foreignKey: 'sale_id', as: 'items' });
 SaleItem.belongsTo(Product,     { foreignKey: 'product_id', as: 'product' });
 Recharge.belongsTo(BankAccount, { foreignKey: 'bank_account_id', as: 'bankAccount' });
