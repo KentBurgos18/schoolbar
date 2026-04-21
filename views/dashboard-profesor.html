@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SchoolBar — Profesor</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Glory's Snack" />
+  <link rel="apple-touch-icon" href="/logo.jpeg" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    @media (max-width: 768px) {
+      #debtAlert { flex-direction: column !important; align-items: flex-start !important; }
+      #debtAlert button { width: 100%; }
+      table { font-size: 12px; }
+      table th, table td { padding: 8px 8px !important; white-space: nowrap; }
+      .cons-filter-btn { width: 100%; }
+      #sec-recharge > div { max-width: 100% !important; }
+    }
+    @media (max-width: 480px) {
+      .stat-value { font-size: 22px !important; }
+      .card-header { flex-wrap: wrap; gap: 8px; }
+    }
+
+    /* QR Card */
+    .qr-card-body { text-align: center; padding: 24px; }
+    .qr-card-body img { width: 220px; height: 220px; border-radius: 14px; border: 2px solid var(--gray-200); display: block; margin: 0 auto 16px; }
+
+    /* Teacher banner color */
+    .teacher-accent { background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1.5px solid #fb923c; border-radius: 10px; padding: 12px 16px; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand" style="display:flex;align-items:center;gap:10px">
+      <img src="/logo.jpeg" alt="Glory's Snack" style="width:42px;height:42px;object-fit:contain;border-radius:8px;flex-shrink:0" />
+      <div>
+        <h1 style="font-size:15px">Glory's Snack</h1>
+        <span>Portal Profesor</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Mi cuenta</div>
+      <div class="nav-item active" onclick="showSection('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Inicio
+      </div>
+      <div class="nav-item" onclick="showSection('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Mi historial
+      </div>
+      <div class="nav-section">Pagos</div>
+      <div class="nav-item" onclick="showSection('recharge')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Recargar saldo
+      </div>
+      <div class="nav-item" onclick="showSection('myRecharges')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Mis recargas
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">P</div>
+        <div>
+          <div class="user-name" id="sidebarName">Profesor</div>
+          <div class="user-role">Profesor / Profesora</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center">
+        <button class="btn-hamburger" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title" id="topbarTitle">Inicio</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <section id="sec-home">
+
+        <!-- Stats -->
+        <div class="stats-grid" style="margin-bottom:24px">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeBalance" style="color:var(--success)">$0.00</div>
+              <div class="stat-label">Mi saldo</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fef2f2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeDebt" style="color:var(--danger)">$0.00</div>
+              <div class="stat-label">Mi deuda</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fffbeb">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeSalesCount">0</div>
+              <div class="stat-label">Compras este mes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mi QR -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>📱 Mi código QR</h3></div>
+          <div class="qr-card-body">
+            <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px">El cajero escanea este código para identificarte como consumidor del bar.</p>
+            <img id="homeQRImg" src="" alt="QR Profesor" />
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="downloadQR()">⬇ Descargar QR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerta de deuda -->
+        <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <strong style="color:var(--danger)">Tienes una deuda pendiente</strong>
+            <p style="font-size:13px;color:var(--danger);margin-top:2px">Tu saldo fue insuficiente en compras recientes. Por favor realiza el pago.</p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="showSection('recharge')">Pagar ahora</button>
+        </div>
+
+        <!-- Últimas compras -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Últimas compras</h3>
+            <button class="btn btn-ghost btn-sm" onclick="showSection('history')">Ver todo</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Productos</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <tbody id="homeSalesTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MI HISTORIAL -->
+      <section id="sec-history" style="display:none">
+        <div class="card" style="margin-bottom:16px;overflow:hidden">
+          <div class="card-body cons-filter">
+            <div style="display:flex;gap:12px;width:100%">
+              <label class="form-label" style="flex:1;margin:0">Desde</label>
+              <label class="form-label" style="flex:1;margin:0">Hasta</label>
+            </div>
+            <div style="display:flex;gap:12px;width:100%">
+              <input type="date" id="histFrom" class="form-control" style="flex:1;min-width:0;height:42px;padding:10px 12px" />
+              <input type="date" id="histTo"   class="form-control" style="flex:1;min-width:0;height:42px;padding:10px 12px" />
+            </div>
+            <button class="btn btn-primary cons-filter-btn" onclick="loadHistory()">Filtrar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Historial de consumos</h3><span id="histTotalLabel" style="font-size:13px;color:var(--gray-500)"></span></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Productos</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <tbody id="histTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Usa los filtros para buscar</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECARGAR SALDO -->
+      <section id="sec-recharge" style="display:none">
+        <div style="max-width:520px">
+          <!-- Mi saldo actual -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-body teacher-accent">
+              <div style="font-size:13px;font-weight:600;color:#9a3412;margin-bottom:6px">Saldo actual</div>
+              <div id="rechargeCurBalance" style="font-size:22px;font-weight:800;color:#9a3412">$0.00</div>
+              <div id="rechargeCurDebt" style="font-size:13px;color:var(--danger);margin-top:2px;display:none"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Solicitar recarga</h3></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Monto a recargar ($)</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="color:var(--gray-500);font-size:16px;font-weight:600">$</span>
+                  <input type="number" id="rAmount" class="form-control" min="0.50" step="0.50" placeholder="0.00" oninput="validateTeacherRecharge()" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Método de pago</label>
+                <select id="rMethod" class="form-control form-select" onchange="toggleTransferFields();validateTeacherRecharge()">
+                  <option value="CASH">Efectivo</option>
+                  <option value="TRANSFER">Transferencia bancaria</option>
+                </select>
+              </div>
+
+              <div id="transferFields" style="display:none">
+                <div class="form-group">
+                  <label class="form-label">Banco de origen <span style="color:var(--danger)">*</span></label>
+                  <input type="text" id="rFromBank" class="form-control" placeholder="Ej: Banco Pichincha, Banco Guayaquil..." oninput="validateTeacherRecharge()" />
+                  <div class="form-hint">Banco desde el que realizas la transferencia</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cuenta destino</label>
+                  <select id="rBankAccount" class="form-control form-select" onchange="showBankDetail();validateTeacherRecharge()">
+                    <option value="">Cargando cuentas...</option>
+                  </select>
+                </div>
+                <div id="bankDetail" style="display:none;background:var(--primary-light);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13.5px">
+                  <strong id="bdBank"></strong>
+                  <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Titular</span><span id="bdOwner" style="font-weight:600"></span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Cédula</span>
+                      <span style="display:flex;align-items:center;gap:6px">
+                        <code id="bdCedula"></code>
+                        <button id="btnCopyCedula" onclick="copyBankField('bdCedula','btnCopyCedula')" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">N° cuenta</span>
+                      <span style="display:flex;align-items:center;gap:6px">
+                        <code id="bdNumber"></code>
+                        <button id="btnCopyNumber" onclick="copyBankField('bdNumber','btnCopyNumber')" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:var(--gray-600)">Tipo</span><span id="bdType" style="font-weight:600"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Número de referencia / comprobante</label>
+                  <input type="text" id="rRef" class="form-control" placeholder="Ej: 000123456" oninput="validateTeacherRecharge()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Imagen del comprobante <span style="color:var(--danger)">*</span></label>
+                  <label id="receiptUploadLabel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--gray-300);border-radius:10px;padding:20px;cursor:pointer;background:var(--gray-50)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="color:var(--gray-400)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span id="receiptUploadText" style="font-size:13px;color:var(--gray-500)">Toca para subir la imagen</span>
+                    <input type="file" id="rReceiptFile" accept="image/*" style="display:none" onchange="handleReceiptUpload(event)" />
+                  </label>
+                  <div id="receiptPreviewWrap" style="display:none;margin-top:10px;position:relative">
+                    <img id="receiptPreviewImg" style="width:100%;border-radius:8px;border:1px solid var(--gray-200);max-height:200px;object-fit:contain" />
+                    <button onclick="clearReceipt()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--warning-light);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--warning);margin-bottom:16px">
+                Tu solicitud quedará pendiente hasta que el administrador la apruebe.
+              </div>
+
+              <button class="btn btn-primary" style="width:100%" id="btnSubmitRecharge" onclick="submitRecharge()" disabled>Enviar solicitud</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MIS RECARGAS -->
+      <section id="sec-myRecharges" style="display:none">
+        <div class="card">
+          <div class="card-header"><h3>Historial de recargas</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Monto</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Estado</th><th>Fecha</th></tr></thead>
+                <tbody id="myRechargesTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// Evitar flash de sidebar al cargar
+requestAnimationFrame(function() { setTimeout(function() { document.body.classList.add('sidebar-ready'); }, 50); });
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+var API   = '/api';
+var token = localStorage.getItem('sbToken');
+var user  = JSON.parse(localStorage.getItem('sbUser') || '{}');
+var bankAccounts = [];
+var meData = null;
+
+if (!token || user.role !== 'PARENT') { window.location.href = '/'; }
+
+document.getElementById('sidebarAvatar').textContent = (user.name || 'P')[0].toUpperCase();
+document.getElementById('sidebarName').textContent = user.name || 'Profesor';
+
+function authHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+async function api(path, opts) {
+  var res = await fetch(API + path, { headers: authHeaders(), ...opts });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+var sections = ['home','history','recharge','myRecharges'];
+var titles   = { home:'Inicio', history:'Mi historial', recharge:'Recargar saldo', myRecharges:'Mis recargas' };
+
+function showSection(id) {
+  sections.forEach(s => document.getElementById('sec-'+s).style.display = s===id?'':'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var el = document.querySelector('.nav-item[onclick="showSection(\''+id+'\')"]');
+  if (el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = titles[id] || id;
+  closeSidebar();
+  if (id==='history')    loadHistory();
+  if (id==='recharge')   loadRechargeSection();
+  if (id==='myRecharges') loadMyRecharges();
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function toast(msg, type) {
+  var el = document.createElement('div'); el.className='toast '+(type||''); el.textContent=msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+function logout() { localStorage.clear(); window.location.href='/'; }
+
+// ── Home ──
+async function loadHome() {
+  meData = await api('/parents/me');
+  if (!meData) return;
+
+  // Verificar que es profesor; si tiene hijos, redirigir al dashboard de padre
+  if (!meData.is_teacher) { window.location.href = '/padres'; return; }
+
+  document.getElementById('homeBalance').textContent = '$' + parseFloat(meData.balance||0).toFixed(2);
+  document.getElementById('homeDebt').textContent    = '$' + parseFloat(meData.debt||0).toFixed(2);
+
+  var debtAlert = document.getElementById('debtAlert');
+  debtAlert.style.display = parseFloat(meData.debt||0) > 0 ? 'flex' : 'none';
+
+  // QR
+  if (meData.qr_image) {
+    document.getElementById('homeQRImg').src = meData.qr_image;
+  }
+
+  // Últimas compras del mes
+  var sales = await api('/teachers/me/history');
+  var now = new Date();
+  var thisMonth = (sales||[]).filter(s => {
+    var d = new Date(s.createdAt);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  });
+  document.getElementById('homeSalesCount').textContent = thisMonth.length;
+  renderSalesTable((sales||[]).slice(0,5), 'homeSalesTbody');
+}
+
+function renderSalesTable(sales, tbodyId) {
+  var tb = document.getElementById(tbodyId);
+  if (!sales.length) { tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Sin compras</td></tr>'; return; }
+  tb.innerHTML = sales.map(s => `
+    <tr>
+      <td style="font-size:12px;color:var(--gray-600)">${(s.items||[]).map(i=>i.name+' x'+i.quantity).join(', ')}</td>
+      <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
+      <td style="color:var(--success)">$${parseFloat(s.paid_from_balance||0).toFixed(2)}</td>
+      <td style="color:${parseFloat(s.added_to_debt||0)>0?'var(--danger)':'var(--gray-400)'}">$${parseFloat(s.added_to_debt||0).toFixed(2)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
+    </tr>`).join('');
+}
+
+function downloadQR() {
+  var img = document.getElementById('homeQRImg');
+  var a = document.createElement('a'); a.href=img.src; a.download='qr-profesor.png'; a.click();
+}
+
+// ── History ──
+async function loadHistory() {
+  var qs = new URLSearchParams();
+  var from = document.getElementById('histFrom').value;
+  var to   = document.getElementById('histTo').value;
+  if (from) qs.set('from', from);
+  if (to)   qs.set('to', to);
+  var data = await api('/teachers/me/history?' + qs.toString());
+  renderSalesTable(data||[], 'histTbody');
+  var total = (data||[]).reduce((a,s)=>a+parseFloat(s.total),0);
+  document.getElementById('histTotalLabel').textContent = data&&data.length ? data.length+' compras | Total: $'+total.toFixed(2) : '';
+}
+
+// ── Recharge ──
+async function loadRechargeSection() {
+  document.getElementById('rMethod').value = 'CASH';
+  document.getElementById('transferFields').style.display = 'none';
+  document.getElementById('rRef').value = '';
+  document.getElementById('rAmount').value = '';
+  document.getElementById('bankDetail').style.display = 'none';
+  clearReceipt();
+  validateTeacherRecharge();
+
+  var me = await api('/parents/me');
+  meData = me;
+
+  if (me) {
+    document.getElementById('rechargeCurBalance').textContent = '$' + parseFloat(me.balance||0).toFixed(2);
+    var debtEl = document.getElementById('rechargeCurDebt');
+    if (parseFloat(me.debt||0) > 0) {
+      debtEl.textContent = 'Deuda: $' + parseFloat(me.debt).toFixed(2);
+      debtEl.style.display = '';
+    } else {
+      debtEl.style.display = 'none';
+    }
+  }
+
+  var banks = await api('/bank-accounts');
+  bankAccounts = (banks||[]).filter(b => b.active);
+  var sel = document.getElementById('rBankAccount');
+  sel.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
+  bankAccounts.forEach(b => { var o=document.createElement('option'); o.value=b.id; o.textContent=b.bank+' — '+b.type+' '+b.number; sel.appendChild(o); });
+}
+
+function validateTeacherRecharge() {
+  var method  = document.getElementById('rMethod').value;
+  var amount  = parseFloat(document.getElementById('rAmount')?.value) || 0;
+  var account = document.getElementById('rBankAccount').value;
+  var ref     = document.getElementById('rRef').value.trim();
+  var fromBnk = document.getElementById('rFromBank')?.value.trim() || '';
+  var ok = amount >= 0.50;
+  if (method === 'TRANSFER') ok = ok && !!account && !!ref && !!fromBnk && !!receiptBase64;
+  document.getElementById('btnSubmitRecharge').disabled = !ok;
+}
+
+function toggleTransferFields() {
+  var show = document.getElementById('rMethod').value === 'TRANSFER';
+  document.getElementById('transferFields').style.display = show ? '' : 'none';
+}
+
+var receiptBase64 = null;
+
+function handleReceiptUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var maxW=1200, maxH=900, w=img.width, h=img.height;
+      if (w>maxW) { h=Math.round(h*maxW/w); w=maxW; }
+      if (h>maxH) { w=Math.round(w*maxH/h); h=maxH; }
+      var canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      receiptBase64 = canvas.toDataURL('image/jpeg',0.82);
+      document.getElementById('receiptPreviewImg').src = receiptBase64;
+      document.getElementById('receiptPreviewWrap').style.display = '';
+      document.getElementById('receiptUploadText').textContent = file.name;
+      validateTeacherRecharge();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReceipt() {
+  receiptBase64 = null;
+  var fi = document.getElementById('rReceiptFile');
+  if (fi) fi.value='';
+  var pw = document.getElementById('receiptPreviewWrap');
+  if (pw) pw.style.display='none';
+  var ut = document.getElementById('receiptUploadText');
+  if (ut) ut.textContent='Toca para subir la imagen';
+}
+
+function showBankDetail() {
+  var id = parseInt(document.getElementById('rBankAccount').value);
+  var bank = bankAccounts.find(b => b.id===id);
+  var div = document.getElementById('bankDetail');
+  if (!bank) { div.style.display='none'; return; }
+  div.style.display='';
+  document.getElementById('bdBank').textContent   = bank.bank;
+  document.getElementById('bdOwner').textContent  = bank.owner;
+  document.getElementById('bdCedula').textContent = bank.cedula || '—';
+  document.getElementById('bdNumber').textContent = bank.number;
+  document.getElementById('bdType').textContent   = bank.type;
+  document.getElementById('btnCopyCedula').style.display = bank.cedula ? '' : 'none';
+}
+
+function copyBankField(elementId, btnId) {
+  var text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById(btnId);
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(function() { btn.innerHTML=orig; }, 1500);
+  });
+}
+
+async function submitRecharge() {
+  var method = document.getElementById('rMethod').value;
+  var amount = parseFloat(document.getElementById('rAmount').value) || 0;
+  if (amount < 0.50) { toast('El monto mínimo es $0.50', 'error'); return; }
+  if (!meData) { toast('Error al cargar datos. Recarga la página.', 'error'); return; }
+
+  var allocations = [{ user_id: meData.id, amount }];
+
+  var body = {
+    amount,
+    method,
+    allocations,
+    bank_account_id: method==='TRANSFER' ? parseInt(document.getElementById('rBankAccount').value) : null,
+    receipt_ref:     method==='TRANSFER' ? document.getElementById('rRef').value.trim() : null,
+    from_bank:       method==='TRANSFER' ? document.getElementById('rFromBank').value.trim() : null,
+    receipt_image:   method==='TRANSFER' ? receiptBase64 : null
+  };
+
+  var res, data;
+  try {
+    res  = await fetch(API+'/recharges', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    data = await res.json();
+  } catch(e) {
+    toast('Error de conexión. Intenta de nuevo.', 'error'); return;
+  }
+  if (!res.ok) { toast(data.error || 'Error al enviar la solicitud', 'error'); return; }
+  toast('Solicitud enviada por $'+amount.toFixed(2)+'. Pendiente de aprobación.', 'success');
+  document.getElementById('rAmount').value='';
+  document.getElementById('rRef').value='';
+  if (document.getElementById('rFromBank')) document.getElementById('rFromBank').value='';
+  clearReceipt();
+  validateTeacherRecharge();
+}
+
+// ── My Recharges ──
+async function loadMyRecharges() {
+  var data = await api('/recharges');
+  var tb = document.getElementById('myRechargesTbody');
+  if (!data||!data.length) { tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
+  tb.innerHTML = data.map(r => `
+    <tr>
+      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
+      <td>${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
+      <td>${r.bankAccount?r.bankAccount.bank:'—'}</td>
+      <td>${r.receipt_ref||'—'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
+    </tr>`).join('');
+}
+
+function statusBadge(s) {
+  var map = { PENDING:'badge-warning', APPROVED:'badge-success', REJECTED:'badge-danger' };
+  var lbl = { PENDING:'Pendiente', APPROVED:'Aprobada', REJECTED:'Rechazada' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${lbl[s]||s}</span>`;
+}
+
+loadHome();
+</script>
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
+<script src="/js/pwa-install.js"></script>
+</body>
+</html>

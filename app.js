@@ -21,6 +21,7 @@ app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'view
 app.get('/admin',          (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-admin.html')));
 app.get('/cajero',         (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-cajero.html')));
 app.get('/padres',         (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-padre.html')));
+app.get('/profesor',       (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard-profesor.html')));
 
 // ── API Routes ──
 app.use('/api/auth',          require('./routes/auth'));
@@ -31,6 +32,7 @@ app.use('/api/sales',         require('./routes/sales'));
 app.use('/api/recharges',     require('./routes/recharges'));
 app.use('/api/bank-accounts', require('./routes/bankAccounts'));
 app.use('/api/settings',      require('./routes/settings'));
+app.use('/api/teachers',      require('./routes/teachers'));
 app.use('/api/events',        require('./routes/events'));
 
 // ── Init DB + seed ──

@@ -110,6 +110,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Padres
       </div>
+      <div class="nav-item" onclick="showSection('teachers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M12 14l2 2 4-4"/></svg>
+        Profesores
+      </div>
       <div class="nav-item" onclick="showSection('cashiers')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Cajeros
@@ -211,7 +215,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table id="overviewRechargesTable">
-                <thead><tr><th>Padre</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Ref.</th><th class="hm">Fecha</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Responsable</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Ref.</th><th class="hm">Fecha</th><th>Acciones</th></tr></thead>
                 <tbody id="overviewRechargesTbody"><tr><td colspan="7" class="empty-state"><p>Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -280,6 +284,24 @@
         </div>
       </section>
 
+      <!-- PROFESORES -->
+      <section id="sec-teachers" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <h3>Profesores</h3>
+            <button class="btn btn-primary btn-sm" onclick="openNewTeacher()">+ Nuevo profesor</button>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th class="hm">Email</th><th>Saldo</th><th>Deuda</th><th class="hm">Hijos</th><th>Acciones</th></tr></thead>
+                <tbody id="teachersTbody"><tr><td colspan="6"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ESTUDIANTES -->
       <section id="sec-students" style="display:none">
         <div class="card">
@@ -325,12 +347,12 @@
         <div class="card">
           <div class="card-header">
             <h3>Todas las recargas</h3>
-            <button class="btn btn-primary btn-sm" onclick="openRechargeModal()">+ Recargar a padre</button>
+            <button class="btn btn-primary btn-sm" onclick="openRechargeModal()">+ Recargar a responsable</button>
           </div>
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Padre</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th class="hm">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
+                <thead><tr><th>Responsable</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th class="hm">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
                 <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -618,13 +640,13 @@
 <div class="modal-overlay" id="modalRecharge">
   <div class="modal">
     <div class="modal-header">
-      <h3>Recargar saldo a padre</h3>
+      <h3>Recargar saldo a responsable</h3>
       <button class="btn-close" onclick="closeModal('modalRecharge')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Padre</label>
-        <select id="rcParent" class="form-control form-select" onchange="loadRcStudents()"><option value="">Seleccionar padre...</option></select>
+        <label class="form-label">Responsable</label>
+        <select id="rcParent" class="form-control form-select" onchange="loadRcStudents()"><option value="">Seleccionar responsable...</option></select>
       </div>
       <!-- Allocations por hijo -->
       <div id="rcAllocationsGroup" style="display:none">
@@ -720,6 +742,33 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalCashier')">Cancelar</button>
       <button class="btn btn-primary" id="btnSaveCashier" onclick="saveCashier()">Crear cajero</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Profesor (crear/editar) ── -->
+<div class="modal-overlay" id="modalTeacher">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTeacherTitle">Nuevo profesor</h3>
+      <button class="btn-close" onclick="closeModal('modalTeacher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tId" />
+      <div class="form-group"><label class="form-label">Nombre completo</label><input type="text" id="tName" class="form-control" placeholder="Ana García" /></div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="tEmail" class="form-control" placeholder="profesor@escuela.com" /></div>
+      <div class="form-group" id="tPassGroup"><label class="form-label">Contraseña</label><input type="password" id="tPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
+      <div id="tChangePassSection" style="display:none;margin-top:8px">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="toggleTeacherChangePass()" id="btnToggleTeacherPass">🔑 Cambiar contraseña</button>
+        <div id="tChangePassFields" style="display:none;margin-top:10px">
+          <div class="form-group"><label class="form-label">Nueva contraseña</label><input type="password" id="tNewPass" class="form-control" placeholder="mínimo 6 caracteres" /></div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="changeTeacherPassword()">Actualizar contraseña</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalTeacher')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveTeacher" onclick="saveTeacher()">Crear profesor</button>
     </div>
   </div>
 </div>
@@ -985,8 +1034,8 @@ async function api(path, opts) {
 }
 
 // ── Navigation ──
-var sections = ['overview','admins','parents','cashiers','students','products','recharges','bankAccounts','sales','email'];
-var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Padres de familia', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', sales:'Ventas', email:'Correo y notificaciones' };
+var sections = ['overview','admins','parents','teachers','cashiers','students','products','recharges','bankAccounts','sales','email'];
+var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Padres de familia', teachers:'Profesores', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', sales:'Ventas', email:'Correo y notificaciones' };
 
 function showSection(id) {
   if (!sections.includes(id)) id = 'overview';
@@ -1002,6 +1051,7 @@ function showSection(id) {
   if (id === 'admins')       loadAdmins();
   if (id === 'cashiers')     loadCashiers();
   if (id === 'parents')      loadParents();
+  if (id === 'teachers')     loadTeachers();
   if (id === 'students')     loadStudents();
   if (id === 'products')     loadProducts();
   if (id === 'recharges')    loadRecharges();
@@ -1394,6 +1444,101 @@ async function deleteParent(id) {
   loadParents();
 }
 
+// ── Teachers ──
+async function loadTeachers() {
+  var data = await api('/teachers');
+  var tb = document.getElementById('teachersTbody');
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin profesores registrados</td></tr>'; return; }
+  tb.innerHTML = data.map(t => `
+    <tr>
+      <td><strong>${t.name}</strong></td>
+      <td class="hm">${t.email}</td>
+      <td><span class="balance-pill">$${parseFloat(t.balance||0).toFixed(2)}</span></td>
+      <td>${parseFloat(t.debt||0)>0?`<span class="debt-pill">$${parseFloat(t.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
+      <td class="hm">${(t.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditTeacher(${t.id},'${t.name.replace(/'/g,"\\'")}','${t.email}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTeacher(${t.id})">Eliminar</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openNewTeacher() {
+  document.getElementById('tId').value    = '';
+  document.getElementById('tName').value  = '';
+  document.getElementById('tEmail').value = '';
+  document.getElementById('tPass').value  = '';
+  document.getElementById('tPassGroup').style.display          = '';
+  document.getElementById('tChangePassSection').style.display  = 'none';
+  document.getElementById('tChangePassFields').style.display   = 'none';
+  document.getElementById('modalTeacherTitle').textContent = 'Nuevo profesor';
+  document.getElementById('btnSaveTeacher').textContent    = 'Crear profesor';
+  openModal('modalTeacher');
+}
+
+function openEditTeacher(id, name, email) {
+  document.getElementById('tId').value    = id;
+  document.getElementById('tName').value  = name;
+  document.getElementById('tEmail').value = email;
+  document.getElementById('tNewPass').value = '';
+  document.getElementById('tPassGroup').style.display          = 'none';
+  document.getElementById('tChangePassSection').style.display  = 'block';
+  document.getElementById('tChangePassFields').style.display   = 'none';
+  document.getElementById('modalTeacherTitle').textContent = 'Editar profesor';
+  document.getElementById('btnSaveTeacher').textContent    = 'Guardar cambios';
+  openModal('modalTeacher');
+}
+
+function toggleTeacherChangePass() {
+  var fields = document.getElementById('tChangePassFields');
+  var hidden = fields.style.display === 'none';
+  fields.style.display = hidden ? 'block' : 'none';
+  if (hidden) document.getElementById('tNewPass').focus();
+}
+
+async function changeTeacherPassword() {
+  var id   = document.getElementById('tId').value;
+  var pass = document.getElementById('tNewPass').value;
+  if (!pass) { toast('Ingresa la nueva contraseña', 'error'); return; }
+  if (pass.length < 6) { toast('Mínimo 6 caracteres', 'error'); return; }
+  var res  = await fetch(API + '/teachers/' + id + '/password', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ password: pass }) });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error, 'error'); return; }
+  toast(data.message, 'success');
+  document.getElementById('tNewPass').value = '';
+  document.getElementById('tChangePassFields').style.display = 'none';
+}
+
+async function saveTeacher() {
+  var id = document.getElementById('tId').value;
+  if (id) {
+    var body = { name: document.getElementById('tName').value, email: document.getElementById('tEmail').value };
+    var res = await fetch(API + '/teachers/' + id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Profesor actualizado', 'success');
+  } else {
+    var body = { name: document.getElementById('tName').value, email: document.getElementById('tEmail').value, password: document.getElementById('tPass').value };
+    if (!body.name || !body.email || !body.password) { toast('Todos los campos son obligatorios', 'error'); return; }
+    var res = await fetch(API + '/teachers', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast('Profesor creado', 'success');
+  }
+  closeModal('modalTeacher');
+  loadTeachers();
+}
+
+async function deleteTeacher(id) {
+  if (!confirm('¿Eliminar este profesor? Se perderán sus datos de acceso.')) return;
+  var res = await fetch(API + '/teachers/' + id, { method:'DELETE', headers: authHeaders() });
+  if (!res.ok) { toast('Error al eliminar profesor', 'error'); return; }
+  toast('Profesor eliminado', 'warning');
+  loadTeachers();
+}
+
 // ── Students ──
 async function fillParentSelect() {
   var parents = await api('/parents');
@@ -1709,12 +1854,19 @@ function deleteProductPermanent(id, name) {
 }
 
 // ── Recharges ──
+var _rcAllParents = [];
+
 async function openRechargeModal() {
-  // Cargar padres
-  var parents = await api('/parents');
+  // Cargar padres (incluye profesores)
+  _rcAllParents = await api('/parents') || [];
   var sel = document.getElementById('rcParent');
-  sel.innerHTML = '<option value="">Seleccionar padre...</option>';
-  (parents||[]).forEach(p => { var o = document.createElement('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); });
+  sel.innerHTML = '<option value="">Seleccionar responsable...</option>';
+  _rcAllParents.forEach(p => {
+    var o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.name + (p.is_teacher ? ' (Profesor)' : '');
+    sel.appendChild(o);
+  });
 
   // Cargar cuentas bancarias
   var accounts = await api('/bank-accounts');
@@ -1731,23 +1883,39 @@ async function openRechargeModal() {
 }
 
 var rcStudents = [];
+var _rcSelectedParent = null;
 
 async function loadRcStudents() {
   var parentId = document.getElementById('rcParent').value;
   var group = document.getElementById('rcAllocationsGroup');
   var container = document.getElementById('rcAllocationsContainer');
-  if (!parentId) { group.style.display = 'none'; rcStudents = []; return; }
+  if (!parentId) { group.style.display = 'none'; rcStudents = []; _rcSelectedParent = null; return; }
+
+  _rcSelectedParent = _rcAllParents.find(p => String(p.id) === String(parentId)) || null;
 
   var allStudents = await api('/students');
   rcStudents = (allStudents||[]).filter(s => String(s.parent_id) === String(parentId) && s.active !== false);
 
-  if (!rcStudents.length) {
-    group.style.display = '';
-    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">Este padre no tiene hijos registrados.</div>';
-    return;
+  var rows = [];
+
+  // Si es profesor, mostrar fila para recargar su propio saldo
+  if (_rcSelectedParent && _rcSelectedParent.is_teacher) {
+    rows.push(`
+      <div style="display:flex;align-items:center;gap:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px">
+        <label style="flex:1;font-size:13.5px;font-weight:600;margin:0;color:#9a3412">
+          🎓 ${_rcSelectedParent.name} (saldo propio)
+          <span style="font-size:11px;color:var(--gray-400);font-weight:400"> · Saldo: $${parseFloat(_rcSelectedParent.balance||0).toFixed(2)}${parseFloat(_rcSelectedParent.debt||0)>0?' · Deuda: $'+parseFloat(_rcSelectedParent.debt).toFixed(2):''}</span>
+        </label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="color:var(--gray-500);font-size:13px">$</span>
+          <input type="number" id="rcAlloc_teacher" class="form-control" style="width:100px;text-align:right"
+            min="0" step="0.50" placeholder="0.00" value="0" oninput="updateRcAllocTotal()" />
+        </div>
+      </div>`);
   }
 
-  container.innerHTML = rcStudents.map(s => `
+  // Filas de hijos
+  rows = rows.concat(rcStudents.map(s => `
     <div style="display:flex;align-items:center;gap:10px">
       <label style="flex:1;font-size:13.5px;font-weight:600;margin:0">
         ${s.name}
@@ -1758,13 +1926,24 @@ async function loadRcStudents() {
         <input type="number" id="rcAlloc_${s.id}" class="form-control" style="width:100px;text-align:right"
           min="0" step="0.50" placeholder="0.00" value="0" oninput="updateRcAllocTotal()" />
       </div>
-    </div>`).join('');
+    </div>`));
+
+  if (!rows.length) {
+    group.style.display = '';
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">Este responsable no tiene hijos registrados.</div>';
+    return;
+  }
+
+  container.innerHTML = rows.join('');
   group.style.display = '';
   updateRcAllocTotal();
 }
 
 function updateRcAllocTotal() {
   var total = rcStudents.reduce((s, st) => s + (parseFloat(document.getElementById('rcAlloc_'+st.id)?.value)||0), 0);
+  if (_rcSelectedParent && _rcSelectedParent.is_teacher) {
+    total += parseFloat(document.getElementById('rcAlloc_teacher')?.value) || 0;
+  }
   document.getElementById('rcAllocTotal').textContent = '$' + total.toFixed(2);
 }
 
@@ -1775,14 +1954,21 @@ function toggleRcTransfer() {
 
 async function applyRecharge() {
   var parentId = document.getElementById('rcParent').value;
-  if (!parentId) { toast('Selecciona un padre', 'error'); return; }
+  if (!parentId) { toast('Selecciona un responsable', 'error'); return; }
 
   var allocations = rcStudents.map(s => ({
     student_id: s.id,
     amount: parseFloat(document.getElementById('rcAlloc_'+s.id)?.value) || 0
-  })).filter(a => a.amount > 0);
+  }));
 
-  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un hijo', 'error'); return; }
+  // Añadir asignación del profesor si aplica
+  if (_rcSelectedParent && _rcSelectedParent.is_teacher) {
+    var teacherAmt = parseFloat(document.getElementById('rcAlloc_teacher')?.value) || 0;
+    if (teacherAmt > 0) allocations.push({ user_id: _rcSelectedParent.id, amount: teacherAmt });
+  }
+
+  allocations = allocations.filter(a => a.amount > 0);
+  if (!allocations.length) { toast('Asigna un monto mayor a $0 en al menos un ítem', 'error'); return; }
 
   var body = {
     parent_id: parentId,
@@ -1805,7 +1991,10 @@ async function loadRecharges() {
   var tb = document.getElementById('rechargesTbody');
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
   tb.innerHTML = data.map(r => {
-    var allocs = (r.allocations||[]).map(a => `${a.student?a.student.name:'?'}: $${parseFloat(a.amount).toFixed(2)}`).join(' · ');
+    var allocs = (r.allocations||[]).map(a => {
+      var name = a.teacher ? (a.teacher.name + ' (Profesor)') : (a.student ? a.student.name : '?');
+      return `${name}: $${parseFloat(a.amount).toFixed(2)}`;
+    }).join(' · ');
     return `
     <tr>
       <td>${r.parent ? r.parent.name : r.parent_id}</td>

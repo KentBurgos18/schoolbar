@@ -141,7 +141,20 @@
         }
         localStorage.setItem('sbToken', data.token);
         localStorage.setItem('sbUser', JSON.stringify(data.user));
-        const redirects = { ADMIN: '/admin', PARENT: '/padres', CASHIER: '/cajero' };
+        if (data.user.role === 'PARENT') {
+          // Si es profesor, verificar si tiene hijos para decidir dashboard
+          try {
+            const meRes = await fetch('/api/parents/me', { headers: { 'Authorization': 'Bearer ' + data.token } });
+            const me = await meRes.json();
+            if (me.is_teacher && (!me.students || me.students.length === 0)) {
+              window.location.href = '/profesor';
+              return;
+            }
+          } catch {}
+          window.location.href = '/padres';
+          return;
+        }
+        const redirects = { ADMIN: '/admin', CASHIER: '/cajero' };
         window.location.href = redirects[data.user.role] || '/';
       } catch {
         errEl.textContent = 'No se pudo conectar con el servidor';
