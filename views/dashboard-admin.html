@@ -597,16 +597,18 @@
         <!-- Panel de filtros -->
         <div class="card" style="margin-bottom:16px">
           <div class="card-body" style="padding:20px">
-            <div class="sales-filter-grid-4">
-              <div>
-                <label class="form-label" style="font-size:12px;margin-bottom:4px">Desde</label>
-                <input type="date" id="salesFrom" class="form-control" style="height:40px;padding:8px 12px" />
-              </div>
-              <div>
-                <label class="form-label" style="font-size:12px;margin-bottom:4px">Hasta</label>
-                <input type="date" id="salesTo" class="form-control" style="height:40px;padding:8px 12px" />
-              </div>
-              <div>
+            <!-- Fila 1: fechas -->
+            <div style="display:flex;gap:12px;margin-bottom:4px">
+              <label class="form-label" style="flex:1;min-width:0;font-size:12px;margin:0">Desde</label>
+              <label class="form-label" style="flex:1;min-width:0;font-size:12px;margin:0">Hasta</label>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <input type="date" id="salesFrom" class="form-control" style="flex:1;width:45px;min-width:0;height:40px;padding:8px 10px" />
+              <input type="date" id="salesTo"   class="form-control" style="flex:1;width:45px;min-width:0;height:40px;padding:8px 10px" />
+            </div>
+            <!-- Fila 2: tipo + método -->
+            <div class="sales-filter-grid-2" style="margin-bottom:12px">
+              <div style="min-width:0">
                 <label class="form-label" style="font-size:12px;margin-bottom:4px">Tipo de cliente</label>
                 <select id="salesCustomerType" class="form-control form-select" style="height:40px;padding:8px 12px">
                   <option value="">Todos</option>
@@ -615,7 +617,7 @@
                   <option value="FINAL_CONSUMER">Consumidor final</option>
                 </select>
               </div>
-              <div>
+              <div style="min-width:0">
                 <label class="form-label" style="font-size:12px;margin-bottom:4px">Método de pago</label>
                 <select id="salesPaymentMethod" class="form-control form-select" style="height:40px;padding:8px 12px">
                   <option value="">Todos</option>
@@ -624,18 +626,20 @@
                 </select>
               </div>
             </div>
-            <div class="sales-filter-grid-2">
-              <div>
+            <!-- Fila 3: búsqueda + cajero -->
+            <div class="sales-filter-grid-2" style="margin-bottom:16px">
+              <div style="min-width:0">
                 <label class="form-label" style="font-size:12px;margin-bottom:4px">Buscar persona</label>
-                <input type="text" id="salesSearch" class="form-control" placeholder="Nombre de estudiante, responsable o cajero..." style="height:40px" />
+                <input type="text" id="salesSearch" class="form-control" placeholder="Estudiante, responsable o cajero..." style="height:40px" />
               </div>
-              <div>
+              <div style="min-width:0">
                 <label class="form-label" style="font-size:12px;margin-bottom:4px">Cajero</label>
                 <select id="salesCashier" class="form-control form-select" style="height:40px;padding:8px 12px">
                   <option value="">Todos los cajeros</option>
                 </select>
               </div>
             </div>
+            <!-- Botones -->
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-primary" onclick="loadSales()" style="height:40px;padding:0 20px">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;vertical-align:-2px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Filtrar
