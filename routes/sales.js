@@ -145,6 +145,69 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
   }
 });
 
+// GET /api/sales/summary  → reporte acumulado por persona (padres, profesores, consumidor final)
+router.get('/summary', auth('ADMIN'), async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    let dateClause = '';
+    const replacements = {};
+    if (from) { dateClause += ' AND s.created_at >= :from'; replacements.from = new Date(from); }
+    if (to)   { dateClause += ' AND s.created_at <= :to';   replacements.to   = new Date(to + 'T23:59:59'); }
+
+    // Padres — ventas tipo STUDENT agrupadas por parent_id
+    const parentsRows = await sequelize.query(`
+      SELECT
+        u.id           AS parent_id,
+        u.name,
+        u.email,
+        COUNT(DISTINCT s.id)::int                                             AS purchase_count,
+        COALESCE(SUM(s.total), 0)::numeric                                    AS total_consumed,
+        COALESCE(SUM(s.added_to_debt), 0)::numeric                            AS debt_in_period,
+        COALESCE((SELECT SUM(st.debt) FROM students st WHERE st.parent_id = u.id), 0)::numeric AS current_debt
+      FROM sales s
+      JOIN users u ON u.id = s.parent_id
+      WHERE s.customer_type = 'STUDENT' ${dateClause}
+      GROUP BY u.id, u.name, u.email
+      ORDER BY total_consumed DESC
+    `, { replacements, type: sequelize.QueryTypes.SELECT });
+
+    // Profesores — ventas tipo TEACHER agrupadas por parent_id (= user id del profesor)
+    const teachersRows = await sequelize.query(`
+      SELECT
+        u.id           AS user_id,
+        u.name,
+        u.email,
+        COUNT(DISTINCT s.id)::int                          AS purchase_count,
+        COALESCE(SUM(s.total), 0)::numeric                 AS total_consumed,
+        COALESCE(SUM(s.added_to_debt), 0)::numeric         AS debt_in_period,
+        COALESCE(u.debt, 0)::numeric                       AS current_debt
+      FROM sales s
+      JOIN users u ON u.id = s.parent_id
+      WHERE s.customer_type = 'TEACHER' ${dateClause}
+      GROUP BY u.id, u.name, u.email, u.debt
+      ORDER BY total_consumed DESC
+    `, { replacements, type: sequelize.QueryTypes.SELECT });
+
+    // Consumidor final — una sola fila de totales
+    const fcRows = await sequelize.query(`
+      SELECT
+        COUNT(id)::int                    AS purchase_count,
+        COALESCE(SUM(total), 0)::numeric  AS total_consumed
+      FROM sales s
+      WHERE s.customer_type = 'FINAL_CONSUMER' ${dateClause}
+    `, { replacements, type: sequelize.QueryTypes.SELECT });
+
+    res.json({
+      parents:        parentsRows,
+      teachers:       teachersRows,
+      final_consumer: fcRows[0] || { purchase_count: 0, total_consumed: 0 }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener resumen' });
+  }
+});
+
 // GET /api/sales/stats  → totales del día, semana y mes
 router.get('/stats', auth('ADMIN'), async (req, res) => {
   try {
