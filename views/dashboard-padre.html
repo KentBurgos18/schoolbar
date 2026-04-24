@@ -114,7 +114,7 @@
             </div>
             <div>
               <div class="stat-value" id="homeBalance" style="color:var(--success)">$0.00</div>
-              <div class="stat-label">Saldo total (hijos)</div>
+              <div class="stat-label" id="homeBalanceLabel">Saldo total (hijos)</div>
             </div>
           </div>
           <div class="stat-card">
@@ -123,7 +123,26 @@
             </div>
             <div>
               <div class="stat-value" id="homeDebt" style="color:var(--danger)">$0.00</div>
-              <div class="stat-label">Deuda total (hijos)</div>
+              <div class="stat-label" id="homeDebtLabel">Deuda total (hijos)</div>
+            </div>
+          </div>
+          <!-- Card saldo/deuda del profesor — solo visible si is_teacher -->
+          <div class="stat-card" id="teacherBalanceStat" style="display:none">
+            <div class="stat-icon" style="background:#fffbeb">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeTeacherBalance" style="color:#d97706">$0.00</div>
+              <div class="stat-label">Mi saldo (Profesor)</div>
+            </div>
+          </div>
+          <div class="stat-card" id="teacherDebtStat" style="display:none">
+            <div class="stat-icon" style="background:#fff7ed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="stat-value" id="homeTeacherDebt" style="color:#ea580c">$0.00</div>
+              <div class="stat-label">Mi deuda (Profesor)</div>
             </div>
           </div>
           <div class="stat-card">
@@ -436,12 +455,31 @@ async function loadHome() {
 
   var totalBalance = (me.students||[]).reduce((s,st)=>s+parseFloat(st.balance||0),0);
   var childrenDebt = (me.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
-  var teacherDebt  = me.is_teacher ? parseFloat(me.debt || 0) : 0;
-  var totalDebt    = childrenDebt + teacherDebt;
+  var teacherBalance = me.is_teacher ? parseFloat(me.balance || 0) : 0;
+  var teacherDebt    = me.is_teacher ? parseFloat(me.debt   || 0) : 0;
+  var totalDebt      = childrenDebt + teacherDebt;
 
   document.getElementById('homeBalance').textContent  = '$'+totalBalance.toFixed(2);
-  document.getElementById('homeDebt').textContent     = '$'+totalDebt.toFixed(2);
+  document.getElementById('homeDebt').textContent     = '$'+childrenDebt.toFixed(2);
   document.getElementById('homeChildren').textContent = (me.students||[]).length;
+
+  // Cards de profesor
+  var hasChildren = (me.students||[]).length > 0;
+  var tBalStat  = document.getElementById('teacherBalanceStat');
+  var tDebtStat = document.getElementById('teacherDebtStat');
+  if (me.is_teacher) {
+    tBalStat.style.display  = '';
+    tDebtStat.style.display = teacherDebt > 0 ? '' : 'none';
+    document.getElementById('homeTeacherBalance').textContent = '$'+teacherBalance.toFixed(2);
+    document.getElementById('homeTeacherDebt').textContent    = '$'+teacherDebt.toFixed(2);
+    // Ajustar labels de las cards de hijos si tiene hijos
+    document.getElementById('homeBalanceLabel').textContent = hasChildren ? 'Saldo total (hijos)' : 'Saldo (hijos)';
+    document.getElementById('homeDebtLabel').textContent    = hasChildren ? 'Deuda total (hijos)' : 'Deuda (hijos)';
+  } else {
+    tBalStat.style.display  = 'none';
+    tDebtStat.style.display = 'none';
+    document.getElementById('homeDebt').textContent = '$'+totalDebt.toFixed(2);
+  }
 
   var debtAlert = document.getElementById('debtAlert');
   debtAlert.style.display = totalDebt > 0 ? 'flex' : 'none';
