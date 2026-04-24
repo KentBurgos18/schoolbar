@@ -107,8 +107,8 @@
       <!-- HOME -->
       <section id="sec-home">
         <!-- Balance y deuda -->
-        <div class="stats-grid" style="margin-bottom:24px">
-          <div class="stat-card">
+        <div style="display:flex;gap:12px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px">
+          <div class="stat-card" style="flex:1;min-width:150px">
             <div class="stat-icon" style="background:#f0fdf4">
               <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             </div>
@@ -117,7 +117,7 @@
               <div class="stat-label" id="homeBalanceLabel">Saldo total (hijos)</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" style="flex:1;min-width:150px">
             <div class="stat-icon" style="background:#fef2f2">
               <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
@@ -127,7 +127,7 @@
             </div>
           </div>
           <!-- Card saldo/deuda del profesor — solo visible si is_teacher -->
-          <div class="stat-card" id="teacherBalanceStat" style="display:none">
+          <div class="stat-card" id="teacherBalanceStat" style="display:none;flex:1;min-width:150px">
             <div class="stat-icon" style="background:#fffbeb">
               <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             </div>
@@ -136,7 +136,7 @@
               <div class="stat-label">Mi saldo (Profesor)</div>
             </div>
           </div>
-          <div class="stat-card" id="teacherDebtStat" style="display:none">
+          <div class="stat-card" id="teacherDebtStat" style="display:none;flex:1;min-width:150px">
             <div class="stat-icon" style="background:#fff7ed">
               <svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
@@ -145,7 +145,7 @@
               <div class="stat-label">Mi deuda (Profesor)</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" style="flex:1;min-width:150px">
             <div class="stat-icon" style="background:#eff6ff">
               <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
             </div>
@@ -154,7 +154,7 @@
               <div class="stat-label">Hijos registrados</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" style="flex:1;min-width:150px">
             <div class="stat-icon" style="background:#fffbeb">
               <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
