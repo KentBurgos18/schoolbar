@@ -178,8 +178,8 @@
         <!-- Deuda alert -->
         <div id="debtAlert" style="display:none;background:var(--danger-light);border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px">
           <div>
-            <strong style="color:var(--danger)">Tienes una deuda pendiente</strong>
-            <p style="font-size:13px;color:var(--danger);margin-top:2px">Tu saldo fue insuficiente en compras recientes. Por favor realiza el pago.</p>
+            <strong style="color:var(--danger)" id="debtAlertTitle">Tienes una deuda pendiente</strong>
+            <p style="font-size:13px;color:var(--danger);margin-top:2px" id="debtAlertMsg">Hubo saldo insuficiente en compras recientes. Por favor realiza el pago.</p>
           </div>
           <button class="btn btn-danger btn-sm" onclick="showSection('recharge')">Pagar ahora</button>
         </div>
@@ -468,21 +468,38 @@ async function loadHome() {
   var tBalStat  = document.getElementById('teacherBalanceStat');
   var tDebtStat = document.getElementById('teacherDebtStat');
   if (me.is_teacher) {
+    // Siempre visibles — así se ve el estado aunque sea $0.00
     tBalStat.style.display  = '';
-    tDebtStat.style.display = teacherDebt > 0 ? '' : 'none';
+    tDebtStat.style.display = '';
     document.getElementById('homeTeacherBalance').textContent = '$'+teacherBalance.toFixed(2);
     document.getElementById('homeTeacherDebt').textContent    = '$'+teacherDebt.toFixed(2);
-    // Ajustar labels de las cards de hijos si tiene hijos
-    document.getElementById('homeBalanceLabel').textContent = hasChildren ? 'Saldo total (hijos)' : 'Saldo (hijos)';
-    document.getElementById('homeDebtLabel').textContent    = hasChildren ? 'Deuda total (hijos)' : 'Deuda (hijos)';
+    // Colorear deuda: rojo si hay deuda, verde si está en cero
+    document.getElementById('homeTeacherDebt').style.color = teacherDebt > 0 ? 'var(--danger)' : 'var(--success)';
+    document.getElementById('homeBalanceLabel').textContent = 'Saldo total (hijos)';
+    document.getElementById('homeDebtLabel').textContent    = 'Deuda total (hijos)';
   } else {
     tBalStat.style.display  = 'none';
     tDebtStat.style.display = 'none';
     document.getElementById('homeDebt').textContent = '$'+totalDebt.toFixed(2);
   }
 
+  // Alert de deuda — mensaje específico según el origen
   var debtAlert = document.getElementById('debtAlert');
-  debtAlert.style.display = totalDebt > 0 ? 'flex' : 'none';
+  if (totalDebt > 0) {
+    debtAlert.style.display = 'flex';
+    var lines = [];
+    if (childrenDebt > 0) lines.push('Hijos: <strong>$'+childrenDebt.toFixed(2)+'</strong>');
+    if (teacherDebt  > 0) lines.push('Tu cuenta (Profesor): <strong>$'+teacherDebt.toFixed(2)+'</strong>');
+    var multi = lines.length > 1;
+    document.getElementById('debtAlertTitle').textContent = multi ? 'Tienes deudas pendientes' : 'Tienes una deuda pendiente';
+    document.getElementById('debtAlertMsg').innerHTML     = multi
+      ? 'Saldo insuficiente en compras recientes — ' + lines.join(' · ') + '. Por favor realiza el pago.'
+      : (teacherDebt > 0
+          ? 'Tu saldo como profesor fue insuficiente en compras recientes ($'+teacherDebt.toFixed(2)+'). Por favor realiza el pago.'
+          : 'El saldo de tus hijos fue insuficiente en compras recientes ($'+childrenDebt.toFixed(2)+'). Por favor realiza el pago.');
+  } else {
+    debtAlert.style.display = 'none';
+  }
 
   // Show teacher QR if is_teacher
   var qrCard = document.getElementById('teacherQRCard');
