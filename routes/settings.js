@@ -13,6 +13,16 @@ const SMTP_KEYS = [
   'school_name'
 ];
 
+// GET /api/settings/public  → datos públicos (sin auth): nombre del colegio
+router.get('/public', async (req, res) => {
+  try {
+    const row = await Setting.findOne({ where: { key: 'school_name' } });
+    res.json({ school_name: (row && row.value) ? row.value : 'SchoolBar' });
+  } catch (err) {
+    res.json({ school_name: 'SchoolBar' });
+  }
+});
+
 // GET /api/settings/email  → leer configuración SMTP (sin la contraseña)
 router.get('/email', auth('ADMIN'), async (req, res) => {
   try {

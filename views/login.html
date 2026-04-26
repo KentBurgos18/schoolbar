@@ -111,8 +111,14 @@
 
     </div>
 
-    <p class="footer-note">SchoolBar &copy; <span id="footerYear"></span> &mdash; Acceso seguro</p>
-    <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+    <p class="footer-note" id="footerNote">SchoolBar &copy; <span id="footerYear"></span> &mdash; Acceso seguro</p>
+    <script>
+      document.getElementById('footerYear').textContent = new Date().getFullYear();
+      fetch('/api/settings/public').then(r=>r.json()).then(d=>{
+        var n = d.school_name || 'SchoolBar';
+        document.getElementById('footerNote').innerHTML = n + ' &copy; ' + new Date().getFullYear() + ' &mdash; Acceso seguro';
+      }).catch(()=>{});
+    </script>
   </div>
 
   <script>
