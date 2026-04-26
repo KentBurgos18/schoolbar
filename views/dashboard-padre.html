@@ -195,7 +195,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Hijo/a</th><th>Productos</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <thead><tr><th>Quién</th><th>Productos</th><th>Método</th><th>Total</th><th>A deuda</th><th>Fecha</th></tr></thead>
                 <tbody id="homeSalesTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
               </table>
             </div>
@@ -213,7 +213,7 @@
         <div class="card" style="margin-bottom:16px;overflow:hidden">
           <div class="card-body cons-filter">
             <div class="form-group" style="margin:0;width:100%">
-              <label class="form-label">Hijo/a</label>
+              <label class="form-label">Filtrar por hijo/a</label>
               <select id="filterChild" class="form-control form-select">
                 <option value="">Todos</option>
               </select>
@@ -234,7 +234,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Hijo/a</th><th>Detalle</th><th>Total</th><th>Del saldo</th><th>A deuda</th><th>Fecha</th></tr></thead>
+                <thead><tr><th>Quién</th><th>Detalle</th><th>Método</th><th>Total</th><th>A deuda</th><th>Fecha</th></tr></thead>
                 <tbody id="consTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Usa los filtros para buscar</td></tr></tbody>
               </table>
             </div>
@@ -533,15 +533,26 @@ async function loadHome() {
 function renderSalesTable(sales, tbodyId) {
   var tb = document.getElementById(tbodyId);
   if (!sales.length) { tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin compras</td></tr>'; return; }
-  tb.innerHTML = sales.map(s => `
-    <tr>
-      <td>${s.student?s.student.name:'—'}</td>
+  tb.innerHTML = sales.map(s => {
+    var quien;
+    if (s.customer_type === 'TEACHER')         quien = '👨‍🏫 Yo (Profesor)';
+    else if (s.customer_type === 'FINAL_CONSUMER') quien = 'Consumidor final';
+    else                                        quien = s.student ? s.student.name : '—';
+
+    var metodo = s.payment_method === 'CASH'
+      ? '<span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:#f0fdf4;color:#16a34a">Efectivo</span>'
+      : '<span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:#eef2ff;color:#4f46e5">Saldo</span>';
+
+    var debt = parseFloat(s.added_to_debt) || 0;
+    return `<tr>
+      <td style="font-weight:600">${quien}</td>
       <td style="font-size:12px;color:var(--gray-600)">${(s.items||[]).map(i=>i.name+' x'+i.quantity).join(', ')}</td>
+      <td>${metodo}</td>
       <td><strong>$${parseFloat(s.total).toFixed(2)}</strong></td>
-      <td style="color:var(--success)">$${parseFloat(s.paid_from_balance).toFixed(2)}</td>
-      <td style="color:${parseFloat(s.added_to_debt)>0?'var(--danger)':'var(--gray-400)'}">$${parseFloat(s.added_to_debt).toFixed(2)}</td>
-      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt).toLocaleString('es-EC')}</td>
-    </tr>`).join('');
+      <td style="color:${debt>0?'var(--danger)':'var(--gray-400)'}">$${debt.toFixed(2)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${new Date(s.createdAt||s.created_at).toLocaleString('es-EC')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Children ──
