@@ -14,8 +14,11 @@ async function sendDebtNotifications() {
     return { sent: 0, skipped: 0, errors: 0, disabled: true };
   }
 
-  const appUrlRow = await Setting.findOne({ where: { key: 'app_url' } });
-  const appUrl = appUrlRow ? appUrlRow.value : '';
+  const settingRows = await Setting.findAll({ where: { key: ['app_url', 'school_name'] } });
+  const settingMap  = {};
+  settingRows.forEach(r => { settingMap[r.key] = r.value; });
+  const appUrl     = settingMap.app_url    || '';
+  const schoolName = settingMap.school_name || 'SchoolBar';
 
   // Obtener estudiantes con deuda > 0, agrupados por padre
   const studentsWithDebt = await Student.findAll({
@@ -67,12 +70,13 @@ async function sendDebtNotifications() {
     try {
       await sendMail({
         to: parent.email,
-        subject: `SchoolBar — Tienes una deuda de $${totalDebt.toFixed(2)} pendiente`,
+        subject: `${schoolName} — Tienes una deuda de $${totalDebt.toFixed(2)} pendiente`,
         html: debtEmailHtml({
           parentName: parent.name,
           debt: totalDebt,
           children,
-          appUrl
+          appUrl,
+          schoolName
         })
       });
       sent++;

@@ -225,27 +225,33 @@ router.post('/forgot-password', async (req, res) => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
     await PasswordReset.create({ user_id: user.id, token, expires_at: expiresAt });
 
-    const appUrlRow = await Setting.findOne({ where: { key: 'app_url' } });
-    const appUrl    = (appUrlRow && appUrlRow.value) ? appUrlRow.value : '';
-    const resetLink = `${appUrl}/reset-password?token=${token}`;
+    const settingRows = await Setting.findAll({ where: { key: ['app_url', 'school_name'] } });
+    const settingMap  = {};
+    settingRows.forEach(r => { settingMap[r.key] = r.value; });
+    const appUrl     = settingMap.app_url    || '';
+    const schoolName = settingMap.school_name || 'SchoolBar';
+    const resetLink  = `${appUrl}/reset-password?token=${token}`;
 
     await sendMail({
       to:      user.email,
-      subject: 'SchoolBar — Recuperación de contraseña',
+      subject: `${schoolName} — Recuperación de contraseña`,
       html: `
         <div style="font-family:'Segoe UI',Arial,sans-serif;background:#f9fafb;padding:32px 0">
           <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08)">
-            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px 32px;text-align:center">
-              <h1 style="color:#fff;margin:0;font-size:20px;font-weight:800">SchoolBar</h1>
+            <div style="background:linear-gradient(135deg,#8B1A0A,#C0391F);padding:24px 32px;text-align:center">
+              <h1 style="color:#fff;margin:0;font-size:20px;font-weight:800">${schoolName}</h1>
               <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:13px">Recuperación de contraseña</p>
             </div>
             <div style="padding:28px 32px">
               <p style="color:#374151;font-size:15px;margin:0 0 12px">Hola <strong>${user.name}</strong>,</p>
               <p style="color:#374151;font-size:14px;margin:0 0 24px">Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón para continuar. El enlace expira en <strong>1 hora</strong>.</p>
               <div style="text-align:center;margin-bottom:24px">
-                <a href="${resetLink}" style="background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">Restablecer contraseña</a>
+                <a href="${resetLink}" style="background:#C0391F;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">Restablecer contraseña</a>
               </div>
               <p style="color:#9ca3af;font-size:12px;margin:0">Si no solicitaste este cambio, ignora este correo. Tu contraseña no será modificada.</p>
+            </div>
+            <div style="background:#f9fafb;padding:14px 32px;text-align:center;border-top:1px solid #e5e7eb">
+              <p style="color:#9ca3af;font-size:12px;margin:0">${schoolName} &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
             </div>
           </div>
         </div>`

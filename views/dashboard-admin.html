@@ -391,6 +391,11 @@
           <div class="card">
             <div class="card-header"><h3>Configuración SMTP</h3></div>
             <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Nombre del colegio / bar</label>
+                <input type="text" id="schoolName" class="form-control" placeholder="SchoolBar" />
+                <div class="form-hint">Este nombre aparece en los correos que reciben los padres.</div>
+              </div>
               <div class="form-row form-row-2">
                 <div class="form-group">
                   <label class="form-label">Servidor SMTP</label>
@@ -2591,13 +2596,14 @@ async function viewSale(id) {
 async function loadEmailSettings() {
   var data = await api('/settings/email');
   if (!data) return;
-  document.getElementById('smtpHost').value   = data.smtp_host || '';
-  document.getElementById('smtpPort').value   = data.smtp_port || '587';
-  document.getElementById('smtpUser').value   = data.smtp_user || '';
-  document.getElementById('smtpPass').value   = data.smtp_pass || '';
-  document.getElementById('smtpFrom').value   = data.smtp_from || '';
-  document.getElementById('appUrl').value     = data.app_url   || '';
-  document.getElementById('smtpSecure').value = data.smtp_secure || 'false';
+  document.getElementById('schoolName').value  = data.school_name || '';
+  document.getElementById('smtpHost').value    = data.smtp_host || '';
+  document.getElementById('smtpPort').value    = data.smtp_port || '587';
+  document.getElementById('smtpUser').value    = data.smtp_user || '';
+  document.getElementById('smtpPass').value    = data.smtp_pass || '';
+  document.getElementById('smtpFrom').value    = data.smtp_from || '';
+  document.getElementById('appUrl').value      = data.app_url   || '';
+  document.getElementById('smtpSecure').value  = data.smtp_secure || 'false';
 
   var enabled = data.email_notifications_enabled === 'true';
   var cb = document.getElementById('notifEnabled');
@@ -2631,6 +2637,7 @@ async function toggleNotifications() {
 
 async function saveEmailSettings() {
   var body = {
+    school_name: document.getElementById('schoolName').value,
     smtp_host:   document.getElementById('smtpHost').value,
     smtp_port:   document.getElementById('smtpPort').value,
     smtp_user:   document.getElementById('smtpUser').value,

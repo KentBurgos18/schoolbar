@@ -9,7 +9,8 @@ const { sendWeeklyReports, startWeeklyReportCron } = require('../services/Weekly
 const SMTP_KEYS = [
   'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url',
   'email_notifications_enabled',
-  'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour'
+  'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour',
+  'school_name'
 ];
 
 // GET /api/settings/email  → leer configuración SMTP (sin la contraseña)
@@ -30,7 +31,8 @@ router.post('/email', auth('ADMIN'), async (req, res) => {
     const allowed = [
       'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url',
       'email_notifications_enabled',
-      'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour'
+      'weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour',
+      'school_name'
     ];
     for (const key of allowed) {
       if (req.body[key] === undefined) continue;

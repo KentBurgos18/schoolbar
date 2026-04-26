@@ -4,7 +4,7 @@ const { Setting } = require('../models');
 // Lee la configuración SMTP desde la tabla settings
 async function getSmtpConfig() {
   const rows = await Setting.findAll({
-    where: { key: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure'] }
+    where: { key: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'school_name'] }
   });
   const cfg = {};
   rows.forEach(r => { cfg[r.key] = r.value; });
@@ -44,7 +44,8 @@ async function verifyConnection() {
 }
 
 // Plantilla de deuda semanal
-function debtEmailHtml({ parentName, debt, children, appUrl }) {
+function debtEmailHtml({ parentName, debt, children, appUrl, schoolName }) {
+  schoolName = schoolName || 'SchoolBar';
   const rows = children.map(c => `
     <tr>
       <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6">${c.name}</td>
@@ -63,8 +64,8 @@ function debtEmailHtml({ parentName, debt, children, appUrl }) {
 
         <!-- Header -->
         <tr>
-          <td style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:28px 32px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800">SchoolBar</h1>
+          <td style="background:linear-gradient(135deg,#8B1A0A,#C0391F);padding:28px 32px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800">${schoolName}</h1>
             <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:14px">Notificación semanal de deuda</p>
           </td>
         </tr>
@@ -101,7 +102,7 @@ function debtEmailHtml({ parentName, debt, children, appUrl }) {
             <!-- CTA -->
             <div style="text-align:center;margin:24px 0">
               <a href="${appUrl || '#'}/padres"
-                style="background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
+                style="background:#C0391F;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
                 Ir al portal y pagar
               </a>
             </div>
@@ -115,7 +116,7 @@ function debtEmailHtml({ parentName, debt, children, appUrl }) {
         <!-- Footer -->
         <tr>
           <td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb">
-            <p style="color:#9ca3af;font-size:12px;margin:0">SchoolBar &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
+            <p style="color:#9ca3af;font-size:12px;margin:0">${schoolName} &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
 
@@ -127,7 +128,8 @@ function debtEmailHtml({ parentName, debt, children, appUrl }) {
 }
 
 // Plantilla de reporte semanal de consumos
-function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl }) {
+function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl, schoolName }) {
+  schoolName = schoolName || 'SchoolBar';
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   const dateRange = `${weekStart.toLocaleDateString('es-EC')} – ${weekEnd.toLocaleDateString('es-EC')}`;
@@ -176,8 +178,8 @@ function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl }) 
 
         <!-- Header -->
         <tr>
-          <td style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:28px 32px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800">SchoolBar</h1>
+          <td style="background:linear-gradient(135deg,#8B1A0A,#C0391F);padding:28px 32px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800">${schoolName}</h1>
             <p style="color:rgba(255,255,255,.75);margin:4px 0 0;font-size:14px">Resumen semanal de consumos</p>
           </td>
         </tr>
@@ -212,13 +214,13 @@ function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl }) 
             <!-- CTA -->
             <div style="text-align:center;margin:24px 0 8px">
               <a href="${appUrl || '#'}/padres"
-                style="background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
-                Ver mi cuenta en SchoolBar
+                style="background:#C0391F;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block">
+                Ver mi cuenta en ${schoolName}
               </a>
             </div>
 
             <p style="color:#9ca3af;font-size:12px;margin:16px 0 0;text-align:center">
-              Recibes este correo porque eres representante registrado en SchoolBar.
+              Recibes este correo porque eres representante registrado en ${schoolName}.
             </p>
           </td>
         </tr>
@@ -226,7 +228,7 @@ function weeklyReportHtml({ parentName, balance, children, weekStart, appUrl }) 
         <!-- Footer -->
         <tr>
           <td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb">
-            <p style="color:#9ca3af;font-size:12px;margin:0">SchoolBar &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
+            <p style="color:#9ca3af;font-size:12px;margin:0">${schoolName} &mdash; Sistema de bar escolar &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
 

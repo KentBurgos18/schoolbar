@@ -7,15 +7,16 @@ let currentTask = null; // referencia al cron activo
 
 // Obtiene la configuración del reporte semanal desde la BD
 async function getReportConfig() {
-  const keys = ['weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour', 'app_url'];
+  const keys = ['weekly_report_enabled', 'weekly_report_day', 'weekly_report_hour', 'app_url', 'school_name'];
   const rows  = await Setting.findAll({ where: { key: keys } });
   const cfg   = {};
   rows.forEach(r => { cfg[r.key] = r.value; });
   return {
-    enabled: cfg.weekly_report_enabled === 'true',
-    day:     parseInt(cfg.weekly_report_day  ?? '1'),   // 0=Dom … 6=Sáb, default lunes
-    hour:    parseInt(cfg.weekly_report_hour ?? '8'),   // 0-23, default 8
-    appUrl:  cfg.app_url || ''
+    enabled:    cfg.weekly_report_enabled === 'true',
+    day:        parseInt(cfg.weekly_report_day  ?? '1'),   // 0=Dom … 6=Sáb, default lunes
+    hour:       parseInt(cfg.weekly_report_hour ?? '8'),   // 0-23, default 8
+    appUrl:     cfg.app_url    || '',
+    schoolName: cfg.school_name || 'SchoolBar'
   };
 }
 
@@ -97,13 +98,14 @@ async function sendWeeklyReports() {
     try {
       await sendMail({
         to:      parent.email,
-        subject: `SchoolBar — Resumen semanal de consumos (semana del ${weekStart.toLocaleDateString('es-EC')})`,
+        subject: `${cfg.schoolName} — Resumen semanal de consumos (semana del ${weekStart.toLocaleDateString('es-EC')})`,
         html:    weeklyReportHtml({
           parentName: parent.name,
           balance:    parent.balance,
           children,
           weekStart,
-          appUrl:     cfg.appUrl
+          appUrl:     cfg.appUrl,
+          schoolName: cfg.schoolName
         })
       });
       sent++;
