@@ -627,35 +627,26 @@ async function loadRechargeSection() {
 
   // Mostrar saldos actuales por hijo
   var balDiv = document.getElementById('rechargeStudentBalances');
-  var teacherRowHtml = '';
+  var rows = [];
   if (me && me.is_teacher) {
-    teacherRowHtml = `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100)">
-        <div>
-          <div style="font-weight:700;font-size:14px">👨‍🏫 Mi saldo (Profesor)</div>
-          <div style="font-size:12px;color:var(--gray-500)">
-            Saldo: <strong>$${parseFloat(me.balance||0).toFixed(2)}</strong>
-            ${parseFloat(me.debt||0)>0 ? '· <span style="color:var(--danger)">Deuda: $'+parseFloat(me.debt||0).toFixed(2)+'</span>' : ''}
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:13px;color:var(--gray-500)">$</span>
-          <input type="number" id="alloc_teacher" min="0" step="0.01" placeholder="0.00" class="form-control" style="width:100px" oninput="updateAllocTotal()" />
-        </div>
-      </div>`;
-  }
-  if (!rechargeStudents.length && !teacherRowHtml) {
-    balDiv.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
-  } else {
-    balDiv.innerHTML = teacherRowHtml + rechargeStudents.map(s => `
+    rows.push(`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100)">
-        <span style="font-size:13.5px;font-weight:600">${s.name} <span style="font-weight:400;color:var(--gray-400);font-size:12px">${s.grade||''}</span></span>
-        <span style="display:flex;gap:12px">
-          <span style="color:var(--success);font-weight:700;font-size:13.5px">$${parseFloat(s.balance||0).toFixed(2)}</span>
-          ${parseFloat(s.debt||0)>0?`<span style="color:var(--danger);font-size:12px">Deuda: $${parseFloat(s.debt).toFixed(2)}</span>`:''}
+        <span style="font-size:13.5px;font-weight:600">👨‍🏫 Mi saldo (Profesor)</span>
+        <span style="display:flex;gap:12px;align-items:center">
+          <span style="color:var(--success);font-weight:700;font-size:13.5px">$${parseFloat(me.balance||0).toFixed(2)}</span>
+          ${parseFloat(me.debt||0)>0?`<span style="color:var(--danger);font-size:12px">Deuda: $${parseFloat(me.debt||0).toFixed(2)}</span>`:''}
         </span>
-      </div>`).join('');
+      </div>`);
   }
+  rows = rows.concat(rechargeStudents.map(s => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100)">
+      <span style="font-size:13.5px;font-weight:600">${s.name} <span style="font-weight:400;color:var(--gray-400);font-size:12px">${s.grade||''}</span></span>
+      <span style="display:flex;gap:12px">
+        <span style="color:var(--success);font-weight:700;font-size:13.5px">$${parseFloat(s.balance||0).toFixed(2)}</span>
+        ${parseFloat(s.debt||0)>0?`<span style="color:var(--danger);font-size:12px">Deuda: $${parseFloat(s.debt).toFixed(2)}</span>`:''}
+      </span>
+    </div>`));
+  balDiv.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
 
   // Renderizar inputs de allocation
   renderAllocationInputs();
@@ -669,20 +660,37 @@ async function loadRechargeSection() {
 
 function renderAllocationInputs() {
   var container = document.getElementById('allocationsContainer');
-  if (!rechargeStudents.length) {
-    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
-    return;
+  var rows = [];
+
+  // Input del profesor (si aplica)
+  if (meData && meData.is_teacher) {
+    rows.push(`
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="flex:1;font-size:13.5px;font-weight:600;margin:0">👨‍🏫 Mi recarga (Profesor)</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="color:var(--gray-500);font-size:13px">$</span>
+          <input type="number" id="alloc_teacher" class="form-control" style="width:100px;text-align:right"
+            min="0" step="0.01" placeholder="0.00" oninput="updateAllocTotal()" />
+        </div>
+      </div>`);
   }
-  container.innerHTML = rechargeStudents.map(s => `
+
+  // Inputs de hijos
+  rows = rows.concat(rechargeStudents.map(s => `
     <div style="display:flex;align-items:center;gap:10px">
       <label style="flex:1;font-size:13.5px;font-weight:600;margin:0">${s.name}</label>
       <div style="display:flex;align-items:center;gap:4px">
         <span style="color:var(--gray-500);font-size:13px">$</span>
         <input type="number" id="alloc_${s.id}" class="form-control" style="width:100px;text-align:right"
-          min="0" step="0.50" placeholder="0.00"
-          oninput="updateAllocTotal()" />
+          min="0" step="0.50" placeholder="0.00" oninput="updateAllocTotal()" />
       </div>
-    </div>`).join('');
+    </div>`));
+
+  if (!rows.length) {
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">No tienes hijos registrados.</div>';
+    return;
+  }
+  container.innerHTML = rows.join('');
   updateAllocTotal();
 }
 
