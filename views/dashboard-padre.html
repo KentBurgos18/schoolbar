@@ -433,10 +433,11 @@ function showSection(id) {
   if (el) el.classList.add('active');
   document.getElementById('topbarTitle').textContent = titles[id] || id;
   closeSidebar();
-  if (id==='children')    loadChildren();
+  if (id==='home')         loadHome();
+  if (id==='children')     loadChildren();
   if (id==='consumptions') loadConsumptions();
-  if (id==='recharge')    loadRechargeSection();
-  if (id==='myRecharges') loadMyRecharges();
+  if (id==='recharge')     loadRechargeSection();
+  if (id==='myRecharges')  loadMyRecharges();
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -872,6 +873,20 @@ function statusBadge(s) {
 }
 
 loadHome();
+
+// SSE — refrescar saldos automáticamente cuando el admin aprueba/rechaza una recarga
+(function() {
+  var tok = localStorage.getItem('sbToken');
+  if (!tok) return;
+  var es = new EventSource('/api/events?token=' + tok);
+  es.addEventListener('recharge:approved', function() {
+    loadHome();
+    if (document.getElementById('sec-myRecharges').style.display !== 'none') loadMyRecharges();
+  });
+  es.addEventListener('recharge:rejected', function() {
+    if (document.getElementById('sec-myRecharges').style.display !== 'none') loadMyRecharges();
+  });
+})();
 </script>
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
 <script src="/js/pwa-install.js"></script>
