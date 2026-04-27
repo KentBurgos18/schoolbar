@@ -865,8 +865,6 @@ async function submitRecharge() {
   clearReceipt();
   rechargeStudents.forEach(s => { var el=document.getElementById('alloc_'+s.id); if(el) el.value=''; });
   var ta = document.getElementById('alloc_teacher'); if(ta) ta.value='';
-  var teacherEl = document.getElementById('alloc_teacher');
-  if (teacherEl) teacherEl.value = '0';
   updateAllocTotal();
 }
 
