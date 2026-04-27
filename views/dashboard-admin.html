@@ -2876,8 +2876,19 @@ connectSSE();
   ptr.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);transform:translateY(-100%);transition:transform .2s ease;border-bottom:1px solid var(--gray-200)';
   document.body.appendChild(ptr);
 
-  var startY = 0, currentY = 0, active = false, refreshing = false;
+  var startY = 0, currentY = 0, active = false, refreshing = false, canPull = false;
   var THRESHOLD = 65;
+  var atTopSince = 0;
+
+  // Registrar cuándo la página lleva tiempo quieta en el tope
+  document.addEventListener('scroll', function() {
+    if (window.scrollY === 0) {
+      if (!atTopSince) atTopSince = Date.now();
+    } else {
+      atTopSince = 0;
+      canPull = false;
+    }
+  }, { passive: true });
 
   function setProgress(dy) {
     var clamped = Math.min(dy, THRESHOLD * 1.5);
@@ -2908,21 +2919,28 @@ connectSSE();
         ptr.style.transform  = 'translateY(-100%)';
         spinner.style.animation = '';
         refreshing = false;
+        canPull = false;
+        atTopSince = 0;
       }, 400);
     });
   }
 
   document.addEventListener('touchstart', function(e) {
     if (refreshing) return;
-    if (window.scrollY === 0) {
-      startY  = e.touches[0].clientY;
+    // Solo habilitar PTR si la página lleva al menos 200ms quieta en el tope
+    var stableAtTop = window.scrollY === 0 && atTopSince > 0 && (Date.now() - atTopSince > 200);
+    // O si ya estaba en el tope antes de que se disparara cualquier scroll (carga inicial)
+    var alreadyAtTop = window.scrollY === 0 && atTopSince === 0;
+    canPull = stableAtTop || alreadyAtTop;
+    if (canPull) {
+      startY   = e.touches[0].clientY;
       currentY = startY;
-      active  = false;
+      active   = false;
     }
   }, { passive: true });
 
   document.addEventListener('touchmove', function(e) {
-    if (refreshing) return;
+    if (refreshing || !canPull) return;
     currentY = e.touches[0].clientY;
     var dy = currentY - startY;
     if (dy <= 0) { active = false; return; }
