@@ -294,7 +294,11 @@
         <div class="card">
           <div class="card-header">
             <h3>Profesores</h3>
-            <button class="btn btn-primary btn-sm" onclick="openNewTeacher()">+ Nuevo profesor</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('teachers')">📥 Plantilla Excel</button>
+              <button class="btn btn-ghost btn-sm" onclick="triggerImport('teachers')">📤 Importar Excel</button>
+              <button class="btn btn-primary btn-sm" onclick="openNewTeacher()">+ Nuevo profesor</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="table-wrap">
@@ -2717,8 +2721,8 @@ async function sendWeeklyNow() {
 var _csvImportType = '';
 
 async function downloadTemplate(type) {
-  var url      = type === 'parents' ? '/api/parents/template' : '/api/students/template';
-  var filename = type === 'parents' ? 'plantilla_padres.xlsx'  : 'plantilla_estudiantes.xlsx';
+  var url      = type === 'parents' ? '/api/parents/template' : type === 'teachers' ? '/api/teachers/template' : '/api/students/template';
+  var filename = type === 'parents' ? 'plantilla_padres.xlsx'  : type === 'teachers' ? 'plantilla_profesores.xlsx' : 'plantilla_estudiantes.xlsx';
   try {
     var res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
     if (!res.ok) { toast('Error al generar plantilla', 'error'); return; }
@@ -2757,7 +2761,9 @@ async function handleCsvImport(input) {
 
     var url = _csvImportType === 'parents'
       ? '/api/parents/bulk-import'
-      : '/api/students/bulk-import';
+      : _csvImportType === 'teachers'
+        ? '/api/teachers/bulk-import'
+        : '/api/students/bulk-import';
 
     toast('Procesando importación...', '');
     var res  = await fetch(url, { method:'POST', headers: authHeaders(), body: JSON.stringify({ fileBase64: base64 }) });
@@ -2786,6 +2792,7 @@ async function handleCsvImport(input) {
 
     openModal('modalImportResult');
     if (_csvImportType === 'parents') loadParents();
+    else if (_csvImportType === 'teachers') loadTeachers();
     else loadStudents();
 
   } catch(e) {
