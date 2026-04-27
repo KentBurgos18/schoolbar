@@ -362,8 +362,8 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Responsable</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th>Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
-                <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Responsable</th><th style="min-width:90px">Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th style="text-align:center">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
+                <tbody id="rechargesTbody"><tr><td colspan="9"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -2143,23 +2143,23 @@ async function loadRecharges() {
     }).join(' · ');
     return `
     <tr>
-      <td>${r.parent ? r.parent.name : '—'}</td>
-      <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong><br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
+      <td>${r.parent ? r.parent.name : '—'}<br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
+      <td style="min-width:90px"><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
       <td class="hm">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
       <td class="hm">
         ${r.bankAccount ? r.bankAccount.bank : '—'}
         ${r.from_bank ? `<br/><span style="font-size:11px;color:var(--gray-400)">Desde: ${r.from_bank}</span>` : ''}
       </td>
       <td class="hm">${r.receipt_ref || '—'}</td>
-      <td>
+      <td style="text-align:center">
         ${r.receipt_image
           ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver</button>`
           : '—'}
       </td>
+      <td>${statusBadge(r.status)}</td>
       <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
       <td>
-        ${statusBadge(r.status)}
-        ${r.status==='PENDING'?`<div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>`:''}
+        ${r.status==='PENDING'?`<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>` : '—'}
       </td>
     </tr>`;
   }).join('');
