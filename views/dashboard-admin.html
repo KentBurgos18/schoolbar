@@ -361,7 +361,7 @@
           <div class="card-body">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Responsable</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th class="hm">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
+                <thead><tr><th>Responsable</th><th>Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th>Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
                 <tbody id="rechargesTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
@@ -2150,9 +2150,9 @@ async function loadRecharges() {
         ${r.from_bank ? `<br/><span style="font-size:11px;color:var(--gray-400)">Desde: ${r.from_bank}</span>` : ''}
       </td>
       <td class="hm">${r.receipt_ref || '—'}</td>
-      <td class="hm">
+      <td>
         ${r.receipt_image
-          ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver comprobante</button>`
+          ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver</button>`
           : '—'}
       </td>
       <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
