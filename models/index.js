@@ -21,7 +21,7 @@ const User = sequelize.define('User', {
   phone:    { type: DataTypes.STRING(30) },
   balance:    { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   debt:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
-  allow_debt: { type: DataTypes.BOOLEAN, defaultValue: true },
+  allow_debt: { type: DataTypes.BOOLEAN, defaultValue: false },
   is_teacher: { type: DataTypes.BOOLEAN, defaultValue: false },
   qr_token:   { type: DataTypes.UUID, allowNull: true },
   qr_image:   { type: DataTypes.TEXT, allowNull: true },
