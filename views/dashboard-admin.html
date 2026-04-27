@@ -2180,8 +2180,9 @@ async function approveRecharge(id) {
 }
 
 async function rejectRecharge(id) {
-  var note = prompt('Motivo del rechazo (opcional):') || '';
-  var res = await fetch(API + '/recharges/' + id + '/reject', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ note }) });
+  var note = prompt('Motivo del rechazo (opcional):');
+  if (note === null) return; // usuario canceló el diálogo
+  var res = await fetch(API + '/recharges/' + id + '/reject', { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ note: note.trim() }) });
   if (!res.ok) { toast('Error al rechazar', 'error'); return; }
   toast('Recarga rechazada', 'warning');
   loadOverview(); loadRecharges();
