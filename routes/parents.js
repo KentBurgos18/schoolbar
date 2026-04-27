@@ -9,13 +9,13 @@ const auth = require('../middlewares/auth');
 
 // GET /api/parents/template  → descarga plantilla Excel de padres
 router.get('/template', auth('ADMIN'), (req, res) => {
-  const headers = ['nombre', 'email', 'telefono', 'contraseña'];
+  const headers = ['nombre', 'email', 'telefono', 'contraseña', 'es_profesor'];
   const data    = [
-    ['Juan Pérez',   'juan@email.com',  '0991234567', 'miClave123'],
-    ['María García', 'maria@email.com', '0987654321', 'clave456'],
+    ['Juan Pérez',   'juan@email.com',  '0991234567', 'miClave123', 'no'],
+    ['María García', 'maria@email.com', '0987654321', 'clave456',   'si'],
   ];
   const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-  ws['!cols'] = headers.map(() => ({ wch: 26 }));
+  ws['!cols'] = headers.map(() => ({ wch: 22 }));
   const wb  = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Padres');
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
@@ -152,10 +152,11 @@ router.post('/bulk-import', auth('ADMIN'), async (req, res) => {
 
     const results = [];
     for (const row of rows) {
-      const nombre     = (row['nombre']    || '').trim();
-      const email      = (row['email']     || '').trim().toLowerCase();
-      const telefono   = (row['telefono']  || '').trim();
-      const password   = (row['contraseña'] || row['password'] || '').trim();
+      const nombre      = (row['nombre']    || '').trim();
+      const email       = (row['email']     || '').trim().toLowerCase();
+      const telefono    = (row['telefono']  || '').trim();
+      const password    = (row['contraseña'] || row['password'] || '').trim();
+      const esProfesor  = ['si', 'sí', 'yes', '1', 'true'].includes((row['es_profesor'] || '').trim().toLowerCase());
 
       if (!nombre || !email || !password) {
         results.push({ email: email || '?', status: 'error', message: 'Faltan campos obligatorios (nombre, email, contraseña)' });
@@ -167,9 +168,15 @@ router.post('/bulk-import', auth('ADMIN'), async (req, res) => {
           results.push({ email, status: 'error', message: 'El correo ya está registrado' });
           continue;
         }
-        const hash = await bcrypt.hash(password, 10);
-        await User.create({ name: nombre, email, phone: telefono || null, password: hash, role: 'PARENT' });
-        results.push({ email, status: 'ok', message: 'Creado correctamente' });
+        const hash     = await bcrypt.hash(password, 10);
+        const userData = { name: nombre, email, phone: telefono || null, password: hash, role: 'PARENT', is_teacher: esProfesor };
+        if (esProfesor) {
+          const qr_token = crypto.randomUUID();
+          userData.qr_token = qr_token;
+          userData.qr_image = await QRCode.toDataURL(qr_token);
+        }
+        await User.create(userData);
+        results.push({ email, status: 'ok', message: esProfesor ? 'Creado como padre/profesor' : 'Creado correctamente' });
       } catch (e) {
         results.push({ email: email || '?', status: 'error', message: e.message });
       }
