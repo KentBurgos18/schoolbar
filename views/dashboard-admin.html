@@ -1256,7 +1256,7 @@ function renderOverviewRecharges(recharges) {
   if (!recharges.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">No hay recargas pendientes</td></tr>'; return; }
   tb.innerHTML = recharges.map(r => `
     <tr>
-      <td><strong>${r.parent_id}</strong></td>
+      <td><strong>${r.parent ? r.parent.name : '—'}</strong></td>
       <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
       <td class="hm"><span class="badge ${r.method==='TRANSFER'?'badge-primary':'badge-gray'}">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</span></td>
       <td class="hm">${r.bankAccount ? r.bankAccount.bank + '<br><small>' + r.bankAccount.number + '</small>' : '—'}</td>
@@ -2142,7 +2142,7 @@ async function loadRecharges() {
     }).join(' · ');
     return `
     <tr>
-      <td>${r.parent ? r.parent.name : r.parent_id}</td>
+      <td>${r.parent ? r.parent.name : '—'}</td>
       <td><strong>$${parseFloat(r.amount).toFixed(2)}</strong><br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
       <td class="hm">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
       <td class="hm">
@@ -2865,6 +2865,15 @@ function connectSSE() {
 }
 
 connectSSE();
+
+// Reconectar y refrescar cuando el teléfono vuelve del background
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    loadOverview();
+    var loader = sectionLoaders[currentSection];
+    if (loader) loader();
+  }
+});
 
 // Init — restaurar sección desde el hash de la URL
 var initSection = window.location.hash.replace('#', '') || 'overview';
