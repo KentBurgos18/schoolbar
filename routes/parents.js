@@ -30,7 +30,7 @@ router.get('/', auth('ADMIN'), async (req, res) => {
     const parents = await User.findAll({
       where: { role: 'PARENT' },
       attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt', 'allow_debt', 'is_teacher'],
-      include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade'] }]
+      include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade', 'balance', 'debt'] }]
     });
     res.json(parents);
   } catch (err) {

@@ -1485,8 +1485,20 @@ async function loadParents() {
       <td><strong>${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
       <td class="hm">${p.email}</td>
       <td class="hm">${p.phone || '—'}</td>
-      <td><span class="balance-pill">$${parseFloat(p.balance).toFixed(2)}</span></td>
-      <td>${parseFloat(p.debt)>0?`<span class="debt-pill">$${parseFloat(p.debt).toFixed(2)}</span>`:'<span class="badge badge-success">Sin deuda</span>'}</td>
+      <td>${(function(){
+        var childrenBal = (p.students||[]).reduce((s,st)=>s+parseFloat(st.balance||0),0);
+        var childrenDebt = (p.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
+        if(p.is_teacher){
+          return '<span class="balance-pill">👨‍🏫 $'+parseFloat(p.balance||0).toFixed(2)+'</span>' +
+            (p.students&&p.students.length ? '<br><span class="balance-pill" style="margin-top:3px">👨‍👩‍👧 $'+childrenBal.toFixed(2)+'</span>' : '');
+        }
+        return '<span class="balance-pill">$'+childrenBal.toFixed(2)+'</span>';
+      })()}</td>
+      <td>${(function(){
+        var childrenDebt = (p.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
+        var totalDebt = p.is_teacher ? parseFloat(p.debt||0)+childrenDebt : childrenDebt;
+        return totalDebt>0 ? '<span class="debt-pill">$'+totalDebt.toFixed(2)+'</span>' : '<span class="badge badge-success">Sin deuda</span>';
+      })()}</td>
       <td class="hm" style="text-align:center">
         <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar crédito' : 'Activar crédito'}">
           <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />
