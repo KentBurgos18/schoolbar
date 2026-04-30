@@ -55,6 +55,7 @@ const Sale = sequelize.define('Sale', {
   total:             { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   paid_from_balance: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
   added_to_debt:     { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.00 },
+  balance_after:     { type: DataTypes.DECIMAL(10, 2), allowNull: true },
   payment_method:    { type: DataTypes.ENUM('BALANCE', 'CASH'), defaultValue: 'BALANCE' },
   customer_type:     { type: DataTypes.ENUM('STUDENT', 'FINAL_CONSUMER', 'TEACHER'), defaultValue: 'STUDENT' },
   note:              { type: DataTypes.STRING(255) },

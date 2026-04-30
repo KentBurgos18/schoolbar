@@ -67,6 +67,13 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       }
     }
 
+    let balanceAfter = null;
+    if (isTeacher && method === 'BALANCE') {
+      balanceAfter = Math.max(0, parseFloat(teacher.balance) - paidFromBalance);
+    } else if (!isFinalConsumer && !isTeacher && method === 'BALANCE' && student) {
+      balanceAfter = Math.max(0, parseFloat(student.balance) - paidFromBalance);
+    }
+
     const sale = await Sale.create({
       student_id:        (isTeacher || isFinalConsumer) ? null : student.id,
       parent_id:         isTeacher ? teacher.id : (parent ? parent.id : null),
@@ -74,6 +81,7 @@ router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
       total,
       paid_from_balance: paidFromBalance,
       added_to_debt:     addedToDebt,
+      balance_after:     balanceAfter,
       payment_method:    method,
       customer_type:     isFinalConsumer ? 'FINAL_CONSUMER' : (isTeacher ? 'TEACHER' : 'STUDENT'),
       note
@@ -261,9 +269,9 @@ router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
     if (cashier_id)      where.cashier_id      = cashier_id;
 
     if (from || to) {
-      where.created_at = {};
-      if (from) where.created_at[Op.gte] = new Date(from);
-      if (to)   where.created_at[Op.lte] = new Date(to + 'T23:59:59');
+      where.createdAt = {};
+      if (from) where.createdAt[Op.gte] = new Date(from + 'T00:00:00');
+      if (to)   where.createdAt[Op.lte] = new Date(to   + 'T23:59:59');
     }
 
     const sales = await Sale.findAll({
