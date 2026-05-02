@@ -755,10 +755,11 @@
                       <th class="hm" style="text-align:center"># Compras</th>
                       <th>Total consumido</th>
                       <th>Deuda actual</th>
+                      <th>Saldo actual</th>
                     </tr>
                   </thead>
                   <tbody id="summaryTbody">
-                    <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--gray-400)">Selecciona un rango de fecha y presiona Filtrar</td></tr>
+                    <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-400)">Selecciona un rango de fecha y presiona Filtrar</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -2516,7 +2517,7 @@ async function loadSalesSummary() {
   if (to)   qs.set('to', to);
 
   var tb = document.getElementById('summaryTbody');
-  tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--gray-400)">Cargando...</td></tr>';
+  tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-400)">Cargando...</td></tr>';
 
   var data = await api('/sales/summary?' + qs.toString());
   if (!data) return;
@@ -2527,22 +2528,24 @@ async function loadSalesSummary() {
   // Padres
   (data.parents || []).forEach(p => {
     rows.push({
-      name:          p.name,
-      type:          'PARENT',
-      purchase_count: parseInt(p.purchase_count),
-      total_consumed: parseFloat(p.total_consumed),
-      current_debt:   parseFloat(p.current_debt)
+      name:            p.name,
+      type:            'PARENT',
+      purchase_count:  parseInt(p.purchase_count),
+      total_consumed:  parseFloat(p.total_consumed),
+      current_debt:    parseFloat(p.current_debt),
+      current_balance: parseFloat(p.current_balance)
     });
   });
 
   // Profesores
   (data.teachers || []).forEach(t => {
     rows.push({
-      name:          t.name,
-      type:          'TEACHER',
-      purchase_count: parseInt(t.purchase_count),
-      total_consumed: parseFloat(t.total_consumed),
-      current_debt:   parseFloat(t.current_debt)
+      name:            t.name,
+      type:            'TEACHER',
+      purchase_count:  parseInt(t.purchase_count),
+      total_consumed:  parseFloat(t.total_consumed),
+      current_debt:    parseFloat(t.current_debt),
+      current_balance: parseFloat(t.current_balance)
     });
   });
 
@@ -2550,17 +2553,18 @@ async function loadSalesSummary() {
   var fc = data.final_consumer;
   if (parseInt(fc.purchase_count) > 0) {
     rows.push({
-      name:          'Consumidor final',
-      type:          'FINAL_CONSUMER',
-      purchase_count: parseInt(fc.purchase_count),
-      total_consumed: parseFloat(fc.total_consumed),
-      current_debt:   null
+      name:            'Consumidor final',
+      type:            'FINAL_CONSUMER',
+      purchase_count:  parseInt(fc.purchase_count),
+      total_consumed:  parseFloat(fc.total_consumed),
+      current_debt:    null,
+      current_balance: null
     });
   }
 
   var countEl = document.getElementById('summaryResultCount');
   if (!rows.length) {
-    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--gray-400)">Sin resultados</td></tr>';
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-400)">Sin resultados</td></tr>';
     countEl.textContent = '0 resultados';
     return;
   }
@@ -2585,27 +2589,33 @@ async function loadSalesSummary() {
           ? `<strong style="color:var(--danger)">$${r.current_debt.toFixed(2)}</strong>`
           : '<span style="color:var(--success);font-weight:700">$0.00</span>'
       }</td>
+      <td>${r.current_balance === null
+        ? '<span style="color:var(--gray-400);font-size:12px">—</span>'
+        : r.current_balance > 0
+          ? `<strong style="color:var(--success)">$${r.current_balance.toFixed(2)}</strong>`
+          : '<span style="color:var(--gray-500)">$0.00</span>'
+      }</td>
     </tr>`).join('');
 }
 
 function exportSummaryExcel() {
-  var rows = [['Nombre','Tipo','# Compras','Total consumido','Deuda actual']];
+  var rows = [['Nombre','Tipo','# Compras','Total consumido','Deuda actual','Saldo actual']];
   var typeLabel = { PARENT:'Padre', TEACHER:'Profesor', FINAL_CONSUMER:'Consumidor final' };
 
   (_summaryData.parents || []).forEach(p => {
-    rows.push([p.name, 'Padre', parseInt(p.purchase_count), parseFloat(p.total_consumed).toFixed(2), parseFloat(p.current_debt).toFixed(2)]);
+    rows.push([p.name, 'Padre', parseInt(p.purchase_count), parseFloat(p.total_consumed).toFixed(2), parseFloat(p.current_debt).toFixed(2), parseFloat(p.current_balance).toFixed(2)]);
   });
   (_summaryData.teachers || []).forEach(t => {
-    rows.push([t.name, 'Profesor', parseInt(t.purchase_count), parseFloat(t.total_consumed).toFixed(2), parseFloat(t.current_debt).toFixed(2)]);
+    rows.push([t.name, 'Profesor', parseInt(t.purchase_count), parseFloat(t.total_consumed).toFixed(2), parseFloat(t.current_debt).toFixed(2), parseFloat(t.current_balance).toFixed(2)]);
   });
   var fc = _summaryData.final_consumer;
   if (parseInt(fc.purchase_count) > 0) {
-    rows.push(['Consumidor final', 'Cons. final', parseInt(fc.purchase_count), parseFloat(fc.total_consumed).toFixed(2), '—']);
+    rows.push(['Consumidor final', 'Cons. final', parseInt(fc.purchase_count), parseFloat(fc.total_consumed).toFixed(2), '—', '—']);
   }
 
   if (rows.length <= 1) { toast('No hay datos para exportar', 'warning'); return; }
   var ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:28},{wch:16},{wch:12},{wch:18},{wch:14}];
+  ws['!cols'] = [{wch:28},{wch:16},{wch:12},{wch:18},{wch:14},{wch:14}];
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Resumen');
   XLSX.writeFile(wb, 'resumen_ventas_' + new Date().toISOString().slice(0,10) + '.xlsx');

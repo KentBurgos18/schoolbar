@@ -171,7 +171,8 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
         COUNT(DISTINCT s.id)::int                                             AS purchase_count,
         COALESCE(SUM(s.total), 0)::numeric                                    AS total_consumed,
         COALESCE(SUM(s.added_to_debt), 0)::numeric                            AS debt_in_period,
-        COALESCE((SELECT SUM(st.debt) FROM students st WHERE st.parent_id = u.id), 0)::numeric AS current_debt
+        COALESCE((SELECT SUM(st.debt)    FROM students st WHERE st.parent_id = u.id), 0)::numeric AS current_debt,
+        COALESCE((SELECT SUM(st.balance) FROM students st WHERE st.parent_id = u.id), 0)::numeric AS current_balance
       FROM sales s
       JOIN users u ON u.id = s.parent_id
       WHERE s.customer_type = 'STUDENT' ${dateClause}
@@ -188,11 +189,12 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
         COUNT(DISTINCT s.id)::int                          AS purchase_count,
         COALESCE(SUM(s.total), 0)::numeric                 AS total_consumed,
         COALESCE(SUM(s.added_to_debt), 0)::numeric         AS debt_in_period,
-        COALESCE(u.debt, 0)::numeric                       AS current_debt
+        COALESCE(u.debt, 0)::numeric                       AS current_debt,
+        COALESCE(u.balance, 0)::numeric                    AS current_balance
       FROM sales s
       JOIN users u ON u.id = s.parent_id
       WHERE s.customer_type = 'TEACHER' ${dateClause}
-      GROUP BY u.id, u.name, u.email, u.debt
+      GROUP BY u.id, u.name, u.email, u.debt, u.balance
       ORDER BY total_consumed DESC
     `, { replacements, type: sequelize.QueryTypes.SELECT });
 
