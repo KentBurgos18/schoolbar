@@ -2154,8 +2154,12 @@ async function loadRecharges() {
   tb.innerHTML = data.map(r => {
     var allocs = (r.allocations||[]).map(a => {
       var name = a.teacher ? (a.teacher.name + ' (Profesor)') : (a.student ? a.student.name : '?');
-      return `${name}: $${parseFloat(a.amount).toFixed(2)}`;
-    }).join(' · ');
+      var recharged = `$${parseFloat(a.amount).toFixed(2)}`;
+      var balance = a.student && a.student.balance != null
+        ? ` <span style="color:var(--success);font-size:11px">→ saldo: $${parseFloat(a.student.balance).toFixed(2)}</span>`
+        : (a.teacher && a.teacher.balance != null ? ` <span style="color:var(--success);font-size:11px">→ saldo: $${parseFloat(a.teacher.balance).toFixed(2)}</span>` : '');
+      return `${name}: ${recharged}${balance}`;
+    }).join('<br/>');
     return `
     <tr>
       <td>${r.parent ? r.parent.name : '—'}<br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>

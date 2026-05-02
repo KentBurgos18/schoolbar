@@ -86,8 +86,8 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
         { model: User, as: 'parent', attributes: ['id', 'name'] },
         { model: RechargeAllocation, as: 'allocations',
           include: [
-            { model: Student, as: 'student', attributes: ['id', 'name', 'grade'], required: false },
-            { model: User, as: 'teacher', attributes: ['id', 'name'], required: false }
+            { model: Student, as: 'student', attributes: ['id', 'name', 'grade', 'balance', 'debt'], required: false },
+            { model: User, as: 'teacher', attributes: ['id', 'name', 'balance', 'debt'], required: false }
           ]
         }
       ],

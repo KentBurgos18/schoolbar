@@ -101,7 +101,7 @@ async function sendWeeklyReports() {
         subject: `${cfg.schoolName} — Resumen semanal de consumos (semana del ${weekStart.toLocaleDateString('es-EC')})`,
         html:    weeklyReportHtml({
           parentName: parent.name,
-          balance:    parent.balance,
+          balance:    children.reduce((sum, c) => sum + parseFloat(c.balance || 0), 0),
           children,
           weekStart,
           appUrl:     cfg.appUrl,
