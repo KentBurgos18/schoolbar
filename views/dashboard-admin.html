@@ -2155,14 +2155,17 @@ async function loadRecharges() {
     var allocs = (r.allocations||[]).map(a => {
       var name = a.teacher ? (a.teacher.name + ' (Profesor)') : (a.student ? a.student.name : '?');
       var recharged = `$${parseFloat(a.amount).toFixed(2)}`;
-      var balance = a.student && a.student.balance != null
-        ? ` <span style="color:var(--success);font-size:11px">→ saldo: $${parseFloat(a.student.balance).toFixed(2)}</span>`
-        : (a.teacher && a.teacher.balance != null ? ` <span style="color:var(--success);font-size:11px">→ saldo: $${parseFloat(a.teacher.balance).toFixed(2)}</span>` : '');
-      return `${name}: ${recharged}${balance}`;
-    }).join('<br/>');
+      var bal = a.student && a.student.balance != null ? parseFloat(a.student.balance)
+              : (a.teacher && a.teacher.balance != null ? parseFloat(a.teacher.balance) : null);
+      var balHtml = bal !== null ? ` <span style="color:var(--success)">→ $${bal.toFixed(2)}</span>` : '';
+      return `<span style="white-space:nowrap">${name}: ${recharged}${balHtml}</span>`;
+    }).join(' &nbsp;·&nbsp; ');
     return `
     <tr>
-      <td>${r.parent ? r.parent.name : '—'}<br/><span style="font-size:11px;color:var(--gray-400)">${allocs}</span></td>
+      <td style="max-width:220px">
+        <div style="font-weight:600">${r.parent ? r.parent.name : '—'}</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:2px;line-height:1.6">${allocs}</div>
+      </td>
       <td style="min-width:90px"><strong>$${parseFloat(r.amount).toFixed(2)}</strong></td>
       <td class="hm">${r.method==='TRANSFER'?'Transferencia':'Efectivo'}</td>
       <td class="hm">
