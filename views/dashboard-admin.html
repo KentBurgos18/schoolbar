@@ -362,6 +362,9 @@
             <button class="btn btn-primary btn-sm" onclick="openRechargeModal()">+ Recargar a responsable</button>
           </div>
           <div class="card-body">
+            <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+              <input type="text" id="rechargeSearch" class="form-control" placeholder="Buscar por responsable..." style="max-width:280px;height:36px" oninput="filterRecharges()" />
+            </div>
             <div class="table-wrap">
               <table>
                 <thead><tr><th>Responsable</th><th style="min-width:90px">Monto</th><th class="hm">Método</th><th class="hm">Cuenta</th><th class="hm">Referencia</th><th style="text-align:center">Comprobante</th><th>Estado</th><th class="hm">Fecha</th><th>Acción</th></tr></thead>
@@ -2147,10 +2150,27 @@ async function applyRecharge() {
   loadRecharges();
 }
 
+var _rechargesData = [];
+
+function filterRecharges() {
+  var q = (document.getElementById('rechargeSearch').value || '').toLowerCase().trim();
+  var filtered = q ? _rechargesData.filter(r => (r.parent && r.parent.name.toLowerCase().includes(q))) : _rechargesData;
+  renderRechargesTable(filtered);
+}
+
 async function loadRecharges() {
   var data = await loadRechargesWithCache();
+  _rechargesData = data || [];
+  var search = document.getElementById('rechargeSearch');
+  if (search) search.value = '';
   var tb = document.getElementById('rechargesTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
+  if (!_rechargesData.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--gray-400)">Sin recargas</td></tr>'; return; }
+  renderRechargesTable(_rechargesData);
+}
+
+function renderRechargesTable(data) {
+  var tb = document.getElementById('rechargesTbody');
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>'; return; }
   tb.innerHTML = data.map(r => {
     var allocs = (r.allocations||[]).map(a => {
       var name = a.teacher ? (a.teacher.name + ' (Profesor)') : (a.student ? a.student.name : '?');
