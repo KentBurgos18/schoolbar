@@ -159,8 +159,8 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
     const { from, to } = req.query;
     let dateClause = '';
     const replacements = {};
-    if (from) { dateClause += ' AND s.created_at >= :from'; replacements.from = new Date(from); }
-    if (to)   { dateClause += ' AND s.created_at <= :to';   replacements.to   = new Date(to + 'T23:59:59'); }
+    if (from) { dateClause += " AND DATE(s.created_at AT TIME ZONE 'America/Guayaquil') >= :from"; replacements.from = from; }
+    if (to)   { dateClause += " AND DATE(s.created_at AT TIME ZONE 'America/Guayaquil') <= :to";   replacements.to   = to; }
 
     // Padres — ventas tipo STUDENT agrupadas por parent_id
     const parentsRows = await sequelize.query(`
@@ -269,9 +269,11 @@ router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
     if (cashier_id)      where.cashier_id      = cashier_id;
 
     if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt[Op.gte] = new Date(from + 'T00:00:00');
-      if (to)   where.createdAt[Op.lte] = new Date(to   + 'T23:59:59');
+      const { literal } = require('sequelize');
+      const conditions = [];
+      if (from) conditions.push(literal(`DATE(created_at AT TIME ZONE 'America/Guayaquil') >= '${from}'`));
+      if (to)   conditions.push(literal(`DATE(created_at AT TIME ZONE 'America/Guayaquil') <= '${to}'`));
+      where[Op.and] = conditions;
     }
 
     const sales = await Sale.findAll({
