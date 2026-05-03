@@ -4,7 +4,8 @@ const { Setting } = require('../models');
 const auth = require('../middlewares/auth');
 const { verifyConnection, sendMail, debtEmailHtml } = require('../services/EmailService');
 const { sendDebtNotifications } = require('../services/DebtNotifier');
-const { sendWeeklyReports, startWeeklyReportCron } = require('../services/WeeklyReportNotifier');
+const { sendWeeklyReports, startWeeklyReportCron, sendWeeklyReportPreview } = require('../services/WeeklyReportNotifier');
+const { User } = require('../models');
 
 const SMTP_KEYS = [
   'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'smtp_secure', 'app_url',
@@ -108,6 +109,24 @@ router.post('/email/send-weekly-now', auth('ADMIN'), async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al enviar reportes: ' + err.message });
+  }
+});
+
+// POST /api/settings/email/weekly-preview  → enviar preview del reporte de un padre específico a un email de prueba
+router.post('/email/weekly-preview', auth('ADMIN'), async (req, res) => {
+  try {
+    const { parent_name, override_email } = req.body;
+    if (!parent_name) return res.status(400).json({ error: 'Indica el nombre del padre (parent_name)' });
+    if (!override_email) return res.status(400).json({ error: 'Indica el email de destino (override_email)' });
+
+    const { Op } = require('sequelize');
+    const parent = await User.findOne({ where: { name: { [Op.iLike]: `%${parent_name}%` }, role: 'PARENT' } });
+    if (!parent) return res.status(404).json({ error: `No se encontró ningún padre con nombre: ${parent_name}` });
+
+    const result = await sendWeeklyReportPreview(parent.id, override_email);
+    res.json({ message: `Preview del reporte de "${result.parentName}" enviado a ${result.sentTo} (${result.childCount} hijo/s)` });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar preview: ' + err.message });
   }
 });
 

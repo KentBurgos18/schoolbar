@@ -143,4 +143,62 @@ async function startWeeklyReportCron() {
   console.log(`[WeeklyReport] Estado: ${cfg.enabled ? 'HABILITADO' : 'DESHABILITADO (el cron corre pero omite el envío)'}`);
 }
 
-module.exports = { startWeeklyReportCron, sendWeeklyReports };
+// Envía el reporte semanal de UN padre específico a un email de destino (para pruebas)
+async function sendWeeklyReportPreview(parentId, overrideEmail) {
+  const cfg = await getReportConfig();
+
+  const weekStart = new Date();
+  const day = weekStart.getDay();
+  const diffToMonday = (day === 0) ? 6 : day - 1;
+  weekStart.setDate(weekStart.getDate() - diffToMonday);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const parent = await User.findByPk(parentId, {
+    include: [{
+      model: Student,
+      as: 'students',
+      where: { active: true },
+      required: false,
+      attributes: ['id', 'name', 'grade', 'balance', 'debt']
+    }]
+  });
+
+  if (!parent) throw new Error('Padre no encontrado');
+
+  const children = await Promise.all(
+    (parent.students || []).map(async (s) => {
+      const sales = await Sale.findAll({
+        where: { student_id: s.id, created_at: { [Op.gte]: weekStart } },
+        include: [{ model: SaleItem, as: 'items' }]
+      });
+      const itemMap = {};
+      let totalConsumed = 0;
+      for (const sale of sales) {
+        totalConsumed += parseFloat(sale.total);
+        for (const item of (sale.items || [])) {
+          if (!itemMap[item.name]) itemMap[item.name] = { name: item.name, qty: 0, subtotal: 0 };
+          itemMap[item.name].qty      += item.quantity;
+          itemMap[item.name].subtotal += parseFloat(item.subtotal);
+        }
+      }
+      return { ...s.dataValues, total_consumed: totalConsumed, sale_count: sales.length, items: Object.values(itemMap) };
+    })
+  );
+
+  await sendMail({
+    to: overrideEmail,
+    subject: `[PREVIEW] ${cfg.schoolName} — Resumen semanal de consumos (semana del ${weekStart.toLocaleDateString('es-EC')})`,
+    html: weeklyReportHtml({
+      parentName: parent.name,
+      balance:    children.reduce((sum, c) => sum + parseFloat(c.balance || 0), 0),
+      children,
+      weekStart,
+      appUrl:     cfg.appUrl,
+      schoolName: cfg.schoolName
+    })
+  });
+
+  return { parentName: parent.name, sentTo: overrideEmail, childCount: children.length };
+}
+
+module.exports = { startWeeklyReportCron, sendWeeklyReports, sendWeeklyReportPreview };
