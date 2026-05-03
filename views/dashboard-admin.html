@@ -1196,6 +1196,9 @@ var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Pad
 
 function showSection(id) {
   if (!sections.includes(id)) id = 'overview';
+  // Limpiar buscadores al cambiar de sección
+  var parentsSearch = document.getElementById('parentsSearch');
+  if (parentsSearch) parentsSearch.value = '';
   sections.forEach(s => {
     document.getElementById('sec-' + s).style.display = s === id ? '' : 'none';
   });
