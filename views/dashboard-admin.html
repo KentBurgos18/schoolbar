@@ -282,6 +282,9 @@
             </div>
           </div>
           <div class="card-body">
+            <div style="margin-bottom:14px">
+              <input type="text" id="parentsSearch" placeholder="🔍 Buscar por nombre, email o hijo..." oninput="filterParents()" class="form-control" style="max-width:380px;height:38px;padding:8px 12px" />
+            </div>
             <div class="table-wrap">
               <table>
                 <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Teléfono</th><th>Saldo</th><th>Deuda</th><th class="hm">Crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
@@ -1481,10 +1484,11 @@ async function deleteCashier(id) {
 }
 
 // ── Parents ──
-async function loadParents() {
-  var data = await api('/parents');
+var _parentsData = [];
+
+function renderParentsTable(data) {
   var tb = document.getElementById('parentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin padres registrados</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
@@ -1518,6 +1522,24 @@ async function loadParents() {
         </div>
       </td>
     </tr>`).join('');
+}
+
+async function loadParents() {
+  var data = await api('/parents');
+  _parentsData = data || [];
+  renderParentsTable(_parentsData);
+}
+
+function filterParents() {
+  var q = (document.getElementById('parentsSearch').value || '').toLowerCase().trim();
+  if (!q) { renderParentsTable(_parentsData); return; }
+  var filtered = _parentsData.filter(p => {
+    if (p.name  && p.name.toLowerCase().includes(q))  return true;
+    if (p.email && p.email.toLowerCase().includes(q)) return true;
+    if ((p.students || []).some(s => s.name && s.name.toLowerCase().includes(q))) return true;
+    return false;
+  });
+  renderParentsTable(filtered);
 }
 
 async function toggleAllowDebt(id, value) {
