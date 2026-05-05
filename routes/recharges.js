@@ -87,11 +87,18 @@ router.post('/', auth('PARENT'), async (req, res) => {
 });
 
 // GET /api/recharges  → admin ve todas, padre ve las suyas
+// IMPORTANTE: NO devolver receipt_image (puede pesar varios MB por imagen y haría el listado lentísimo).
+// Solo se devuelve un booleano has_receipt; para ver la imagen usar GET /api/recharges/:id/receipt
 router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
   try {
+    const { literal } = require('sequelize');
     const where = req.user.role === 'PARENT' ? { parent_id: req.user.id } : {};
     const recharges = await Recharge.findAll({
       where,
+      attributes: {
+        exclude: ['receipt_image'],
+        include: [[literal('(receipt_image IS NOT NULL)'), 'has_receipt']]
+      },
       include: [
         { model: BankAccount, as: 'bankAccount', attributes: ['bank', 'number', 'owner'] },
         { model: User, as: 'parent', attributes: ['id', 'name'] },
@@ -106,7 +113,21 @@ router.get('/', auth('ADMIN', 'PARENT'), async (req, res) => {
     });
     res.json(recharges);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error al obtener recargas' });
+  }
+});
+
+// GET /api/recharges/:id/receipt  → cargar el comprobante (imagen base64) on-demand
+router.get('/:id/receipt', auth('ADMIN', 'PARENT'), async (req, res) => {
+  try {
+    const where = { id: req.params.id };
+    if (req.user.role === 'PARENT') where.parent_id = req.user.id;
+    const recharge = await Recharge.findOne({ where, attributes: ['id', 'receipt_image'] });
+    if (!recharge) return res.status(404).json({ error: 'Recarga no encontrada' });
+    res.json({ receipt_image: recharge.receipt_image });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener comprobante' });
   }
 });
 

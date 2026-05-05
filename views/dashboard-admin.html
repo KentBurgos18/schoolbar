@@ -2218,7 +2218,7 @@ function renderRechargesTable(data) {
       </td>
       <td class="hm">${r.receipt_ref || '—'}</td>
       <td style="text-align:center">
-        ${r.receipt_image
+        ${r.has_receipt
           ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver</button>`
           : '—'}
       </td>
@@ -2262,11 +2262,14 @@ async function loadRechargesWithCache() {
   return data;
 }
 
-function viewReceipt(id) {
+async function viewReceipt(id) {
   var r = _rechargesCache.find(x => String(x.id) === String(id));
-  if (!r || !r.receipt_image) { toast('No hay comprobante disponible', 'error'); return; }
-  document.getElementById('receiptModalImg').src = r.receipt_image;
-  document.getElementById('receiptDownloadLink').href = r.receipt_image;
+  if (!r || !r.has_receipt) { toast('No hay comprobante disponible', 'error'); return; }
+  // Cargar la imagen on-demand para no saturar el listado
+  var data = await api('/recharges/' + id + '/receipt');
+  if (!data || !data.receipt_image) { toast('No se pudo cargar el comprobante', 'error'); return; }
+  document.getElementById('receiptModalImg').src = data.receipt_image;
+  document.getElementById('receiptDownloadLink').href = data.receipt_image;
   openModal('modalReceipt');
 }
 
