@@ -823,6 +823,8 @@ function copyBankField(elementId, btnId) {
 }
 
 async function submitRecharge() {
+  var btn = document.getElementById('btnSubmitRecharge');
+  if (btn.disabled) return; // evitar doble clic
   var method = document.getElementById('rMethod').value;
   if (method==='TRANSFER' && !document.getElementById('rBankAccount').value) { toast('Selecciona una cuenta bancaria', 'error'); return; }
   if (method==='TRANSFER' && !document.getElementById('rRef').value.trim()) { toast('Ingresa el número de referencia', 'error'); return; }
@@ -852,15 +854,27 @@ async function submitRecharge() {
     receipt_image:   method==='TRANSFER' ? receiptBase64 : null
   };
 
+  // Deshabilitar botón para evitar envíos duplicados por doble clic o mala señal
+  btn.disabled = true;
+  var origText = btn.textContent;
+  btn.textContent = 'Enviando...';
+
   var res, data;
   try {
     res  = await fetch(API+'/recharges', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
     data = await res.json();
   } catch(e) {
     toast('Error de conexión al enviar la solicitud. Intenta de nuevo.', 'error');
+    btn.disabled = false;
+    btn.textContent = origText;
     return;
   }
-  if (!res.ok) { toast(data.error || 'Error al enviar la solicitud', 'error'); return; }
+  if (!res.ok) {
+    toast(data.error || 'Error al enviar la solicitud', 'error');
+    btn.disabled = false;
+    btn.textContent = origText;
+    return;
+  }
   toast('Solicitud enviada por $'+totalAmount.toFixed(2)+'. Pendiente de aprobación.', 'success');
   document.getElementById('rRef').value='';
   if (document.getElementById('rFromBank')) document.getElementById('rFromBank').value='';

@@ -20,6 +20,17 @@ router.post('/', auth('PARENT'), async (req, res) => {
       if (!receipt_image) { await t.rollback(); return res.status(400).json({ error: 'Debes subir la imagen del comprobante de transferencia' }); }
     }
 
+    // Protección anti-duplicado: rechazar si el mismo padre envió la misma recarga en los últimos 15 segundos
+    const since = new Date(Date.now() - 15000);
+    const recent = await Recharge.findOne({
+      where: { parent_id: req.user.id, amount: parseFloat(amount), method, created_at: { [Op.gte]: since } },
+      transaction: t
+    });
+    if (recent) {
+      await t.rollback();
+      return res.status(429).json({ error: 'Solicitud duplicada. Ya enviaste esta recarga hace unos segundos.' });
+    }
+
     // Validar que la suma de allocations === amount
     const total = allocations.reduce((s, a) => s + parseFloat(a.amount), 0);
     if (Math.abs(total - parseFloat(amount)) > 0.01) {
