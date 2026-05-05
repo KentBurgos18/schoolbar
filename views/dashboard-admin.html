@@ -2219,7 +2219,7 @@ function renderRechargesTable(data) {
       <td class="hm">${r.receipt_ref || '—'}</td>
       <td style="text-align:center">
         ${r.has_receipt
-          ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}')">Ver</button>`
+          ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt('${r.id}', this)">Ver</button>`
           : '—'}
       </td>
       <td>${statusBadge(r.status)}</td>
@@ -2262,15 +2262,31 @@ async function loadRechargesWithCache() {
   return data;
 }
 
-async function viewReceipt(id) {
+async function viewReceipt(id, btn) {
   var r = _rechargesCache.find(x => String(x.id) === String(id));
   if (!r || !r.has_receipt) { toast('No hay comprobante disponible', 'error'); return; }
-  // Cargar la imagen on-demand para no saturar el listado
-  var data = await api('/recharges/' + id + '/receipt');
-  if (!data || !data.receipt_image) { toast('No se pudo cargar el comprobante', 'error'); return; }
-  document.getElementById('receiptModalImg').src = data.receipt_image;
-  document.getElementById('receiptDownloadLink').href = data.receipt_image;
-  openModal('modalReceipt');
+  // Deshabilitar el botón mientras carga para evitar múltiples clics
+  if (btn) {
+    if (btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+    btn.dataset.origText = btn.textContent;
+    btn.textContent = 'Cargando...';
+  }
+  try {
+    // Cargar la imagen on-demand para no saturar el listado
+    var data = await api('/recharges/' + id + '/receipt');
+    if (!data || !data.receipt_image) { toast('No se pudo cargar el comprobante', 'error'); return; }
+    document.getElementById('receiptModalImg').src = data.receipt_image;
+    document.getElementById('receiptDownloadLink').href = data.receipt_image;
+    openModal('modalReceipt');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = btn.dataset.origText || 'Ver';
+      btn.dataset.loading = '0';
+    }
+  }
 }
 
 // ── Banks ──
