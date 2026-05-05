@@ -137,7 +137,9 @@ router.patch('/:id/approve', auth('ADMIN'), async (req, res) => {
         const userDebt       = parseFloat(teacherUser.debt);
         const debtPaid       = Math.min(userDebt, allocAmount);
         const addedToBalance = allocAmount - debtPaid;
-        await teacherUser.update({ balance: parseFloat(teacherUser.balance) + addedToBalance, debt: userDebt - debtPaid }, { transaction: t });
+        const newBalance     = parseFloat(teacherUser.balance) + addedToBalance;
+        await teacherUser.update({ balance: newBalance, debt: userDebt - debtPaid }, { transaction: t });
+        await alloc.update({ balance_after: newBalance }, { transaction: t });
         totalDebtPaid += debtPaid;
       } else {
         // Student allocation
@@ -146,7 +148,9 @@ router.patch('/:id/approve', auth('ADMIN'), async (req, res) => {
         const studentDebt    = parseFloat(student.debt);
         const debtPaid       = Math.min(studentDebt, allocAmount);
         const addedToBalance = allocAmount - debtPaid;
-        await student.update({ balance: parseFloat(student.balance) + addedToBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        const newBalance     = parseFloat(student.balance) + addedToBalance;
+        await student.update({ balance: newBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        await alloc.update({ balance_after: newBalance }, { transaction: t });
         totalDebtPaid += debtPaid;
       }
     }
@@ -216,20 +220,22 @@ router.post('/admin-add', auth('ADMIN'), async (req, res) => {
     for (const a of validAllocs) {
       const allocAmount = parseFloat(a.amount);
       if (a.user_id) {
-        await RechargeAllocation.create({ recharge_id: recharge.id, user_id: parseInt(a.user_id), student_id: null, amount: allocAmount }, { transaction: t });
         const teacherUser = await User.findByPk(a.user_id, { transaction: t, lock: true });
         const userDebt       = parseFloat(teacherUser.debt);
         const debtPaid       = Math.min(userDebt, allocAmount);
         const addedToBalance = allocAmount - debtPaid;
-        await teacherUser.update({ balance: parseFloat(teacherUser.balance) + addedToBalance, debt: userDebt - debtPaid }, { transaction: t });
+        const newBalance     = parseFloat(teacherUser.balance) + addedToBalance;
+        await teacherUser.update({ balance: newBalance, debt: userDebt - debtPaid }, { transaction: t });
+        await RechargeAllocation.create({ recharge_id: recharge.id, user_id: parseInt(a.user_id), student_id: null, amount: allocAmount, balance_after: newBalance }, { transaction: t });
         totalDebtPaid += debtPaid;
       } else {
-        await RechargeAllocation.create({ recharge_id: recharge.id, student_id: parseInt(a.student_id), amount: allocAmount }, { transaction: t });
         const student = await Student.findByPk(a.student_id, { transaction: t, lock: true });
         const studentDebt    = parseFloat(student.debt);
         const debtPaid       = Math.min(studentDebt, allocAmount);
         const addedToBalance = allocAmount - debtPaid;
-        await student.update({ balance: parseFloat(student.balance) + addedToBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        const newBalance     = parseFloat(student.balance) + addedToBalance;
+        await student.update({ balance: newBalance, debt: studentDebt - debtPaid }, { transaction: t });
+        await RechargeAllocation.create({ recharge_id: recharge.id, student_id: parseInt(a.student_id), amount: allocAmount, balance_after: newBalance }, { transaction: t });
         totalDebtPaid += debtPaid;
       }
     }

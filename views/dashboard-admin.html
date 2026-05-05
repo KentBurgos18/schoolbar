@@ -2201,9 +2201,7 @@ function renderRechargesTable(data) {
     var allocs = (r.allocations||[]).map(a => {
       var name = a.teacher ? (a.teacher.name + ' (Profesor)') : (a.student ? a.student.name : '?');
       var recharged = `$${parseFloat(a.amount).toFixed(2)}`;
-      var bal = a.student && a.student.balance != null ? parseFloat(a.student.balance)
-              : (a.teacher && a.teacher.balance != null ? parseFloat(a.teacher.balance) : null);
-      var balHtml = bal !== null ? ` <span style="color:var(--success)">→ $${bal.toFixed(2)}</span>` : '';
+      var balHtml = a.balance_after != null ? ` <span style="color:var(--success)">→ $${parseFloat(a.balance_after).toFixed(2)}</span>` : '';
       return `<span style="white-space:nowrap">${name}: ${recharged}${balHtml}</span>`;
     }).join(' &nbsp;·&nbsp; ');
     return `

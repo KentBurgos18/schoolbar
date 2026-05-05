@@ -97,11 +97,12 @@ const BankAccount = sequelize.define('BankAccount', {
 }, { tableName: 'bank_accounts', underscored: true });
 
 const RechargeAllocation = sequelize.define('RechargeAllocation', {
-  id:          { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  recharge_id: { type: DataTypes.INTEGER, allowNull: false },
-  student_id:  { type: DataTypes.INTEGER, allowNull: true },
-  user_id:     { type: DataTypes.INTEGER, allowNull: true },
-  amount:      { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  id:            { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  recharge_id:   { type: DataTypes.INTEGER, allowNull: false },
+  student_id:    { type: DataTypes.INTEGER, allowNull: true },
+  user_id:       { type: DataTypes.INTEGER, allowNull: true },
+  amount:        { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  balance_after: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
 }, { tableName: 'recharge_allocations', underscored: true });
 
 const Category = sequelize.define('Category', {
