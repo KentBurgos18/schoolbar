@@ -45,7 +45,7 @@ async function sendWeeklyReports() {
       as: 'students',
       where: { active: true },
       required: true,
-      attributes: ['id', 'name', 'grade']
+      attributes: ['id', 'name', 'grade', 'balance', 'debt']
     }]
   });
 
