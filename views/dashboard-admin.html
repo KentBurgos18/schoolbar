@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="/css/theme.css" />
   <script src="/js/xlsx.full.min.js"></script>
   <style>
+    /* Evitar el auto-zoom de texto que aplica iOS Safari cuando hay acumulación de texto pequeño */
+    html { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; text-size-adjust: 100%; }
+
     /* ── Grids base (sin media query — deben ir primero) ── */
     #salesStatsGrid   { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
     #emailSectionGrid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
