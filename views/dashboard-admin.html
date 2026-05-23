@@ -287,8 +287,8 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Teléfono</th><th>Saldo</th><th>Deuda</th><th class="hm">Crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
-                <tbody id="parentsTbody"><tr><td colspan="8"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
+                <thead><tr><th>Nombre</th><th class="hm">Email</th><th class="hm">Teléfono</th><th>Saldo</th><th>Deuda</th><th class="hm" title="Total recargado histórico">Recargado</th><th class="hm" title="Total consumido histórico">Consumido</th><th class="hm">Crédito</th><th>Hijos</th><th>Acciones</th></tr></thead>
+                <tbody id="parentsTbody"><tr><td colspan="10"><p style="padding:20px;text-align:center;color:var(--gray-400)">Cargando...</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -1491,7 +1491,7 @@ var _parentsData = [];
 
 function renderParentsTable(data) {
   var tb = document.getElementById('parentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>'; return; }
   tb.innerHTML = data.map(p => `
     <tr>
       <td><strong>${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
@@ -1511,6 +1511,8 @@ function renderParentsTable(data) {
         var totalDebt = p.is_teacher ? parseFloat(p.debt||0)+childrenDebt : childrenDebt;
         return totalDebt>0 ? '<span class="debt-pill">$'+totalDebt.toFixed(2)+'</span>' : '<span class="badge badge-success">Sin deuda</span>';
       })()}</td>
+      <td class="hm"><span style="font-size:13px;color:var(--gray-700);font-weight:600">$${parseFloat(p.total_recharged||0).toFixed(2)}</span></td>
+      <td class="hm"><span style="font-size:13px;color:var(--gray-700);font-weight:600">$${parseFloat(p.total_consumed||0).toFixed(2)}</span></td>
       <td class="hm" style="text-align:center">
         <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar crédito' : 'Activar crédito'}">
           <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />

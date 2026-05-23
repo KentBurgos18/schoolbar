@@ -27,13 +27,45 @@ router.get('/template', auth('ADMIN'), (req, res) => {
 // GET /api/parents  → lista de padres (solo admin)
 router.get('/', auth('ADMIN'), async (req, res) => {
   try {
+    const { sequelize } = require('../models');
     const parents = await User.findAll({
       where: { role: 'PARENT' },
       attributes: ['id', 'name', 'email', 'phone', 'balance', 'debt', 'allow_debt', 'is_teacher'],
       include: [{ model: Student, as: 'students', attributes: ['id', 'name', 'grade', 'balance', 'debt'] }]
     });
-    res.json(parents);
+
+    // Totales acumulados (recargas aprobadas y ventas) por padre — sumando estudiantes + profesor
+    const rechargedRows = await sequelize.query(`
+      SELECT u.id AS parent_id, COALESCE(SUM(ra.amount), 0)::numeric AS total_recharged
+      FROM users u
+      LEFT JOIN students st ON st.parent_id = u.id
+      LEFT JOIN recharge_allocations ra ON (ra.student_id = st.id OR ra.user_id = u.id)
+      LEFT JOIN recharges r ON r.id = ra.recharge_id AND r.status = 'APPROVED'
+      WHERE u.role = 'PARENT'
+      GROUP BY u.id
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const consumedRows = await sequelize.query(`
+      SELECT u.id AS parent_id, COALESCE(SUM(s.total), 0)::numeric AS total_consumed
+      FROM users u
+      LEFT JOIN sales s ON (s.parent_id = u.id)
+      WHERE u.role = 'PARENT' AND (s.customer_type IN ('STUDENT', 'TEACHER') OR s.id IS NULL)
+      GROUP BY u.id
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const rechargedMap = Object.fromEntries(rechargedRows.map(r => [r.parent_id, parseFloat(r.total_recharged)]));
+    const consumedMap  = Object.fromEntries(consumedRows.map(r => [r.parent_id, parseFloat(r.total_consumed)]));
+
+    const result = parents.map(p => {
+      const obj = p.toJSON();
+      obj.total_recharged = rechargedMap[p.id] || 0;
+      obj.total_consumed  = consumedMap[p.id]  || 0;
+      return obj;
+    });
+
+    res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error al obtener padres' });
   }
 });
