@@ -41,6 +41,16 @@
       #sec-sales .sales-filter-grid-4 { grid-template-columns: 1fr 1fr; }
     }
 
+    /* Mini-tabla de detalle dentro de fila expandida (Padres) */
+    .parent-detail-table .pd-head { padding: 7px 8px; font-size: 11px; color: var(--gray-500); font-weight: 700; text-transform: uppercase; }
+    .parent-detail-table .pd-name { text-align: left; padding: 7px 8px; font-size: 13px; }
+    .parent-detail-table .pd-num  { text-align: right; padding: 7px 8px; font-size: 13px; color: var(--gray-700); font-weight: 600; white-space: nowrap; }
+    @media (max-width: 640px) {
+      .parent-detail-table .pd-head { padding: 5px 4px; font-size: 9px; letter-spacing: 0; }
+      .parent-detail-table .pd-name { padding: 5px 4px; font-size: 11px; }
+      .parent-detail-table .pd-num  { padding: 5px 4px; font-size: 11px; }
+    }
+
     /* ── Responsive: móvil ── */
     @media (max-width: 640px) {
       #sec-sales .sales-filter-grid-4 { grid-template-columns: 1fr; }
@@ -1523,11 +1533,11 @@ function buildParentDetailRow(p) {
     var deu = parseFloat(c.debt    || 0);
     return `
       <tr>
-        <td style="padding:6px 10px"><strong style="font-size:13px">${c.name}</strong></td>
-        <td style="padding:6px 10px;text-align:right;font-size:13px;color:var(--gray-700);font-weight:600">$${rec.toFixed(2)}</td>
-        <td style="padding:6px 10px;text-align:right;font-size:13px;color:var(--gray-700);font-weight:600">$${con.toFixed(2)}</td>
-        <td style="padding:6px 10px;text-align:right">${bal>0 ? '<span style="color:var(--success);font-weight:700">$'+bal.toFixed(2)+'</span>' : '<span style="color:var(--gray-400)">$0.00</span>'}</td>
-        <td style="padding:6px 10px;text-align:right">${deu>0 ? '<span style="color:var(--danger);font-weight:700">$'+deu.toFixed(2)+'</span>' : '<span style="color:var(--success)">$0.00</span>'}</td>
+        <td class="pd-name"><strong>${c.name}</strong></td>
+        <td class="pd-num">${bal>0 ? '<span style="color:var(--success);font-weight:700">$'+bal.toFixed(2)+'</span>' : '<span style="color:var(--gray-400)">$0.00</span>'}</td>
+        <td class="pd-num">${deu>0 ? '<span style="color:var(--danger);font-weight:700">$'+deu.toFixed(2)+'</span>' : '<span style="color:var(--success)">$0.00</span>'}</td>
+        <td class="pd-num">$${rec.toFixed(2)}</td>
+        <td class="pd-num">$${con.toFixed(2)}</td>
       </tr>`;
   }).join('');
   return `
@@ -1535,14 +1545,14 @@ function buildParentDetailRow(p) {
       <td colspan="10" style="background:var(--gray-50);padding:10px 14px">
         <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Detalle por persona</div>
         <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
+          <table class="parent-detail-table" style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
             <thead>
               <tr style="background:#fff;border-bottom:1px solid var(--gray-200)">
-                <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Persona</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Recargado</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Consumido</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Saldo</th>
-                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Deuda</th>
+                <th class="pd-head pd-name">Persona</th>
+                <th class="pd-head pd-num">Saldo</th>
+                <th class="pd-head pd-num">Deuda</th>
+                <th class="pd-head pd-num">Recargado</th>
+                <th class="pd-head pd-num">Consumido</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
