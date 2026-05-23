@@ -56,10 +56,34 @@ router.get('/', auth('ADMIN'), async (req, res) => {
     const rechargedMap = Object.fromEntries(rechargedRows.map(r => [r.parent_id, parseFloat(r.total_recharged)]));
     const consumedMap  = Object.fromEntries(consumedRows.map(r => [r.parent_id, parseFloat(r.total_consumed)]));
 
+    // Totales acumulados POR HIJO (para el detalle expandible)
+    const studentRechargedRows = await sequelize.query(`
+      SELECT ra.student_id, COALESCE(SUM(ra.amount), 0)::numeric AS total_recharged
+      FROM recharge_allocations ra
+      JOIN recharges r ON r.id = ra.recharge_id
+      WHERE r.status = 'APPROVED' AND ra.student_id IS NOT NULL
+      GROUP BY ra.student_id
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const studentConsumedRows = await sequelize.query(`
+      SELECT student_id, COALESCE(SUM(total), 0)::numeric AS total_consumed
+      FROM sales
+      WHERE customer_type = 'STUDENT' AND student_id IS NOT NULL
+      GROUP BY student_id
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const studentRechargedMap = Object.fromEntries(studentRechargedRows.map(r => [r.student_id, parseFloat(r.total_recharged)]));
+    const studentConsumedMap  = Object.fromEntries(studentConsumedRows.map(r => [r.student_id, parseFloat(r.total_consumed)]));
+
     const result = parents.map(p => {
       const obj = p.toJSON();
       obj.total_recharged = rechargedMap[p.id] || 0;
       obj.total_consumed  = consumedMap[p.id]  || 0;
+      obj.students = (obj.students || []).map(s => ({
+        ...s,
+        total_recharged: studentRechargedMap[s.id] || 0,
+        total_consumed:  studentConsumedMap[s.id]  || 0
+      }));
       return obj;
     });
 

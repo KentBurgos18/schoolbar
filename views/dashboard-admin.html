@@ -1499,18 +1499,83 @@ async function deleteCashier(id) {
 
 // ── Parents ──
 var _parentsData = [];
+var _expandedParents = new Set();
+
+function buildParentDetailRow(p) {
+  var children = p.students || [];
+  if (p.is_teacher) {
+    children = [{
+      id: 'teacher_' + p.id,
+      name: p.name + ' (Profesor)',
+      total_recharged: parseFloat(p.total_recharged || 0) - children.reduce((s, st) => s + parseFloat(st.total_recharged || 0), 0),
+      total_consumed:  parseFloat(p.total_consumed  || 0) - children.reduce((s, st) => s + parseFloat(st.total_consumed  || 0), 0),
+      balance: parseFloat(p.balance || 0),
+      debt:    parseFloat(p.debt    || 0)
+    }].concat(children);
+  }
+  if (!children.length) {
+    return `<tr class="parent-detail-row" data-parent-id="${p.id}"><td colspan="10" style="background:var(--gray-50);padding:14px;text-align:center;color:var(--gray-400)">Sin hijos registrados</td></tr>`;
+  }
+  var rows = children.map(c => {
+    var rec = parseFloat(c.total_recharged || 0);
+    var con = parseFloat(c.total_consumed  || 0);
+    var bal = parseFloat(c.balance || 0);
+    var deu = parseFloat(c.debt    || 0);
+    return `
+      <tr>
+        <td style="padding:6px 10px"><strong style="font-size:13px">${c.name}</strong></td>
+        <td style="padding:6px 10px;text-align:right;font-size:13px;color:var(--gray-700);font-weight:600">$${rec.toFixed(2)}</td>
+        <td style="padding:6px 10px;text-align:right;font-size:13px;color:var(--gray-700);font-weight:600">$${con.toFixed(2)}</td>
+        <td style="padding:6px 10px;text-align:right">${bal>0 ? '<span style="color:var(--success);font-weight:700">$'+bal.toFixed(2)+'</span>' : '<span style="color:var(--gray-400)">$0.00</span>'}</td>
+        <td style="padding:6px 10px;text-align:right">${deu>0 ? '<span style="color:var(--danger);font-weight:700">$'+deu.toFixed(2)+'</span>' : '<span style="color:var(--success)">$0.00</span>'}</td>
+      </tr>`;
+  }).join('');
+  return `
+    <tr class="parent-detail-row" data-parent-id="${p.id}">
+      <td colspan="10" style="background:var(--gray-50);padding:10px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Detalle por persona</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
+            <thead>
+              <tr style="background:#fff;border-bottom:1px solid var(--gray-200)">
+                <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Persona</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Recargado</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Consumido</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Saldo</th>
+                <th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Deuda</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function toggleParentDetail(parentId) {
+  if (_expandedParents.has(parentId)) {
+    _expandedParents.delete(parentId);
+  } else {
+    _expandedParents.add(parentId);
+  }
+  renderParentsTable(_parentsData_filtered || _parentsData);
+}
+
+var _parentsData_filtered = null;
 
 function renderParentsTable(data) {
   var tb = document.getElementById('parentsTbody');
   if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>'; return; }
-  tb.innerHTML = data.map(p => `
-    <tr>
-      <td><strong>${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
+  tb.innerHTML = data.map(p => {
+    var isExpanded = _expandedParents.has(p.id);
+    var chevron = `<span style="display:inline-block;width:14px;text-align:center;color:var(--gray-400);font-size:10px;transition:transform .15s;transform:${isExpanded?'rotate(90deg)':'rotate(0)'}">▶</span>`;
+    var mainRow = `
+    <tr style="cursor:pointer" onclick="toggleParentDetail(${p.id})">
+      <td><strong>${chevron} ${p.name}</strong>${p.is_teacher ? ' <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px">Profesor</span>' : ''}</td>
       <td class="hm">${p.email}</td>
       <td class="hm">${p.phone || '—'}</td>
       <td>${(function(){
         var childrenBal = (p.students||[]).reduce((s,st)=>s+parseFloat(st.balance||0),0);
-        var childrenDebt = (p.students||[]).reduce((s,st)=>s+parseFloat(st.debt||0),0);
         if(p.is_teacher){
           return '<span class="balance-pill">👨‍🏫 $'+parseFloat(p.balance||0).toFixed(2)+'</span>' +
             (p.students&&p.students.length ? '<br><span class="balance-pill" style="margin-top:3px">👨‍👩‍👧 $'+childrenBal.toFixed(2)+'</span>' : '');
@@ -1524,20 +1589,22 @@ function renderParentsTable(data) {
       })()}</td>
       <td class="hm"><span style="font-size:13px;color:var(--gray-700);font-weight:600">$${parseFloat(p.total_recharged||0).toFixed(2)}</span></td>
       <td class="hm"><span style="font-size:13px;color:var(--gray-700);font-weight:600">$${parseFloat(p.total_consumed||0).toFixed(2)}</span></td>
-      <td class="hm" style="text-align:center">
+      <td class="hm" style="text-align:center" onclick="event.stopPropagation()">
         <label class="toggle-switch" title="${p.allow_debt ? 'Desactivar crédito' : 'Activar crédito'}">
           <input type="checkbox" ${p.allow_debt ? 'checked' : ''} onchange="toggleAllowDebt(${p.id}, this.checked)" />
           <span class="toggle-slider"></span>
         </label>
       </td>
       <td>${(p.students||[]).map(s=>`<span class="badge badge-gray">${s.name}</span>`).join(' ') || '—'}</td>
-      <td>
+      <td onclick="event.stopPropagation()">
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="openEditParent(${p.id},'${p.name.replace(/'/g,"\\'")}','${p.email}','${p.phone||''}',${!!p.is_teacher})">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="deleteParent(${p.id})">Eliminar</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+    return isExpanded ? mainRow + buildParentDetailRow(p) : mainRow;
+  }).join('');
 }
 
 async function loadParents() {
@@ -1548,13 +1615,14 @@ async function loadParents() {
 
 function filterParents() {
   var q = (document.getElementById('parentsSearch').value || '').toLowerCase().trim();
-  if (!q) { renderParentsTable(_parentsData); return; }
+  if (!q) { _parentsData_filtered = null; renderParentsTable(_parentsData); return; }
   var filtered = _parentsData.filter(p => {
     if (p.name  && p.name.toLowerCase().includes(q))  return true;
     if (p.email && p.email.toLowerCase().includes(q)) return true;
     if ((p.students || []).some(s => s.name && s.name.toLowerCase().includes(q))) return true;
     return false;
   });
+  _parentsData_filtered = filtered;
   renderParentsTable(filtered);
 }
 
