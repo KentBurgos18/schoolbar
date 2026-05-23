@@ -42,13 +42,16 @@
     }
 
     /* Mini-tabla de detalle dentro de fila expandida (Padres) */
-    .parent-detail-table .pd-head { padding: 7px 8px; font-size: 11px; color: var(--gray-500); font-weight: 700; text-transform: uppercase; }
-    .parent-detail-table .pd-name { text-align: left; padding: 7px 8px; font-size: 13px; }
-    .parent-detail-table .pd-num  { text-align: right; padding: 7px 8px; font-size: 13px; color: var(--gray-700); font-weight: 600; white-space: nowrap; }
+    .parent-detail-row .parent-detail-title { font-size: 11px !important; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .parent-detail-table { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    .parent-detail-table .pd-head { padding: 7px 8px !important; font-size: 11px !important; color: var(--gray-500); font-weight: 700; text-transform: uppercase; }
+    .parent-detail-table .pd-name { text-align: left; padding: 7px 8px !important; font-size: 13px !important; }
+    .parent-detail-table .pd-num  { text-align: right; padding: 7px 8px !important; font-size: 13px !important; color: var(--gray-700); font-weight: 600; white-space: nowrap; }
     @media (max-width: 640px) {
-      .parent-detail-table .pd-head { padding: 5px 4px; font-size: 9px; letter-spacing: 0; }
-      .parent-detail-table .pd-name { padding: 5px 4px; font-size: 11px; }
-      .parent-detail-table .pd-num  { padding: 5px 4px; font-size: 11px; }
+      .parent-detail-row .parent-detail-title { font-size: 10px !important; letter-spacing: 0 !important; }
+      .parent-detail-table .pd-head { padding: 5px 4px !important; font-size: 9px !important; letter-spacing: 0 !important; }
+      .parent-detail-table .pd-name { padding: 5px 4px !important; font-size: 11px !important; }
+      .parent-detail-table .pd-num  { padding: 5px 4px !important; font-size: 11px !important; }
     }
 
     /* ── Responsive: móvil ── */
@@ -1527,7 +1530,7 @@ function buildParentDetailRow(p) {
     }].concat(children);
   }
   if (!children.length) {
-    return `<tr class="parent-detail-row" data-parent-id="${p.id}"><td colspan="10" style="background:var(--gray-50);padding:14px;text-align:center;color:var(--gray-400)">Sin hijos registrados</td></tr>`;
+    return `<tr class="parent-detail-row" data-parent-id="${p.id}"><td colspan="10" style="background:var(--gray-50);padding:14px;text-align:center;color:var(--gray-400);font-size:12px">Sin hijos registrados</td></tr>`;
   }
   var rows = children.map(c => {
     var rec = parseFloat(c.total_recharged || 0);
@@ -1546,7 +1549,7 @@ function buildParentDetailRow(p) {
   return `
     <tr class="parent-detail-row" data-parent-id="${p.id}">
       <td colspan="10" style="background:var(--gray-50);padding:10px 14px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Detalle por persona</div>
+        <div class="parent-detail-title">Detalle por persona</div>
         <div style="overflow-x:auto">
           <table class="parent-detail-table" style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
             <thead>
