@@ -329,6 +329,13 @@
             </div>
           </div>
           <div class="card-body">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+              <input type="text" id="studentsSearch" placeholder="🔍 Buscar por estudiante o padre..." oninput="filterStudents()" class="form-control" style="flex:1;min-width:240px;max-width:380px;height:38px;padding:8px 12px" />
+              <select id="studentsGradeFilter" onchange="filterStudents()" class="form-control form-select" style="width:auto;min-width:160px;height:38px">
+                <option value="">Todos los grados</option>
+              </select>
+              <span id="studentsResultCount" style="font-size:13px;color:var(--gray-500);margin-left:auto"></span>
+            </div>
             <div class="table-wrap">
               <table>
                 <thead><tr><th>Nombre</th><th>Grado</th><th class="hm">Padre</th><th>Estado</th><th class="hm">QR</th><th>Acciones</th></tr></thead>
@@ -1199,6 +1206,10 @@ function showSection(id) {
   // Limpiar buscadores al cambiar de sección
   var parentsSearch = document.getElementById('parentsSearch');
   if (parentsSearch) parentsSearch.value = '';
+  var studentsSearch = document.getElementById('studentsSearch');
+  if (studentsSearch) studentsSearch.value = '';
+  var studentsGradeFilter = document.getElementById('studentsGradeFilter');
+  if (studentsGradeFilter) studentsGradeFilter.value = '';
   sections.forEach(s => {
     document.getElementById('sec-' + s).style.display = s === id ? '' : 'none';
   });
@@ -1744,10 +1755,17 @@ async function openStudentModal() {
   openModal('modalStudent');
 }
 
-async function loadStudents() {
-  var data = await api('/students');
+var _studentsData = [];
+
+function renderStudentsTable(data) {
   var tb = document.getElementById('studentsTbody');
-  if (!data || !data.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin estudiantes</td></tr>'; return; }
+  var countEl = document.getElementById('studentsResultCount');
+  if (!data || !data.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>';
+    if (countEl) countEl.textContent = '0 estudiantes';
+    return;
+  }
+  if (countEl) countEl.textContent = data.length + ' estudiante' + (data.length !== 1 ? 's' : '');
   tb.innerHTML = data.map(s => `
     <tr>
       <td><strong>${s.name}</strong></td>
@@ -1767,6 +1785,38 @@ async function loadStudents() {
         </div>
       </td>
     </tr>`).join('');
+}
+
+async function loadStudents() {
+  var data = await api('/students');
+  _studentsData = data || [];
+
+  // Poblar dropdown de grados con los grados únicos existentes
+  var gradeSel = document.getElementById('studentsGradeFilter');
+  if (gradeSel) {
+    var currentVal = gradeSel.value;
+    var grades = Array.from(new Set(_studentsData.map(s => s.grade).filter(Boolean))).sort();
+    gradeSel.innerHTML = '<option value="">Todos los grados</option>' +
+      grades.map(g => `<option value="${g}">${g}</option>`).join('');
+    if (currentVal && grades.includes(currentVal)) gradeSel.value = currentVal;
+  }
+
+  filterStudents();
+}
+
+function filterStudents() {
+  var q = (document.getElementById('studentsSearch')?.value || '').toLowerCase().trim();
+  var grade = document.getElementById('studentsGradeFilter')?.value || '';
+  var filtered = _studentsData.filter(s => {
+    if (grade && s.grade !== grade) return false;
+    if (q) {
+      var studentName = (s.name || '').toLowerCase();
+      var parentName  = (s.parent?.name || '').toLowerCase();
+      if (!studentName.includes(q) && !parentName.includes(q)) return false;
+    }
+    return true;
+  });
+  renderStudentsTable(filtered);
 }
 
 function buildGrade() {
