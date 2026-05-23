@@ -1213,13 +1213,16 @@ var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Pad
 
 function showSection(id) {
   if (!sections.includes(id)) id = 'overview';
-  // Limpiar buscadores al cambiar de sección
+  // Limpiar buscadores y estado al cambiar de sección
   var parentsSearch = document.getElementById('parentsSearch');
   if (parentsSearch) parentsSearch.value = '';
   var studentsSearch = document.getElementById('studentsSearch');
   if (studentsSearch) studentsSearch.value = '';
   var studentsGradeFilter = document.getElementById('studentsGradeFilter');
   if (studentsGradeFilter) studentsGradeFilter.value = '';
+  // Reset filtros y expansión de padres
+  if (typeof _parentsData_filtered !== 'undefined') _parentsData_filtered = null;
+  if (typeof _expandedParents !== 'undefined') _expandedParents.clear();
   sections.forEach(s => {
     document.getElementById('sec-' + s).style.display = s === id ? '' : 'none';
   });
@@ -1620,6 +1623,8 @@ function renderParentsTable(data) {
 async function loadParents() {
   var data = await api('/parents');
   _parentsData = data || [];
+  _parentsData_filtered = null;
+  _expandedParents.clear();
   renderParentsTable(_parentsData);
 }
 
