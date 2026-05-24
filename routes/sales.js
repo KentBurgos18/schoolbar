@@ -218,34 +218,37 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /api/sales/stats  → totales del día, semana y mes
+// GET /api/sales/stats  → totales del día, semana y mes (zona horaria America/Guayaquil)
 router.get('/stats', auth('ADMIN'), async (req, res) => {
   try {
-    const { Op, fn, col, literal } = require('sequelize');
-    const now = new Date();
+    // Todos los rangos calculados en TZ Ecuador (UTC-5) para que "hoy" sea el día calendario local
+    const todayCond  = `DATE(created_at AT TIME ZONE 'America/Guayaquil') = (NOW() AT TIME ZONE 'America/Guayaquil')::date`;
+    const weekCond   = `DATE(created_at AT TIME ZONE 'America/Guayaquil') >= date_trunc('week',  (NOW() AT TIME ZONE 'America/Guayaquil'))::date`;
+    const monthCond  = `DATE(created_at AT TIME ZONE 'America/Guayaquil') >= date_trunc('month', (NOW() AT TIME ZONE 'America/Guayaquil'))::date`;
 
-    const startOfDay  = new Date(now); startOfDay.setHours(0,0,0,0);
-    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    async function getStats(from) {
-      const rows = await Sale.findAll({
-        where: { created_at: { [Op.gte]: from } },
-        attributes: [
-          [fn('COUNT', col('id')), 'count'],
-          [fn('COALESCE', fn('SUM', col('total')), 0), 'total'],
-          [fn('COALESCE', fn('SUM', col('paid_from_balance')), 0), 'paid_from_balance'],
-          [fn('COALESCE', fn('SUM', col('added_to_debt')), 0), 'added_to_debt'],
-        ],
-        raw: true
-      });
-      return { count: parseInt(rows[0].count), total: parseFloat(rows[0].total), paid_from_balance: parseFloat(rows[0].paid_from_balance), added_to_debt: parseFloat(rows[0].added_to_debt) };
+    async function getStats(whereSql) {
+      const [rows] = await sequelize.query(`
+        SELECT
+          COUNT(id)::int                                  AS count,
+          COALESCE(SUM(total), 0)::numeric                AS total,
+          COALESCE(SUM(paid_from_balance), 0)::numeric    AS paid_from_balance,
+          COALESCE(SUM(added_to_debt), 0)::numeric        AS added_to_debt
+        FROM sales
+        WHERE ${whereSql}
+      `);
+      const r = rows[0] || {};
+      return {
+        count: parseInt(r.count || 0),
+        total: parseFloat(r.total || 0),
+        paid_from_balance: parseFloat(r.paid_from_balance || 0),
+        added_to_debt:     parseFloat(r.added_to_debt || 0)
+      };
     }
 
     const [today, week, month] = await Promise.all([
-      getStats(startOfDay),
-      getStats(startOfWeek),
-      getStats(startOfMonth),
+      getStats(todayCond),
+      getStats(weekCond),
+      getStats(monthCond),
     ]);
 
     res.json({ today, week, month });
