@@ -116,6 +116,16 @@ const Setting = sequelize.define('Setting', {
   value: { type: DataTypes.TEXT },
 }, { tableName: 'settings', underscored: true });
 
+const StudentTransfer = sequelize.define('StudentTransfer', {
+  id:              { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  from_student_id: { type: DataTypes.INTEGER, allowNull: false },
+  to_student_id:   { type: DataTypes.INTEGER, allowNull: false },
+  amount:          { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  debt_paid:       { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+  performed_by:    { type: DataTypes.INTEGER, allowNull: false },
+  note:            { type: DataTypes.STRING(255) },
+}, { tableName: 'student_transfers', underscored: true });
+
 const PasswordReset = sequelize.define('PasswordReset', {
   id:         { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   user_id:    { type: DataTypes.INTEGER, allowNull: false },
@@ -139,5 +149,8 @@ RechargeAllocation.belongsTo(Recharge, { foreignKey: 'recharge_id', as: 'recharg
 RechargeAllocation.belongsTo(Student,  { foreignKey: 'student_id',  as: 'student' });
 RechargeAllocation.belongsTo(User, { foreignKey: 'user_id', as: 'teacher' });
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+StudentTransfer.belongsTo(Student, { foreignKey: 'from_student_id', as: 'fromStudent' });
+StudentTransfer.belongsTo(Student, { foreignKey: 'to_student_id',   as: 'toStudent' });
+StudentTransfer.belongsTo(User,    { foreignKey: 'performed_by',    as: 'performer' });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset };
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset, StudentTransfer };

@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const QRCode  = require('qrcode');
 const XLSX    = require('xlsx');
-const { Student, User, Sale, SaleItem, RechargeAllocation, sequelize } = require('../models');
+const { Student, User, Sale, SaleItem, RechargeAllocation, StudentTransfer, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 
 // GET /api/students/template  → descarga plantilla Excel de estudiantes
@@ -217,6 +217,81 @@ router.get('/scan/:token', auth('CASHIER', 'ADMIN'), async (req, res) => {
     return res.status(404).json({ error: 'Código QR no válido' });
   } catch (err) {
     res.status(500).json({ error: 'Error al escanear QR' });
+  }
+});
+
+// POST /api/students/transfer  → admin transfiere saldo de un hijo a otro (mismo padre)
+router.post('/transfer', auth('ADMIN'), async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { from_student_id, to_student_id, amount, note } = req.body;
+    const amt = parseFloat(amount);
+
+    if (!from_student_id || !to_student_id) { await t.rollback(); return res.status(400).json({ error: 'Debes seleccionar hijo origen y destino' }); }
+    if (parseInt(from_student_id) === parseInt(to_student_id)) { await t.rollback(); return res.status(400).json({ error: 'El origen y el destino deben ser distintos' }); }
+    if (!amt || amt <= 0) { await t.rollback(); return res.status(400).json({ error: 'El monto debe ser mayor a 0' }); }
+
+    const fromStudent = await Student.findByPk(from_student_id, { transaction: t, lock: true });
+    const toStudent   = await Student.findByPk(to_student_id,   { transaction: t, lock: true });
+
+    if (!fromStudent || !toStudent) { await t.rollback(); return res.status(404).json({ error: 'Estudiante no encontrado' }); }
+    if (fromStudent.parent_id !== toStudent.parent_id) { await t.rollback(); return res.status(400).json({ error: 'Solo puedes transferir entre hijos del mismo padre' }); }
+
+    const fromBalance = parseFloat(fromStudent.balance);
+    if (fromBalance < amt) {
+      await t.rollback();
+      return res.status(400).json({ error: `Saldo insuficiente. ${fromStudent.name} tiene $${fromBalance.toFixed(2)}` });
+    }
+
+    // Restar del origen
+    await fromStudent.update({ balance: fromBalance - amt }, { transaction: t });
+
+    // Aplicar al destino: primero deuda, luego saldo
+    const toDebt        = parseFloat(toStudent.debt);
+    const debtPaid      = Math.min(toDebt, amt);
+    const addedToBalance = amt - debtPaid;
+    await toStudent.update({
+      balance: parseFloat(toStudent.balance) + addedToBalance,
+      debt:    toDebt - debtPaid
+    }, { transaction: t });
+
+    await StudentTransfer.create({
+      from_student_id: parseInt(from_student_id),
+      to_student_id:   parseInt(to_student_id),
+      amount:          amt,
+      debt_paid:       debtPaid,
+      performed_by:    req.user.id,
+      note:            note || null
+    }, { transaction: t });
+
+    await t.commit();
+    res.json({
+      message: `Transferencia de $${amt.toFixed(2)} aplicada de ${fromStudent.name} a ${toStudent.name}.${debtPaid > 0 ? ` Se pagó $${debtPaid.toFixed(2)} de deuda.` : ''}`,
+      debt_paid: debtPaid.toFixed(2)
+    });
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Error al transferir saldo' });
+  }
+});
+
+// GET /api/students/:id/transfers  → historial de transferencias de un estudiante
+router.get('/:id/transfers', auth('ADMIN'), async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    const transfers = await StudentTransfer.findAll({
+      where: { [Op.or]: [{ from_student_id: req.params.id }, { to_student_id: req.params.id }] },
+      include: [
+        { model: Student, as: 'fromStudent', attributes: ['id', 'name'] },
+        { model: Student, as: 'toStudent',   attributes: ['id', 'name'] },
+        { model: User,    as: 'performer',   attributes: ['id', 'name'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(transfers);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener transferencias' });
   }
 });
 

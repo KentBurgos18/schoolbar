@@ -800,6 +800,45 @@
 </div><!-- /shell -->
 
 <!-- ── Modal: Ver comprobante ── -->
+<div class="modal-overlay" id="modalTransfer">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Transferir saldo entre hijos</h3>
+      <button class="btn-close" onclick="closeModal('modalTransfer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="trfParentName" style="font-size:13px;color:var(--gray-500);margin-bottom:14px;padding:10px;background:var(--gray-50);border-radius:8px"></div>
+      <div class="form-group">
+        <label>De (origen)</label>
+        <select id="trfFrom" class="form-control form-select" onchange="updateTransferUI()">
+          <option value="">— Selecciona —</option>
+        </select>
+        <small id="trfFromInfo" style="display:block;margin-top:4px;font-size:12px;color:var(--gray-500)"></small>
+      </div>
+      <div class="form-group">
+        <label>A (destino)</label>
+        <select id="trfTo" class="form-control form-select" onchange="updateTransferUI()">
+          <option value="">— Selecciona —</option>
+        </select>
+        <small id="trfToInfo" style="display:block;margin-top:4px;font-size:12px;color:var(--gray-500)"></small>
+      </div>
+      <div class="form-group">
+        <label>Monto a transferir</label>
+        <input type="number" id="trfAmount" class="form-control" placeholder="0.00" min="0.01" step="0.50" oninput="updateTransferUI()" />
+      </div>
+      <div class="form-group">
+        <label>Nota (opcional)</label>
+        <input type="text" id="trfNote" class="form-control" maxlength="255" placeholder="Ej: traspaso por solicitud del padre" />
+      </div>
+      <div id="trfPreview" style="display:none;margin-top:10px;padding:10px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;font-size:13px;color:#1e3a8a"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalTransfer')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmTransfer" onclick="confirmTransfer()" disabled>Transferir</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalReceipt">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -1549,10 +1588,18 @@ function buildParentDetailRow(p) {
         <td class="pd-num">$${con.toFixed(2)}</td>
       </tr>`;
   }).join('');
+  var realChildren = (p.students || []);
+  var canTransfer = realChildren.length >= 2;
+  var transferBtn = canTransfer
+    ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openTransferModal(${p.id})">🔄 Transferir entre hijos</button>`
+    : '';
   return `
     <tr class="parent-detail-row" data-parent-id="${p.id}">
       <td colspan="10" style="background:var(--gray-50);padding:10px 14px">
-        <div class="parent-detail-title">Detalle por persona</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <div class="parent-detail-title" style="margin-bottom:0">Detalle por persona</div>
+          ${transferBtn}
+        </div>
         <div style="overflow-x:auto">
           <table class="parent-detail-table" style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
             <thead>
@@ -1645,6 +1692,120 @@ function filterParents() {
   });
   _parentsData_filtered = filtered;
   renderParentsTable(filtered);
+}
+
+// ── Transferencias entre hijos ──
+var _transferParent = null;
+
+function openTransferModal(parentId) {
+  var p = (_parentsData || []).find(x => x.id === parentId);
+  if (!p) { toast('Padre no encontrado', 'error'); return; }
+  var kids = p.students || [];
+  if (kids.length < 2) { toast('Este padre debe tener al menos 2 hijos para transferir', 'warning'); return; }
+
+  _transferParent = p;
+  document.getElementById('trfParentName').innerHTML = '<strong>' + p.name + '</strong> — ' + kids.length + ' hijos';
+
+  var fromSel = document.getElementById('trfFrom');
+  var toSel   = document.getElementById('trfTo');
+  fromSel.innerHTML = '<option value="">— Selecciona —</option>' + kids.map(s => `<option value="${s.id}" data-bal="${s.balance}" data-debt="${s.debt}">${s.name} (Saldo $${parseFloat(s.balance||0).toFixed(2)})</option>`).join('');
+  toSel.innerHTML   = '<option value="">— Selecciona —</option>' + kids.map(s => `<option value="${s.id}" data-bal="${s.balance}" data-debt="${s.debt}">${s.name} (Saldo $${parseFloat(s.balance||0).toFixed(2)} · Deuda $${parseFloat(s.debt||0).toFixed(2)})</option>`).join('');
+
+  document.getElementById('trfAmount').value = '';
+  document.getElementById('trfNote').value = '';
+  document.getElementById('trfFromInfo').textContent = '';
+  document.getElementById('trfToInfo').textContent = '';
+  document.getElementById('trfPreview').style.display = 'none';
+  document.getElementById('btnConfirmTransfer').disabled = true;
+
+  openModal('modalTransfer');
+}
+
+function updateTransferUI() {
+  var fromSel = document.getElementById('trfFrom');
+  var toSel   = document.getElementById('trfTo');
+  var amtInp  = document.getElementById('trfAmount');
+  var btn     = document.getElementById('btnConfirmTransfer');
+  var preview = document.getElementById('trfPreview');
+  var fromInfo = document.getElementById('trfFromInfo');
+  var toInfo   = document.getElementById('trfToInfo');
+
+  var fromId = parseInt(fromSel.value);
+  var toId   = parseInt(toSel.value);
+  var amt    = parseFloat(amtInp.value) || 0;
+
+  var fromOpt = fromSel.options[fromSel.selectedIndex];
+  var toOpt   = toSel.options[toSel.selectedIndex];
+
+  var fromBal  = fromOpt ? parseFloat(fromOpt.dataset.bal || 0) : 0;
+  var toBal    = toOpt   ? parseFloat(toOpt.dataset.bal  || 0) : 0;
+  var toDebt   = toOpt   ? parseFloat(toOpt.dataset.debt || 0) : 0;
+
+  fromInfo.textContent = fromOpt && fromId ? `Saldo disponible: $${fromBal.toFixed(2)}` : '';
+  fromInfo.style.color = fromOpt && fromId && amt > fromBal ? 'var(--danger)' : 'var(--gray-500)';
+  toInfo.textContent   = toOpt && toId ? `Deuda actual: $${toDebt.toFixed(2)} · Saldo: $${toBal.toFixed(2)}` : '';
+
+  // Validaciones
+  var ok = fromId && toId && fromId !== toId && amt > 0 && amt <= fromBal;
+  btn.disabled = !ok;
+
+  // Vista previa
+  if (ok) {
+    var newFromBal = fromBal - amt;
+    var debtPaid   = Math.min(toDebt, amt);
+    var newToBal   = toBal + (amt - debtPaid);
+    var newToDebt  = toDebt - debtPaid;
+    preview.style.display = '';
+    preview.innerHTML = `
+      <div style="font-weight:700;margin-bottom:6px">Vista previa:</div>
+      <div>• ${fromOpt.textContent.split(' (')[0]}: saldo $${fromBal.toFixed(2)} → <strong>$${newFromBal.toFixed(2)}</strong></div>
+      <div>• ${toOpt.textContent.split(' (')[0]}: saldo $${toBal.toFixed(2)} → <strong>$${newToBal.toFixed(2)}</strong>${toDebt > 0 ? ` · deuda $${toDebt.toFixed(2)} → <strong>$${newToDebt.toFixed(2)}</strong>` : ''}</div>
+      ${debtPaid > 0 ? `<div style="margin-top:4px;color:#16a34a">→ Se paga $${debtPaid.toFixed(2)} de deuda</div>` : ''}
+    `;
+  } else if (fromId && toId && fromId === toId) {
+    preview.style.display = '';
+    preview.style.background = '#fef2f2';
+    preview.style.borderColor = '#fecaca';
+    preview.style.color = '#991b1b';
+    preview.textContent = 'El origen y el destino no pueden ser el mismo hijo';
+  } else if (fromId && amt > fromBal && amt > 0) {
+    preview.style.display = '';
+    preview.style.background = '#fef2f2';
+    preview.style.borderColor = '#fecaca';
+    preview.style.color = '#991b1b';
+    preview.textContent = `Saldo insuficiente. Máximo: $${fromBal.toFixed(2)}`;
+  } else {
+    preview.style.display = 'none';
+    preview.style.background = '#eff6ff';
+    preview.style.borderColor = '#bfdbfe';
+    preview.style.color = '#1e3a8a';
+  }
+}
+
+async function confirmTransfer() {
+  var btn = document.getElementById('btnConfirmTransfer');
+  if (btn.disabled) return;
+  var body = {
+    from_student_id: parseInt(document.getElementById('trfFrom').value),
+    to_student_id:   parseInt(document.getElementById('trfTo').value),
+    amount:          parseFloat(document.getElementById('trfAmount').value),
+    note:            document.getElementById('trfNote').value.trim() || null
+  };
+  btn.disabled = true;
+  var origText = btn.textContent;
+  btn.textContent = 'Transfiriendo...';
+  try {
+    var res  = await fetch(API + '/students/transfer', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al transferir', 'error'); btn.disabled = false; btn.textContent = origText; return; }
+    toast(data.message, 'success');
+    closeModal('modalTransfer');
+    loadParents();
+  } catch (e) {
+    toast('Error de conexión', 'error');
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
 }
 
 async function toggleAllowDebt(id, value) {
