@@ -3684,17 +3684,32 @@ async function loadProfit() {
     tpTb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Sin ventas en el periodo</td></tr>';
   } else {
     var medal = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    var topRevenue = tp[0].revenue || 1;  // para escalar las barras relativas al líder
     tpTb.innerHTML = tp.map((p, i) => {
-      var pct = data.income.total > 0 ? (p.revenue / data.income.total * 100) : 0;
+      var pctIncome = data.income.total > 0 ? (p.revenue / data.income.total * 100) : 0;
+      var pctRelative = (p.revenue / topRevenue * 100);
+      // Color del gradiente según posición
+      var grad = i===0 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'   // oro
+               : i===1 ? 'linear-gradient(90deg, #cbd5e1, #94a3b8)'   // plata
+               : i===2 ? 'linear-gradient(90deg, #d97706, #b45309)'   // bronce
+               :        'linear-gradient(90deg, var(--primary), #60a5fa)';
       return `
         <tr>
-          <td style="text-align:center;font-weight:700">${medal(i)}</td>
-          <td><strong>${p.name}</strong></td>
+          <td style="text-align:center;font-weight:700;font-size:16px">${medal(i)}</td>
+          <td>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px">
+              <strong style="font-size:13px">${p.name}</strong>
+              <span style="font-size:11px;color:var(--gray-500);white-space:nowrap">${pctIncome.toFixed(1)}% del total</span>
+            </div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pctRelative.toFixed(1)}%;background:${grad};border-radius:3px;transition:width .4s ease"></div>
+            </div>
+          </td>
           <td class="hm"><span class="badge badge-gray" style="font-size:10px">${p.category}</span></td>
           <td style="text-align:right"><strong>${p.qty}</strong></td>
           <td class="hm" style="text-align:right;color:var(--gray-500)">$${p.avg_price.toFixed(2)}</td>
           <td style="text-align:right"><strong style="color:var(--primary)">$${p.revenue.toFixed(2)}</strong></td>
-          <td class="hm" style="text-align:right;color:var(--gray-500)">${pct.toFixed(1)}%</td>
+          <td class="hm" style="text-align:right;color:var(--gray-500)">${pctIncome.toFixed(1)}%</td>
         </tr>`;
     }).join('');
   }
