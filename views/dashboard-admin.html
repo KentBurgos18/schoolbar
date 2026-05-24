@@ -956,7 +956,6 @@
           <select id="expPaymentMethod" class="form-control form-select">
             <option value="CASH">Efectivo</option>
             <option value="TRANSFER">Transferencia</option>
-            <option value="CARD">Tarjeta</option>
           </select>
         </div>
       </div>
@@ -3444,7 +3443,7 @@ function renderExpensesTable(data) {
   }
   var total = data.reduce((s, e) => s + parseFloat(e.amount), 0);
   document.getElementById('expTotalShown').textContent = '$' + total.toFixed(2);
-  var methodLabel = { CASH:'Efectivo', TRANSFER:'Transferencia', CARD:'Tarjeta' };
+  var methodLabel = { CASH:'Efectivo', TRANSFER:'Transferencia' };
   tb.innerHTML = data.map(e => `
     <tr>
       <td style="font-size:12px;white-space:nowrap">${e.expense_date}</td>
