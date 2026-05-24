@@ -493,7 +493,8 @@
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Hasta</label>
                 <input type="date" id="profitTo" class="form-control" style="height:38px" onchange="loadProfit()" />
               </div>
-              <div style="display:flex;align-items:flex-end;gap:6px">
+              <div style="display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="setProfitRange('week')" style="height:38px">Esta semana</button>
                 <button class="btn btn-ghost btn-sm" onclick="setProfitRange('month')" style="height:38px">Este mes</button>
                 <button class="btn btn-ghost btn-sm" onclick="setProfitRange('year')" style="height:38px">Este año</button>
               </div>
@@ -3603,11 +3604,18 @@ function initProfitDates() {
 
 function setProfitRange(type) {
   var t = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-  var from;
-  if (type === 'month') from = new Date(t.getFullYear(), t.getMonth(), 1);
-  else if (type === 'year') from = new Date(t.getFullYear(), 0, 1);
+  var from, to = t;
+  if (type === 'week') {
+    // Lunes a domingo (de la semana actual en Ecuador)
+    var dow = t.getDay();                     // 0=Dom, 1=Lun, ..., 6=Sáb
+    var diffToMon = dow === 0 ? 6 : dow - 1;  // si es domingo, lunes fue hace 6 días
+    from = new Date(t.getFullYear(), t.getMonth(), t.getDate() - diffToMon);
+    to   = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6);
+  }
+  else if (type === 'month') from = new Date(t.getFullYear(), t.getMonth(), 1);
+  else if (type === 'year')  from = new Date(t.getFullYear(), 0, 1);
   document.getElementById('profitFrom').value = from.toISOString().slice(0,10);
-  document.getElementById('profitTo').value   = t.toISOString().slice(0,10);
+  document.getElementById('profitTo').value   = to.toISOString().slice(0,10);
   loadProfit();
 }
 
