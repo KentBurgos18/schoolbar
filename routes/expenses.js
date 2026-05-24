@@ -178,6 +178,27 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
       ORDER BY total DESC
     `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
 
+    // Recargas (entradas de efectivo / banco)
+    let rechargeWhere = "WHERE status = 'APPROVED'";
+    if (from) rechargeWhere += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') >= :from";
+    if (to)   rechargeWhere += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') <= :to";
+    const rechargeRows = await sequelize.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN method='CASH'     THEN amount ELSE 0 END), 0)::numeric AS cash,
+        COALESCE(SUM(CASE WHEN method='TRANSFER' THEN amount ELSE 0 END), 0)::numeric AS transfer
+      FROM recharges
+      ${rechargeWhere}
+    `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
+
+    // Gastos por método de pago
+    const expenseByMethodRows = await sequelize.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN payment_method='CASH'     THEN amount ELSE 0 END), 0)::numeric AS cash,
+        COALESCE(SUM(CASE WHEN payment_method='TRANSFER' THEN amount ELSE 0 END), 0)::numeric AS transfer
+      FROM expenses
+      WHERE 1=1 ${expenseWhere}
+    `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
+
     // Productos más vendidos en el periodo
     const topProducts = await sequelize.query(`
       SELECT
@@ -201,6 +222,26 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
     const profit  = income - expense;
     const margin  = income > 0 ? (profit / income) * 100 : 0;
 
+    // Flujo de caja
+    const salesCash       = parseFloat(incomeRows[0].cash)      || 0;
+    const rechargesCash   = parseFloat(rechargeRows[0].cash)    || 0;
+    const rechargesTransfer = parseFloat(rechargeRows[0].transfer) || 0;
+    const expenseCash     = parseFloat(expenseByMethodRows[0].cash)     || 0;
+    const expenseTransfer = parseFloat(expenseByMethodRows[0].transfer) || 0;
+    const cashFlow = {
+      in_sales:     salesCash,
+      in_recharges: rechargesCash,
+      total_in:     salesCash + rechargesCash,
+      out:          expenseCash,
+      net:          (salesCash + rechargesCash) - expenseCash
+    };
+    const bankFlow = {
+      in_recharges: rechargesTransfer,
+      total_in:     rechargesTransfer,
+      out:          expenseTransfer,
+      net:          rechargesTransfer - expenseTransfer
+    };
+
     res.json({
       income: {
         total: income,
@@ -221,6 +262,8 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
         revenue: parseFloat(p.revenue),
         avg_price: parseFloat(p.avg_price)
       })),
+      cash_flow: cashFlow,
+      bank_flow: bankFlow,
       profit,
       margin
     });

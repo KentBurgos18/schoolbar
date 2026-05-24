@@ -518,6 +518,11 @@
               </div>
             </div>
 
+            <div class="card" style="margin:0 0 16px">
+              <div class="card-header"><h3 style="font-size:14px">💰 Flujo de caja (efectivo y banco)</h3></div>
+              <div class="card-body" id="profitCashFlow"></div>
+            </div>
+
             <div class="card" style="margin:0">
               <div class="card-header"><h3 style="font-size:14px">🏆 Productos más vendidos</h3><span id="topProductsCount" style="font-size:12px;color:var(--gray-500)"></span></div>
               <div class="card-body" style="padding:0">
@@ -3672,6 +3677,51 @@ async function loadProfit() {
         <span>Total gastos</span>
         <span style="color:var(--danger)">$${data.expense.total.toFixed(2)}</span>
       </div>
+    </div>`;
+
+  // Flujo de caja
+  var cf = data.cash_flow || { in_sales:0, in_recharges:0, total_in:0, out:0, net:0 };
+  var bf = data.bank_flow || { in_recharges:0, total_in:0, out:0, net:0 };
+  document.getElementById('profitCashFlow').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="profit-grid">
+      <div style="border:1px solid var(--gray-200);border-radius:10px;padding:14px;background:#fefce8">
+        <div style="font-weight:700;color:#854d0e;margin-bottom:10px;display:flex;align-items:center;gap:6px">💵 Caja (Efectivo)</div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--gray-700)">
+          <span>+ Ventas en efectivo</span><strong>$${cf.in_sales.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--gray-700);border-bottom:1px solid #fde68a">
+          <span>+ Recargas en efectivo</span><strong>$${cf.in_recharges.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--gray-700)">
+          <span>Total entradas</span><strong>$${cf.total_in.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--danger);border-bottom:2px solid #fde68a;padding-bottom:6px">
+          <span>− Gastos en efectivo</span><strong>-$${cf.out.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:16px;font-weight:700">
+          <span>= Saldo neto efectivo</span>
+          <span style="color:${cf.net>=0?'var(--success)':'var(--danger)'}">$${cf.net.toFixed(2)}</span>
+        </div>
+      </div>
+      <div style="border:1px solid var(--gray-200);border-radius:10px;padding:14px;background:#eff6ff">
+        <div style="font-weight:700;color:#1e40af;margin-bottom:10px;display:flex;align-items:center;gap:6px">🏦 Cuenta bancaria (Transferencia)</div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--gray-700);border-bottom:1px solid #bfdbfe">
+          <span>+ Recargas por transferencia</span><strong>$${bf.in_recharges.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--gray-700)">
+          <span>Total entradas</span><strong>$${bf.total_in.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--danger);border-bottom:2px solid #bfdbfe;padding-bottom:6px">
+          <span>− Gastos por transferencia</span><strong>-$${bf.out.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:16px;font-weight:700">
+          <span>= Saldo neto banco</span>
+          <span style="color:${bf.net>=0?'var(--success)':'var(--danger)'}">$${bf.net.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600)">
+      <strong>ℹ️ Nota:</strong> las ventas pagadas con saldo no aparecen aquí porque ese dinero entró antes (cuando se hizo la recarga). Esta sección muestra solo el dinero que físicamente entra y sale en el periodo.
     </div>`;
 
   // Top productos
