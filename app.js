@@ -34,6 +34,7 @@ app.use('/api/bank-accounts', require('./routes/bankAccounts'));
 app.use('/api/settings',      require('./routes/settings'));
 app.use('/api/teachers',      require('./routes/teachers'));
 app.use('/api/events',        require('./routes/events'));
+app.use('/api/expenses',      require('./routes/expenses'));
 
 // ── Init DB + seed ──
 async function initDb() {

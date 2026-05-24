@@ -116,6 +116,25 @@ const Setting = sequelize.define('Setting', {
   value: { type: DataTypes.TEXT },
 }, { tableName: 'settings', underscored: true });
 
+const ExpenseCategory = sequelize.define('ExpenseCategory', {
+  id:     { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name:   { type: DataTypes.STRING(80), allowNull: false, unique: true },
+  active: { type: DataTypes.BOOLEAN, defaultValue: true },
+}, { tableName: 'expense_categories', underscored: true });
+
+const Expense = sequelize.define('Expense', {
+  id:             { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  amount:         { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  category_id:    { type: DataTypes.INTEGER, allowNull: true },
+  description:    { type: DataTypes.STRING(255), allowNull: false },
+  expense_date:   { type: DataTypes.DATEONLY, allowNull: false },
+  payment_method: { type: DataTypes.STRING(20), defaultValue: 'CASH' },
+  supplier:       { type: DataTypes.STRING(120) },
+  receipt_image:  { type: DataTypes.TEXT },
+  note:           { type: DataTypes.STRING(255) },
+  created_by:     { type: DataTypes.INTEGER },
+}, { tableName: 'expenses', underscored: true });
+
 const StudentTransfer = sequelize.define('StudentTransfer', {
   id:              { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   from_student_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -152,5 +171,7 @@ PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 StudentTransfer.belongsTo(Student, { foreignKey: 'from_student_id', as: 'fromStudent' });
 StudentTransfer.belongsTo(Student, { foreignKey: 'to_student_id',   as: 'toStudent' });
 StudentTransfer.belongsTo(User,    { foreignKey: 'performed_by',    as: 'performer' });
+Expense.belongsTo(ExpenseCategory, { foreignKey: 'category_id', as: 'category' });
+Expense.belongsTo(User,            { foreignKey: 'created_by',  as: 'creator' });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset, StudentTransfer };
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset, StudentTransfer, ExpenseCategory, Expense };
