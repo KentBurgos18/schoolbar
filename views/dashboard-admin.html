@@ -800,6 +800,35 @@
 </div><!-- /shell -->
 
 <!-- ── Modal: Ver comprobante ── -->
+<div class="modal-overlay" id="modalTransferHistory">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Historial de transferencias</h3>
+      <button class="btn-close" onclick="closeModal('modalTransferHistory')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="thParentName" style="font-size:13px;color:var(--gray-500);margin-bottom:14px;padding:10px;background:var(--gray-50);border-radius:8px"></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:var(--gray-50);border-bottom:2px solid var(--gray-200)">
+              <th style="padding:10px;text-align:left;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Fecha</th>
+              <th style="padding:10px;text-align:left;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Origen</th>
+              <th></th>
+              <th style="padding:10px;text-align:left;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Destino</th>
+              <th style="padding:10px;text-align:right;font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Monto</th>
+            </tr>
+          </thead>
+          <tbody id="thBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modalTransferHistory')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalTransfer">
   <div class="modal">
     <div class="modal-header">
@@ -1590,16 +1619,16 @@ function buildParentDetailRow(p) {
   }).join('');
   var realChildren = (p.students || []);
   var canTransfer = realChildren.length >= 2;
-  var transferBtn = canTransfer
-    ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openTransferModal(${p.id})">🔄 Transferir entre hijos</button>`
-    : '';
+  var actionsBar = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      ${canTransfer ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openTransferModal(${p.id})">🔄 Transferir entre hijos</button>` : ''}
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openTransferHistory(${p.id})">📋 Historial de transferencias</button>
+    </div>`;
   return `
     <tr class="parent-detail-row" data-parent-id="${p.id}">
       <td colspan="10" style="background:var(--gray-50);padding:10px 14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-          <div class="parent-detail-title" style="margin-bottom:0">Detalle por persona</div>
-          ${transferBtn}
-        </div>
+        ${actionsBar}
+        <div class="parent-detail-title">Detalle por persona</div>
         <div style="overflow-x:auto">
           <table class="parent-detail-table" style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;border:1px solid var(--gray-200)">
             <thead>
@@ -1711,14 +1740,57 @@ function openTransferModal(parentId) {
   fromSel.innerHTML = '<option value="">— Selecciona —</option>' + kids.map(s => `<option value="${s.id}" data-bal="${s.balance}" data-debt="${s.debt}">${s.name} (Saldo $${parseFloat(s.balance||0).toFixed(2)})</option>`).join('');
   toSel.innerHTML   = '<option value="">— Selecciona —</option>' + kids.map(s => `<option value="${s.id}" data-bal="${s.balance}" data-debt="${s.debt}">${s.name} (Saldo $${parseFloat(s.balance||0).toFixed(2)} · Deuda $${parseFloat(s.debt||0).toFixed(2)})</option>`).join('');
 
+  // Defaults inteligentes:
+  // - Origen: hijo con MÁS saldo
+  // - Destino: hijo con deuda (o sin saldo) que NO sea el origen
+  var sortedByBalDesc = [...kids].sort((a,b) => parseFloat(b.balance||0) - parseFloat(a.balance||0));
+  var defaultFrom = sortedByBalDesc[0];
+  if (defaultFrom && parseFloat(defaultFrom.balance||0) > 0) {
+    fromSel.value = defaultFrom.id;
+    var candidatesDest = kids.filter(s => s.id !== defaultFrom.id);
+    // Prefiere el que tenga MÁS deuda; si nadie tiene, el que tenga MENOS saldo
+    var withDebt = candidatesDest.filter(s => parseFloat(s.debt||0) > 0).sort((a,b) => parseFloat(b.debt||0) - parseFloat(a.debt||0));
+    var defaultTo = withDebt.length ? withDebt[0] : [...candidatesDest].sort((a,b) => parseFloat(a.balance||0) - parseFloat(b.balance||0))[0];
+    if (defaultTo) toSel.value = defaultTo.id;
+  }
+
   document.getElementById('trfAmount').value = '';
   document.getElementById('trfNote').value = '';
   document.getElementById('trfFromInfo').textContent = '';
   document.getElementById('trfToInfo').textContent = '';
   document.getElementById('trfPreview').style.display = 'none';
   document.getElementById('btnConfirmTransfer').disabled = true;
+  updateTransferUI();
 
   openModal('modalTransfer');
+}
+
+// ── Historial de transferencias ──
+function openTransferHistory(parentId) {
+  var p = (_parentsData || []).find(x => x.id === parentId);
+  if (!p) { toast('Padre no encontrado', 'error'); return; }
+  document.getElementById('thParentName').innerHTML = '<strong>' + p.name + '</strong>';
+  document.getElementById('thBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr>';
+  openModal('modalTransferHistory');
+  loadTransferHistory(parentId);
+}
+
+async function loadTransferHistory(parentId) {
+  var data = await api('/students/transfers/by-parent/' + parentId);
+  var tb = document.getElementById('thBody');
+  if (!data || !data.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-400)">Sin transferencias registradas</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(t => `
+    <tr>
+      <td style="font-size:12px;color:var(--gray-500);white-space:nowrap">${new Date(t.createdAt).toLocaleString('es-EC')}</td>
+      <td><strong style="font-size:13px">${t.fromStudent ? t.fromStudent.name : '?'}</strong></td>
+      <td style="text-align:center;color:var(--gray-400)">→</td>
+      <td><strong style="font-size:13px">${t.toStudent ? t.toStudent.name : '?'}</strong></td>
+      <td style="text-align:right"><strong style="color:var(--primary)">$${parseFloat(t.amount).toFixed(2)}</strong>${parseFloat(t.debt_paid) > 0 ? `<br/><span style="font-size:10px;color:var(--success)">($${parseFloat(t.debt_paid).toFixed(2)} deuda)</span>` : ''}</td>
+    </tr>${t.note ? `<tr><td colspan="5" style="font-size:11px;color:var(--gray-500);padding:0 12px 8px;border-bottom:1px solid var(--gray-100)">📝 ${t.note} — por ${t.performer ? t.performer.name : ''}</td></tr>` : ''}
+  `).join('');
 }
 
 function updateTransferUI() {

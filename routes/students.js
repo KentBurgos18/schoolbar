@@ -276,6 +276,29 @@ router.post('/transfer', auth('ADMIN'), async (req, res) => {
   }
 });
 
+// GET /api/students/transfers/by-parent/:parentId  → historial de transferencias entre hijos del mismo padre
+router.get('/transfers/by-parent/:parentId', auth('ADMIN'), async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    const kids = await Student.findAll({ where: { parent_id: req.params.parentId }, attributes: ['id'] });
+    const ids = kids.map(k => k.id);
+    if (!ids.length) return res.json([]);
+    const transfers = await StudentTransfer.findAll({
+      where: { [Op.or]: [{ from_student_id: { [Op.in]: ids } }, { to_student_id: { [Op.in]: ids } }] },
+      include: [
+        { model: Student, as: 'fromStudent', attributes: ['id', 'name'] },
+        { model: Student, as: 'toStudent',   attributes: ['id', 'name'] },
+        { model: User,    as: 'performer',   attributes: ['id', 'name'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(transfers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener transferencias' });
+  }
+});
+
 // GET /api/students/:id/transfers  → historial de transferencias de un estudiante
 router.get('/:id/transfers', auth('ADMIN'), async (req, res) => {
   try {
