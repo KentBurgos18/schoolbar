@@ -178,6 +178,24 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
       ORDER BY total DESC
     `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
 
+    // Productos más vendidos en el periodo
+    const topProducts = await sequelize.query(`
+      SELECT
+        p.id,
+        p.name,
+        COALESCE(p.category, 'Sin categoría') AS category,
+        SUM(si.quantity)::int                  AS qty,
+        SUM(si.subtotal)::numeric              AS revenue,
+        AVG(si.price)::numeric                 AS avg_price
+      FROM sale_items si
+      JOIN sales s    ON s.id = si.sale_id
+      JOIN products p ON p.id = si.product_id
+      WHERE 1=1 ${salesWhere.replace(/created_at/g, 's.created_at')}
+      GROUP BY p.id, p.name, p.category
+      ORDER BY revenue DESC
+      LIMIT 20
+    `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
+
     const income  = parseFloat(incomeRows[0].total)  || 0;
     const expense = parseFloat(expenseRows[0].total) || 0;
     const profit  = income - expense;
@@ -195,6 +213,14 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
         count: parseInt(expenseRows[0].count),
         by_category: byCategory.map(c => ({ id: c.id, name: c.name, total: parseFloat(c.total), count: parseInt(c.count) }))
       },
+      top_products: topProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        qty: parseInt(p.qty),
+        revenue: parseFloat(p.revenue),
+        avg_price: parseFloat(p.avg_price)
+      })),
       profit,
       margin
     });
