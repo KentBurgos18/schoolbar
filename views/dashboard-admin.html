@@ -449,21 +449,18 @@
             </div>
           </div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:14px" class="expenses-filters">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px" class="expenses-filters">
               <div>
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Desde</label>
-                <input type="date" id="expFrom" class="form-control" style="height:38px" />
+                <input type="date" id="expFrom" class="form-control" style="height:38px" onchange="loadExpenses()" />
               </div>
               <div>
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Hasta</label>
-                <input type="date" id="expTo" class="form-control" style="height:38px" />
+                <input type="date" id="expTo" class="form-control" style="height:38px" onchange="loadExpenses()" />
               </div>
               <div>
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Categoría</label>
-                <select id="expCategoryFilter" class="form-control form-select" style="height:38px"><option value="">Todas</option></select>
-              </div>
-              <div style="display:flex;align-items:flex-end">
-                <button class="btn btn-primary" onclick="loadExpenses()" style="height:38px;padding:0 20px">Filtrar</button>
+                <select id="expCategoryFilter" class="form-control form-select" style="height:38px" onchange="loadExpenses()"><option value="">Todas</option></select>
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
@@ -487,21 +484,18 @@
             <h3>Rendimiento</h3>
           </div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;margin-bottom:18px" class="profit-filters">
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:18px" class="profit-filters">
               <div>
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Desde</label>
-                <input type="date" id="profitFrom" class="form-control" style="height:38px" />
+                <input type="date" id="profitFrom" class="form-control" style="height:38px" onchange="loadProfit()" />
               </div>
               <div>
                 <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Hasta</label>
-                <input type="date" id="profitTo" class="form-control" style="height:38px" />
+                <input type="date" id="profitTo" class="form-control" style="height:38px" onchange="loadProfit()" />
               </div>
               <div style="display:flex;align-items:flex-end;gap:6px">
                 <button class="btn btn-ghost btn-sm" onclick="setProfitRange('month')" style="height:38px">Este mes</button>
                 <button class="btn btn-ghost btn-sm" onclick="setProfitRange('year')" style="height:38px">Este año</button>
-              </div>
-              <div style="display:flex;align-items:flex-end">
-                <button class="btn btn-primary" onclick="loadProfit()" style="height:38px;padding:0 20px">Calcular</button>
               </div>
             </div>
 
