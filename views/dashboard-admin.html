@@ -1319,8 +1319,19 @@ function showSection(id) {
 }
 
 // ── Modals ──
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // Solo restaurar scroll si NO hay otros modales abiertos
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+  }
+}
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
 
 // ── Toast ──
