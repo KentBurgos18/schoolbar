@@ -25,6 +25,27 @@ router.get('/template', auth('ADMIN'), (req, res) => {
 });
 
 // GET /api/parents  → lista de padres (solo admin)
+// GET /api/parents/balances-summary  → totales globales para el card del Resumen
+router.get('/balances-summary', auth('ADMIN'), async (req, res) => {
+  try {
+    const { sequelize } = require('../models');
+    const [row] = await sequelize.query(`
+      SELECT
+        COALESCE((SELECT SUM(balance) FROM students), 0)::numeric
+        + COALESCE((SELECT SUM(balance) FROM users WHERE role='PARENT' AND is_teacher=true), 0)::numeric AS total_balance,
+        COALESCE((SELECT SUM(debt) FROM students), 0)::numeric
+        + COALESCE((SELECT SUM(debt) FROM users WHERE role='PARENT' AND is_teacher=true), 0)::numeric AS total_debt
+    `, { type: sequelize.QueryTypes.SELECT });
+    res.json({
+      total_balance: parseFloat(row.total_balance) || 0,
+      total_debt:    parseFloat(row.total_debt)    || 0
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener totales' });
+  }
+});
+
 router.get('/', auth('ADMIN'), async (req, res) => {
   try {
     const { sequelize } = require('../models');

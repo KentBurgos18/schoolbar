@@ -251,6 +251,18 @@
             </div>
             <div><div class="stat-value" id="statSalesToday">—</div><div class="stat-label">Ventas hoy</div></div>
           </div>
+          <div class="stat-card" title="Dinero recargado por los padres que sus hijos/profesores aún no han consumido — representa una deuda del bar con ellos">
+            <div class="stat-icon" style="background:#ede9fe">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>
+            </div>
+            <div><div class="stat-value" id="statRemainingBalance">—</div><div class="stat-label">Saldo de recargas por consumir</div></div>
+          </div>
+          <div class="stat-card" title="Deuda total acumulada de estudiantes y profesores con el bar">
+            <div class="stat-icon" style="background:#fef2f2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div><div class="stat-value" id="statTotalDebt">—</div><div class="stat-label">Deuda total</div></div>
+          </div>
         </div>
 
         <div class="card">
@@ -1569,6 +1581,13 @@ async function loadOverview() {
 
   var statsToday = await api('/sales/stats');
   document.getElementById('statSalesToday').textContent = statsToday ? '$' + statsToday.today.total.toFixed(2) : '$0.00';
+
+  // Saldos globales (recargas por consumir + deuda total)
+  var balances = await api('/parents/balances-summary');
+  if (balances) {
+    document.getElementById('statRemainingBalance').textContent = '$' + balances.total_balance.toFixed(2);
+    document.getElementById('statTotalDebt').textContent        = '$' + balances.total_debt.toFixed(2);
+  }
 
   renderOverviewRecharges(pending);
 }
