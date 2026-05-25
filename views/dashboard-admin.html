@@ -3483,6 +3483,12 @@ function renderExpensesTable(data) {
     </tr>`).join('');
 }
 
+function todayInEcuador() {
+  // Usa Intl para obtener el YYYY-MM-DD del día actual en Ecuador, sin depender
+  // de la zona horaria del navegador ni de toISOString (que devuelve UTC).
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+}
+
 function openExpenseModal(id) {
   document.getElementById('expId').value = '';
   document.getElementById('expAmount').value = '';
@@ -3491,10 +3497,8 @@ function openExpenseModal(id) {
   document.getElementById('expPaymentMethod').value = 'CASH';
   document.getElementById('expSupplier').value = '';
   document.getElementById('expNote').value = '';
-  // Fecha por defecto: hoy en Ecuador (no UTC)
-  var ecToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-  var iso = ecToday.toISOString().slice(0,10);
-  document.getElementById('expDate').value = iso;
+  // Fecha por defecto: hoy en Ecuador (cálculo correcto, no depende del TZ del navegador)
+  document.getElementById('expDate').value = todayInEcuador();
 
   if (id) {
     var e = _expensesData.find(x => x.id === id);
@@ -3617,27 +3621,37 @@ async function deleteCategory(id) {
 }
 
 // ── Profit / Rendimiento ──
+function ymdInEcuador(d) {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+}
+
+function ecuadorTodayParts() {
+  // Devuelve {y,m,d,dow} del día actual en Ecuador, sin importar el TZ del navegador
+  var s = ymdInEcuador(new Date()); // "YYYY-MM-DD"
+  var parts = s.split('-').map(Number);
+  var d = new Date(Date.UTC(parts[0], parts[1]-1, parts[2])); // Date en UTC = mismo Y/M/D
+  return { y: parts[0], m: parts[1]-1, d: parts[2], dow: d.getUTCDay(), date: d };
+}
+
 function initProfitDates() {
-  var t = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-  var first = new Date(t.getFullYear(), t.getMonth(), 1);
-  document.getElementById('profitFrom').value = first.toISOString().slice(0,10);
-  document.getElementById('profitTo').value   = t.toISOString().slice(0,10);
+  var t = ecuadorTodayParts();
+  var first = new Date(Date.UTC(t.y, t.m, 1));
+  document.getElementById('profitFrom').value = ymdInEcuador(first);
+  document.getElementById('profitTo').value   = ymdInEcuador(t.date);
 }
 
 function setProfitRange(type) {
-  var t = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-  var from, to = t;
+  var t = ecuadorTodayParts();
+  var from, to = t.date;
   if (type === 'week') {
-    // Lunes a domingo (de la semana actual en Ecuador)
-    var dow = t.getDay();                     // 0=Dom, 1=Lun, ..., 6=Sáb
-    var diffToMon = dow === 0 ? 6 : dow - 1;  // si es domingo, lunes fue hace 6 días
-    from = new Date(t.getFullYear(), t.getMonth(), t.getDate() - diffToMon);
-    to   = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6);
+    var diffToMon = t.dow === 0 ? 6 : t.dow - 1;
+    from = new Date(Date.UTC(t.y, t.m, t.d - diffToMon));
+    to   = new Date(Date.UTC(t.y, t.m, t.d - diffToMon + 6));
   }
-  else if (type === 'month') from = new Date(t.getFullYear(), t.getMonth(), 1);
-  else if (type === 'year')  from = new Date(t.getFullYear(), 0, 1);
-  document.getElementById('profitFrom').value = from.toISOString().slice(0,10);
-  document.getElementById('profitTo').value   = to.toISOString().slice(0,10);
+  else if (type === 'month') from = new Date(Date.UTC(t.y, t.m, 1));
+  else if (type === 'year')  from = new Date(Date.UTC(t.y, 0, 1));
+  document.getElementById('profitFrom').value = ymdInEcuador(from);
+  document.getElementById('profitTo').value   = ymdInEcuador(to);
   loadProfit();
 }
 
