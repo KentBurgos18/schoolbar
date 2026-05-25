@@ -3625,33 +3625,41 @@ function ymdInEcuador(d) {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
 }
 
+function fmtYMD(y, m, d) {
+  // Formatea YYYY-MM-DD directamente sin pasar por Date (evita problemas de TZ)
+  return y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+
 function ecuadorTodayParts() {
-  // Devuelve {y,m,d,dow} del día actual en Ecuador, sin importar el TZ del navegador
   var s = ymdInEcuador(new Date()); // "YYYY-MM-DD"
   var parts = s.split('-').map(Number);
-  var d = new Date(Date.UTC(parts[0], parts[1]-1, parts[2])); // Date en UTC = mismo Y/M/D
-  return { y: parts[0], m: parts[1]-1, d: parts[2], dow: d.getUTCDay(), date: d };
+  // Usamos mediodía UTC para calcular el día de la semana de forma estable
+  var noon = new Date(Date.UTC(parts[0], parts[1]-1, parts[2], 12));
+  return { y: parts[0], m: parts[1]-1, d: parts[2], dow: noon.getUTCDay() };
 }
 
 function initProfitDates() {
   var t = ecuadorTodayParts();
-  var first = new Date(Date.UTC(t.y, t.m, 1));
-  document.getElementById('profitFrom').value = ymdInEcuador(first);
-  document.getElementById('profitTo').value   = ymdInEcuador(t.date);
+  document.getElementById('profitFrom').value = fmtYMD(t.y, t.m, 1);
+  document.getElementById('profitTo').value   = fmtYMD(t.y, t.m, t.d);
 }
 
 function setProfitRange(type) {
   var t = ecuadorTodayParts();
-  var from, to = t.date;
+  var fromY = t.y, fromM = t.m, fromD = t.d;
+  var toY   = t.y, toM   = t.m, toD   = t.d;
   if (type === 'week') {
     var diffToMon = t.dow === 0 ? 6 : t.dow - 1;
-    from = new Date(Date.UTC(t.y, t.m, t.d - diffToMon));
-    to   = new Date(Date.UTC(t.y, t.m, t.d - diffToMon + 6));
+    // Usamos Date solo para sumar/restar días, con mediodía UTC para evitar saltos por TZ
+    var mon = new Date(Date.UTC(t.y, t.m, t.d - diffToMon, 12));
+    var sun = new Date(Date.UTC(t.y, t.m, t.d - diffToMon + 6, 12));
+    fromY = mon.getUTCFullYear(); fromM = mon.getUTCMonth(); fromD = mon.getUTCDate();
+    toY   = sun.getUTCFullYear(); toM   = sun.getUTCMonth(); toD   = sun.getUTCDate();
   }
-  else if (type === 'month') from = new Date(Date.UTC(t.y, t.m, 1));
-  else if (type === 'year')  from = new Date(Date.UTC(t.y, 0, 1));
-  document.getElementById('profitFrom').value = ymdInEcuador(from);
-  document.getElementById('profitTo').value   = ymdInEcuador(to);
+  else if (type === 'month') { fromM = t.m; fromD = 1; }
+  else if (type === 'year')  { fromM = 0;   fromD = 1; }
+  document.getElementById('profitFrom').value = fmtYMD(fromY, fromM, fromD);
+  document.getElementById('profitTo').value   = fmtYMD(toY,   toM,   toD);
   loadProfit();
 }
 
