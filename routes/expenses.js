@@ -3,7 +3,7 @@ const router = express.Router();
 const { Expense, ExpenseCategory, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const auth = require('../middlewares/auth');
-const { TZ } = require('../config/timezone');
+const { TZ } = require('../services/timezone');
 
 // ── Categorías de gastos ────────────────────────────────────────────────
 router.get('/categories', auth('ADMIN'), async (req, res) => {

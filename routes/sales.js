@@ -4,7 +4,7 @@ const { Sale, SaleItem, Student, User, Product } = require('../models');
 const { sequelize } = require('../models');
 const auth     = require('../middlewares/auth');
 const EventBus = require('../services/EventBus');
-const { TZ }   = require('../config/timezone');
+const { TZ }   = require('../services/timezone');
 
 // POST /api/sales  → procesar venta desde cajero
 router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {

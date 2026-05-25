@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const { User, Student, Sale, Setting, sequelize } = require('../models');
 const { sendMail, debtEmailHtml } = require('./EmailService');
 const { Op } = require('sequelize');
-const { TZ } = require('../config/timezone');
+const { TZ } = require('./timezone');
 
 // Ejecuta el envío de correos a todos los padres con deuda > 0
 async function sendDebtNotifications() {

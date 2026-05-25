@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const { User, Student, Sale, SaleItem, Setting } = require('../models');
 const { sendMail, weeklyReportHtml } = require('./EmailService');
 const { Op } = require('sequelize');
-const { TZ } = require('../config/timezone');
+const { TZ } = require('./timezone');
 
 let currentTask = null; // referencia al cron activo
 
