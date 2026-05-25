@@ -504,7 +504,10 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" class="profit-grid">
               <div class="card" style="margin:0">
-                <div class="card-header"><h3 style="font-size:14px">Desglose de ingresos</h3></div>
+                <div class="card-header" style="flex-direction:column;align-items:flex-start;gap:4px">
+                  <h3 style="font-size:14px;margin:0">Forma de pago de las ventas</h3>
+                  <span style="font-size:11px;color:var(--gray-400);font-weight:400">Informativo — el ingreso es el total de ventas, no esta separación</span>
+                </div>
                 <div class="card-body" id="profitIncomeDetail"></div>
               </div>
               <div class="card" style="margin:0">
@@ -3631,7 +3634,7 @@ async function loadProfit() {
   var cards = document.getElementById('profitCards');
   cards.innerHTML = `
     <div class="card" style="margin:0;padding:16px;text-align:center">
-      <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;font-weight:700">Ingresos</div>
+      <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;font-weight:700" title="Total de ventas del periodo (sin importar cómo se cobraron)">Ingresos (ventas)</div>
       <div style="font-size:24px;font-weight:700;color:var(--success);margin-top:4px">$${data.income.total.toFixed(2)}</div>
       <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${data.income.count} venta(s)</div>
     </div>
@@ -3652,15 +3655,15 @@ async function loadProfit() {
   document.getElementById('profitIncomeDetail').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)">
-        <span style="color:var(--gray-700)">💵 Efectivo</span>
+        <span style="color:var(--gray-700)">💵 Ventas cobradas en efectivo</span>
         <strong>$${data.income.cash.toFixed(2)}</strong>
       </div>
       <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)">
-        <span style="color:var(--gray-700)">💳 Saldo (recargado previamente)</span>
+        <span style="color:var(--gray-700)">💳 Ventas pagadas con saldo</span>
         <strong>$${data.income.balance.toFixed(2)}</strong>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px">
-        <span>Total ingresos</span>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;border-top:2px solid var(--gray-200);margin-top:4px">
+        <span>= Total de ventas (ingreso)</span>
         <span style="color:var(--success)">$${data.income.total.toFixed(2)}</span>
       </div>
     </div>`;
