@@ -152,12 +152,17 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
     }
 
     // Ingresos: TODAS las ventas (Método B)
+    // Desglose:
+    //   cash         = ventas pagadas en efectivo
+    //   paid_balance = ventas cobradas del saldo prepagado del estudiante
+    //   on_credit    = ventas que quedaron a deuda (sin saldo suficiente)
     const incomeRows = await sequelize.query(`
       SELECT
-        COUNT(id)::int                              AS count,
-        COALESCE(SUM(total), 0)::numeric            AS total,
-        COALESCE(SUM(CASE WHEN payment_method='CASH' THEN total ELSE 0 END), 0)::numeric AS cash,
-        COALESCE(SUM(CASE WHEN payment_method='BALANCE' THEN total ELSE 0 END), 0)::numeric AS balance
+        COUNT(id)::int                                                                       AS count,
+        COALESCE(SUM(total), 0)::numeric                                                     AS total,
+        COALESCE(SUM(CASE WHEN payment_method='CASH' THEN total ELSE 0 END), 0)::numeric     AS cash,
+        COALESCE(SUM(CASE WHEN payment_method='BALANCE' THEN paid_from_balance ELSE 0 END), 0)::numeric AS paid_balance,
+        COALESCE(SUM(CASE WHEN payment_method='BALANCE' THEN added_to_debt    ELSE 0 END), 0)::numeric AS on_credit
       FROM sales
       WHERE 1=1 ${salesWhere}
     `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
@@ -245,10 +250,11 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
 
     res.json({
       income: {
-        total: income,
-        count: parseInt(incomeRows[0].count),
-        cash:    parseFloat(incomeRows[0].cash),
-        balance: parseFloat(incomeRows[0].balance)
+        total:        income,
+        count:        parseInt(incomeRows[0].count),
+        cash:         parseFloat(incomeRows[0].cash),
+        paid_balance: parseFloat(incomeRows[0].paid_balance),
+        on_credit:    parseFloat(incomeRows[0].on_credit)
       },
       expense: {
         total: expense,

@@ -3695,19 +3695,24 @@ async function loadProfit() {
       <div style="font-size:24px;font-weight:700;color:${data.margin>=0?'var(--primary)':'var(--danger)'};margin-top:4px">${data.margin.toFixed(1)}%</div>
     </div>`;
 
+  var inc = data.income;
   document.getElementById('profitIncomeDetail').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)">
-        <span style="color:var(--gray-700)">💵 Ventas cobradas en efectivo</span>
-        <strong>$${data.income.cash.toFixed(2)}</strong>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)" title="Ventas pagadas con dinero en mano (consumidor final, etc.)">
+        <span style="color:var(--gray-700)">💵 Cobrado en efectivo</span>
+        <strong>$${(inc.cash||0).toFixed(2)}</strong>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)">
-        <span style="color:var(--gray-700)">💳 Ventas pagadas con saldo</span>
-        <strong>$${data.income.balance.toFixed(2)}</strong>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)" title="Ventas pagadas con saldo previamente recargado por los padres">
+        <span style="color:var(--gray-700)">💳 Cobrado con saldo del estudiante</span>
+        <strong>$${(inc.paid_balance||0).toFixed(2)}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)" title="Ventas que se cargaron a la cuenta del estudiante porque no tenía saldo (acumulado histórico de deuda generada)">
+        <span style="color:var(--danger)">🟠 Por cobrar (deuda generada)</span>
+        <strong style="color:var(--danger)">$${(inc.on_credit||0).toFixed(2)}</strong>
       </div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;border-top:2px solid var(--gray-200);margin-top:4px">
         <span>= Total de ventas (ingreso)</span>
-        <span style="color:var(--success)">$${data.income.total.toFixed(2)}</span>
+        <span style="color:var(--success)">$${inc.total.toFixed(2)}</span>
       </div>
     </div>`;
 
