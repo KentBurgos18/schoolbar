@@ -518,6 +518,7 @@
               <div class="card" style="margin:0">
                 <div class="card-header" style="flex-direction:column;align-items:flex-start;gap:4px">
                   <h3 style="font-size:14px;margin:0">Forma de pago de las ventas</h3>
+                  <span id="profitPeriodLabel" style="font-size:11px;color:var(--primary);font-weight:600"></span>
                   <span style="font-size:11px;color:var(--gray-400);font-weight:400">Solo informativo: muestra cómo se pagaron las ventas. El ingreso real es la suma total.</span>
                 </div>
                 <div class="card-body" id="profitIncomeDetail"></div>
@@ -3665,6 +3666,31 @@ function setProfitRange(type) {
   loadProfit();
 }
 
+function describePeriodLabel(from, to) {
+  if (!from || !to) return '';
+  // Detectar si coincide con algún preset
+  var t = ecuadorTodayParts();
+  var todayStr = fmtYMD(t.y, t.m, t.d);
+  var monthStart = fmtYMD(t.y, t.m, 1);
+  var yearStart  = fmtYMD(t.y, 0, 1);
+  var diffToMon = t.dow === 0 ? 6 : t.dow - 1;
+  var mon = new Date(Date.UTC(t.y, t.m, t.d - diffToMon, 12));
+  var sun = new Date(Date.UTC(t.y, t.m, t.d - diffToMon + 6, 12));
+  var weekStart = fmtYMD(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate());
+  var weekEnd   = fmtYMD(sun.getUTCFullYear(), sun.getUTCMonth(), sun.getUTCDate());
+
+  var label = '';
+  if (from === weekStart  && to === weekEnd)  label = '📅 Esta semana';
+  else if (from === monthStart && to === todayStr)  label = '📅 Este mes';
+  else if (from === yearStart  && to === todayStr)  label = '📅 Este año';
+  else label = '📅 Periodo personalizado';
+
+  // Formato dd/mm/yyyy para la fecha
+  function pretty(s) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  var days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+  return label + ': del ' + pretty(from) + ' al ' + pretty(to) + ' (' + days + ' día' + (days!==1?'s':'') + ')';
+}
+
 async function loadProfit() {
   var qs = new URLSearchParams();
   var from = document.getElementById('profitFrom').value;
@@ -3674,8 +3700,14 @@ async function loadProfit() {
   var data = await api('/expenses/profit/report?' + qs.toString());
   if (!data) return;
 
+  // Actualizar etiqueta del periodo en el panel de Forma de pago
+  var labelEl = document.getElementById('profitPeriodLabel');
+  if (labelEl) labelEl.textContent = describePeriodLabel(from, to);
+
   var cards = document.getElementById('profitCards');
+  var periodTxt = describePeriodLabel(from, to);
   cards.innerHTML = `
+    <div style="grid-column:1/-1;font-size:12px;color:var(--gray-500);margin-bottom:-6px">${periodTxt}</div>`+`
     <div class="card" style="margin:0;padding:16px;text-align:center">
       <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;font-weight:700" title="Total de ventas del periodo (sin importar cómo se cobraron)">Ingresos (ventas)</div>
       <div style="font-size:24px;font-weight:700;color:var(--success);margin-top:4px">$${data.income.total.toFixed(2)}</div>
@@ -3706,9 +3738,19 @@ async function loadProfit() {
         <span style="color:var(--gray-700)">💳 Cobrado con saldo del estudiante</span>
         <strong>$${(inc.paid_balance||0).toFixed(2)}</strong>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-100)" title="Ventas que se cargaron a la cuenta del estudiante porque no tenía saldo (acumulado histórico de deuda generada)">
-        <span style="color:var(--danger)">🟠 Por cobrar (deuda generada)</span>
-        <strong style="color:var(--danger)">$${(inc.on_credit||0).toFixed(2)}</strong>
+      <div style="padding:6px 0;border-bottom:1px solid var(--gray-100)" title="Ventas que se cargaron a deuda durante este periodo">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--warning,#d97706)">🟠 Vendido a crédito (este periodo)</span>
+          <strong style="color:var(--warning,#d97706)">$${(inc.on_credit||0).toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-left:18px;margin-top:4px;font-size:12px">
+          <span style="color:var(--gray-500)">↳ 📥 Cobrado de deudas en este periodo</span>
+          <span style="color:var(--success)">$${(inc.debt_recovered_period||0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-left:18px;margin-top:2px;font-size:12px" title="Deuda actual TOTAL del sistema (no depende del periodo seleccionado)">
+          <span style="color:var(--gray-500)">↳ ⏳ Deuda actual (sistema completo)</span>
+          <span style="color:var(--danger)">$${(inc.current_debt||0).toFixed(2)}</span>
+        </div>
       </div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;border-top:2px solid var(--gray-200);margin-top:4px">
         <span>= Total de ventas (ingreso)</span>

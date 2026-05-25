@@ -191,10 +191,26 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
     const rechargeRows = await sequelize.query(`
       SELECT
         COALESCE(SUM(CASE WHEN method='CASH'     THEN amount ELSE 0 END), 0)::numeric AS cash,
-        COALESCE(SUM(CASE WHEN method='TRANSFER' THEN amount ELSE 0 END), 0)::numeric AS transfer
+        COALESCE(SUM(CASE WHEN method='TRANSFER' THEN amount ELSE 0 END), 0)::numeric AS transfer,
+        COALESCE(SUM(debt_paid), 0)::numeric AS debt_paid
       FROM recharges
       ${rechargeWhere}
     `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
+
+    // Cobranza de deuda vía transferencias entre hermanos en el periodo
+    let transferWhere = '';
+    if (from) transferWhere += ` AND DATE(created_at AT TIME ZONE '${TZ}') >= :from`;
+    if (to)   transferWhere += ` AND DATE(created_at AT TIME ZONE '${TZ}') <= :to`;
+    const transferDebtRows = await sequelize.query(`
+      SELECT COALESCE(SUM(debt_paid), 0)::numeric AS debt_paid
+      FROM student_transfers
+      WHERE 1=1 ${transferWhere}
+    `, { replacements: reps, type: sequelize.QueryTypes.SELECT });
+
+    // Deuda actual NETA (no depende del periodo, es estado actual)
+    const currentDebtRows = await sequelize.query(`
+      SELECT (COALESCE((SELECT SUM(debt) FROM students),0) + COALESCE((SELECT SUM(debt) FROM users WHERE is_teacher=true),0))::numeric AS current_debt
+    `, { type: sequelize.QueryTypes.SELECT });
 
     // Gastos por método de pago
     const expenseByMethodRows = await sequelize.query(`
@@ -250,11 +266,13 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
 
     res.json({
       income: {
-        total:        income,
-        count:        parseInt(incomeRows[0].count),
-        cash:         parseFloat(incomeRows[0].cash),
-        paid_balance: parseFloat(incomeRows[0].paid_balance),
-        on_credit:    parseFloat(incomeRows[0].on_credit)
+        total:                income,
+        count:                parseInt(incomeRows[0].count),
+        cash:                 parseFloat(incomeRows[0].cash),
+        paid_balance:         parseFloat(incomeRows[0].paid_balance),
+        on_credit:            parseFloat(incomeRows[0].on_credit),
+        debt_recovered_period: parseFloat(rechargeRows[0].debt_paid) + parseFloat(transferDebtRows[0].debt_paid),
+        current_debt:         parseFloat(currentDebtRows[0].current_debt)
       },
       expense: {
         total: expense,
