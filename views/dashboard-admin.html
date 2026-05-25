@@ -3747,8 +3747,8 @@ async function loadProfit() {
           <span style="color:var(--gray-500)">↳ 📥 Cobrado de deudas en este periodo</span>
           <span style="color:var(--success)">$${(inc.debt_recovered_period||0).toFixed(2)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding-left:18px;margin-top:2px;font-size:12px" title="Deuda actual TOTAL del sistema (no depende del periodo seleccionado)">
-          <span style="color:var(--gray-500)">↳ ⏳ Deuda actual (sistema completo)</span>
+        <div style="display:flex;justify-content:space-between;padding-left:18px;margin-top:2px;font-size:12px" title="Deuda total actual de todos los estudiantes y profesores (no depende del periodo seleccionado)">
+          <span style="color:var(--gray-500)">↳ ⏳ Deuda pendiente actual</span>
           <span style="color:var(--danger)">$${(inc.current_debt||0).toFixed(2)}</span>
         </div>
       </div>
