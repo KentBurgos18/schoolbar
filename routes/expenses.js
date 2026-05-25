@@ -3,6 +3,7 @@ const router = express.Router();
 const { Expense, ExpenseCategory, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const auth = require('../middlewares/auth');
+const { TZ } = require('../config/timezone');
 
 // ── Categorías de gastos ────────────────────────────────────────────────
 router.get('/categories', auth('ADMIN'), async (req, res) => {
@@ -140,12 +141,12 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
     let expenseWhere = '';
     const reps = {};
     if (from) {
-      salesWhere   += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') >= :from";
+      salesWhere   += ` AND DATE(created_at AT TIME ZONE '${TZ}') >= :from`;
       expenseWhere += " AND expense_date >= :from";
       reps.from = from;
     }
     if (to) {
-      salesWhere   += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') <= :to";
+      salesWhere   += ` AND DATE(created_at AT TIME ZONE '${TZ}') <= :to`;
       expenseWhere += " AND expense_date <= :to";
       reps.to = to;
     }
@@ -180,8 +181,8 @@ router.get('/profit/report', auth('ADMIN'), async (req, res) => {
 
     // Recargas (entradas de efectivo / banco)
     let rechargeWhere = "WHERE status = 'APPROVED'";
-    if (from) rechargeWhere += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') >= :from";
-    if (to)   rechargeWhere += " AND DATE(created_at AT TIME ZONE 'America/Guayaquil') <= :to";
+    if (from) rechargeWhere += ` AND DATE(created_at AT TIME ZONE '${TZ}') >= :from`;
+    if (to)   rechargeWhere += ` AND DATE(created_at AT TIME ZONE '${TZ}') <= :to`;
     const rechargeRows = await sequelize.query(`
       SELECT
         COALESCE(SUM(CASE WHEN method='CASH'     THEN amount ELSE 0 END), 0)::numeric AS cash,

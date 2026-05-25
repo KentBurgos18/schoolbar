@@ -1471,6 +1471,8 @@ function closeSidebar() {
 }
 
 const API = '/api';
+// Zona horaria del negocio (centralizada — cambiar aquí y en config/timezone.js si migran)
+const APP_TZ = 'America/Guayaquil';
 var token = localStorage.getItem('sbToken');
 var user  = JSON.parse(localStorage.getItem('sbUser') || '{}');
 
@@ -3486,7 +3488,7 @@ function renderExpensesTable(data) {
 function todayInEcuador() {
   // Usa Intl para obtener el YYYY-MM-DD del día actual en Ecuador, sin depender
   // de la zona horaria del navegador ni de toISOString (que devuelve UTC).
-  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: APP_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 }
 
 function openExpenseModal(id) {
@@ -3622,7 +3624,7 @@ async function deleteCategory(id) {
 
 // ── Profit / Rendimiento ──
 function ymdInEcuador(d) {
-  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Guayaquil', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: APP_TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
 }
 
 function fmtYMD(y, m, d) {

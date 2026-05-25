@@ -4,6 +4,7 @@ const { Sale, SaleItem, Student, User, Product } = require('../models');
 const { sequelize } = require('../models');
 const auth     = require('../middlewares/auth');
 const EventBus = require('../services/EventBus');
+const { TZ }   = require('../config/timezone');
 
 // POST /api/sales  → procesar venta desde cajero
 router.post('/', auth('CASHIER', 'ADMIN'), async (req, res) => {
@@ -159,8 +160,8 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
     const { from, to } = req.query;
     let dateClause = '';
     const replacements = {};
-    if (from) { dateClause += " AND DATE(s.created_at AT TIME ZONE 'America/Guayaquil') >= :from"; replacements.from = from; }
-    if (to)   { dateClause += " AND DATE(s.created_at AT TIME ZONE 'America/Guayaquil') <= :to";   replacements.to   = to; }
+    if (from) { dateClause += ` AND DATE(s.created_at AT TIME ZONE '${TZ}') >= :from`; replacements.from = from; }
+    if (to)   { dateClause += ` AND DATE(s.created_at AT TIME ZONE '${TZ}') <= :to`;   replacements.to   = to; }
 
     // Padres — ventas tipo STUDENT agrupadas por parent_id
     const parentsRows = await sequelize.query(`
@@ -218,13 +219,13 @@ router.get('/summary', auth('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /api/sales/stats  → totales del día, semana y mes (zona horaria America/Guayaquil)
+// GET /api/sales/stats  → totales del día, semana y mes (zona horaria del negocio: config/timezone.js)
 router.get('/stats', auth('ADMIN'), async (req, res) => {
   try {
     // Todos los rangos calculados en TZ Ecuador (UTC-5) para que "hoy" sea el día calendario local
-    const todayCond  = `DATE(created_at AT TIME ZONE 'America/Guayaquil') = (NOW() AT TIME ZONE 'America/Guayaquil')::date`;
-    const weekCond   = `DATE(created_at AT TIME ZONE 'America/Guayaquil') >= date_trunc('week',  (NOW() AT TIME ZONE 'America/Guayaquil'))::date`;
-    const monthCond  = `DATE(created_at AT TIME ZONE 'America/Guayaquil') >= date_trunc('month', (NOW() AT TIME ZONE 'America/Guayaquil'))::date`;
+    const todayCond  = `DATE(created_at AT TIME ZONE '${TZ}') = (NOW() AT TIME ZONE '${TZ}')::date`;
+    const weekCond   = `DATE(created_at AT TIME ZONE '${TZ}') >= date_trunc('week',  (NOW() AT TIME ZONE '${TZ}'))::date`;
+    const monthCond  = `DATE(created_at AT TIME ZONE '${TZ}') >= date_trunc('month', (NOW() AT TIME ZONE '${TZ}'))::date`;
 
     async function getStats(whereSql) {
       const [rows] = await sequelize.query(`
@@ -276,8 +277,8 @@ router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
     if (from || to) {
       const { literal } = require('sequelize');
       const conditions = [];
-      if (from) conditions.push(literal(`DATE(created_at AT TIME ZONE 'America/Guayaquil') >= '${from}'`));
-      if (to)   conditions.push(literal(`DATE(created_at AT TIME ZONE 'America/Guayaquil') <= '${to}'`));
+      if (from) conditions.push(literal(`DATE(created_at AT TIME ZONE '${TZ}') >= '${from}'`));
+      if (to)   conditions.push(literal(`DATE(created_at AT TIME ZONE '${TZ}') <= '${to}'`));
       where[Op.and] = conditions;
     }
 

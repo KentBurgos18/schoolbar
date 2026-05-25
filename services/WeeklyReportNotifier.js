@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { User, Student, Sale, SaleItem, Setting } = require('../models');
 const { sendMail, weeklyReportHtml } = require('./EmailService');
 const { Op } = require('sequelize');
+const { TZ } = require('../config/timezone');
 
 let currentTask = null; // referencia al cron activo
 
@@ -137,9 +138,9 @@ async function startWeeklyReportCron() {
   currentTask = cron.schedule(cronExpr, async () => {
     console.log('[WeeklyReport] Cron disparado —', new Date().toISOString());
     await sendWeeklyReports();
-  }, { timezone: 'America/Guayaquil' });
+  }, { timezone: TZ });
 
-  console.log(`[WeeklyReport] Cron registrado → cada ${dayNames[cfg.day] || cfg.day} a las ${cfg.hour}:00 (America/Guayaquil)`);
+  console.log(`[WeeklyReport] Cron registrado → cada ${dayNames[cfg.day] || cfg.day} a las ${cfg.hour}:00 (${TZ})`);
   console.log(`[WeeklyReport] Estado: ${cfg.enabled ? 'HABILITADO' : 'DESHABILITADO (el cron corre pero omite el envío)'}`);
 }
 

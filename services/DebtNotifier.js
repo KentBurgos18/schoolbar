@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { User, Student, Sale, Setting, sequelize } = require('../models');
 const { sendMail, debtEmailHtml } = require('./EmailService');
 const { Op } = require('sequelize');
+const { TZ } = require('../config/timezone');
 
 // Ejecuta el envío de correos a todos los padres con deuda > 0
 async function sendDebtNotifications() {
@@ -98,10 +99,10 @@ function startDebtNotifierCron() {
     console.log('[DebtNotifier] Cron semanal disparado —', new Date().toISOString());
     await sendDebtNotifications();
   }, {
-    timezone: 'America/Guayaquil'
+    timezone: TZ
   });
 
-  console.log('[DebtNotifier] Cron registrado → todos los lunes a las 08:00 (America/Guayaquil)');
+  console.log(`[DebtNotifier] Cron registrado → todos los lunes a las 08:00 (${TZ})`);
 }
 
 module.exports = { startDebtNotifierCron, sendDebtNotifications };
