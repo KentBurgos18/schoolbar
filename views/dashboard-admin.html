@@ -1415,6 +1415,10 @@
       <button class="btn-close" onclick="closeModal('modalSaleDetail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body" id="saleDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="deleteSale(_currentSaleDetailId, true)">🗑 Eliminar venta</button>
+      <button class="btn btn-primary" onclick="closeModal('modalSaleDetail')">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -3094,7 +3098,12 @@ async function loadSales() {
       <td class="hm" style="color:var(--success);font-weight:600">${balAfter}</td>
       <td class="hm" style="font-size:12px;color:var(--gray-500)">${cashierN}</td>
       <td class="hm" style="font-size:12px;color:var(--gray-500);white-space:nowrap">${fecha}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="viewSale(${s.id})">Ver</button></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="viewSale(${s.id})">Ver</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSale(${s.id})" title="Eliminar venta">🗑</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 
@@ -3269,6 +3278,8 @@ function exportSummaryExcel() {
   XLSX.writeFile(wb, 'resumen_ventas_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
+var _currentSaleDetailId = null;
+
 async function viewSale(id) {
   var sale = _salesData.find(s => s.id === id);
   if (!sale) {
@@ -3277,6 +3288,7 @@ async function viewSale(id) {
     sale = (data||[]).find(s => s.id === id);
   }
   if (!sale) return;
+  _currentSaleDetailId = sale.id;
   var person = getSalePersonName(sale);
   var cashierN = sale.cashier?.name || '#' + sale.cashier_id;
   var fecha    = new Date(sale.created_at || sale.createdAt).toLocaleString('es-EC');
@@ -3298,6 +3310,38 @@ async function viewSale(id) {
       ${parseFloat(sale.added_to_debt)>0 ? `<span class="badge" style="font-size:13px;padding:6px 12px;background:#fef2f2;color:#dc2626;border-radius:8px">A deuda: <strong>$${parseFloat(sale.added_to_debt).toFixed(2)}</strong></span>` : ''}
     </div>`;
   openModal('modalSaleDetail');
+}
+
+async function deleteSale(id, fromModal) {
+  var sale = (_salesData || []).find(s => s.id === id);
+  if (!sale) {
+    var data = await api('/sales?limit=500');
+    sale = (data||[]).find(s => s.id === id);
+  }
+  if (!sale) { toast('Venta no encontrada', 'error'); return; }
+
+  var person  = getSalePersonName(sale);
+  var total   = parseFloat(sale.total).toFixed(2);
+  var paidBal = parseFloat(sale.paid_from_balance) || 0;
+  var debt    = parseFloat(sale.added_to_debt) || 0;
+  var isBal   = sale.payment_method === 'BALANCE';
+
+  var efectos = isBal
+    ? `\n\nSe revertirán:\n` +
+      (paidBal > 0 ? `  • +$${paidBal.toFixed(2)} al saldo de ${person}\n` : '') +
+      (debt    > 0 ? `  • −$${debt.toFixed(2)} de deuda (si ya pagó, el sobrante va al saldo)\n` : '')
+    : '\n\n(Venta en efectivo — no requiere ajustes de saldo)';
+
+  var msg = `¿Eliminar la venta #${id} de ${person} por $${total}?${efectos}\n\nEsta acción no se puede deshacer.`;
+  if (!confirm(msg)) return;
+
+  var res  = await fetch(API + '/sales/' + id, { method:'DELETE', headers: authHeaders() });
+  var data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al eliminar', 'error'); return; }
+  toast(data.message, 'success');
+  if (fromModal) closeModal('modalSaleDetail');
+  loadSales();
+  loadSalesStats();
 }
 
 // ── Email Settings ──

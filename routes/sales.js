@@ -313,4 +313,56 @@ router.get('/', auth('ADMIN', 'PARENT', 'CASHIER'), async (req, res) => {
   }
 });
 
+// DELETE /api/sales/:id  → admin elimina una venta y revierte los saldos
+router.delete('/:id', auth('ADMIN'), async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const sale = await Sale.findByPk(req.params.id, { transaction: t, lock: true });
+    if (!sale) { await t.rollback(); return res.status(404).json({ error: 'Venta no encontrada' }); }
+
+    const paidFromBalance = parseFloat(sale.paid_from_balance) || 0;
+    const addedToDebt     = parseFloat(sale.added_to_debt)     || 0;
+    const isBalance       = sale.payment_method === 'BALANCE';
+
+    // Solo revertimos saldos/deuda si la venta fue contra una cuenta (no CASH consumidor final)
+    if (isBalance) {
+      let account = null;
+      if (sale.customer_type === 'STUDENT' && sale.student_id) {
+        account = await Student.findByPk(sale.student_id, { transaction: t, lock: true });
+      } else if (sale.customer_type === 'TEACHER' && sale.parent_id) {
+        account = await User.findByPk(sale.parent_id, { transaction: t, lock: true });
+      }
+
+      if (account) {
+        // Devuelve la deuda: descuenta lo que se pueda; si la deuda original ya fue pagada
+        // con recargas/transferencias posteriores, el sobrante se acredita al saldo
+        const currentDebt = parseFloat(account.debt) || 0;
+        const debtRefund    = Math.min(addedToDebt, currentDebt);
+        const overflowToBal = addedToDebt - debtRefund;
+        const balanceRefund = paidFromBalance + overflowToBal;
+
+        await account.update({
+          debt:    currentDebt - debtRefund,
+          balance: parseFloat(account.balance) + balanceRefund
+        }, { transaction: t });
+      }
+    }
+
+    await SaleItem.destroy({ where: { sale_id: sale.id }, transaction: t });
+    await sale.destroy({ transaction: t });
+
+    await t.commit();
+    EventBus.emit('sale:deleted', { sale_id: sale.id });
+    res.json({
+      message: 'Venta eliminada correctamente.' + (isBalance ? ' Se ajustaron los saldos.' : ''),
+      sale_id: sale.id,
+      refunded: isBalance ? { paid_from_balance: paidFromBalance, added_to_debt: addedToDebt } : null
+    });
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar venta' });
+  }
+});
+
 module.exports = router;
