@@ -9,6 +9,10 @@ const { startWeeklyReportCron }    = require('./services/WeeklyReportNotifier');
 const app  = express();
 const PORT = process.env.PORT || 3030;
 
+// Confiar en el proxy reverso (Nginx Proxy Manager) para que req.ip devuelva la IP real
+// del cliente y no la del contenedor del proxy.
+app.set('trust proxy', true);
+
 // ── Middlewares ──
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true, limit: '8mb' }));

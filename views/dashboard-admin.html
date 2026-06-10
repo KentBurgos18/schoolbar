@@ -184,6 +184,10 @@
         Rendimiento
       </div>
       <div class="nav-section">Configuración</div>
+      <div class="nav-item" onclick="showSection('authLogs')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Logs de acceso
+      </div>
       <div class="nav-item" onclick="showSection('admins')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/><polyline points="16,11 18,13 22,9"/></svg>
         Administradores
@@ -554,6 +558,75 @@
                   </table>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOGS DE ACCESO -->
+      <section id="sec-authLogs" style="display:none">
+        <div class="stats-grid" id="authLogsStats" style="margin-bottom:18px"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px" class="auth-logs-grid">
+          <div class="card" style="margin:0">
+            <div class="card-header"><h3 style="font-size:14px">🚨 IPs con más intentos fallidos (últimos 7 días)</h3></div>
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>IP</th><th style="text-align:right">Intentos</th><th class="hm">Último intento</th></tr></thead>
+                  <tbody id="topFailIpsBody"><tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gray-400)">—</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="card-header"><h3 style="font-size:14px">📧 Emails con más intentos fallidos</h3></div>
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Email</th><th style="text-align:right">Intentos</th><th class="hm">Último intento</th></tr></thead>
+                  <tbody id="topFailEmailsBody"><tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gray-400)">—</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Detalle de eventos</h3></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px" class="auth-logs-filters">
+              <div>
+                <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Tipo de evento</label>
+                <select id="logsEventType" class="form-control form-select" style="height:38px" onchange="loadAuthLogs()">
+                  <option value="">Todos</option>
+                  <option value="LOGIN_SUCCESS">Login exitoso</option>
+                  <option value="LOGIN_FAILED">Login fallido (clave mala)</option>
+                  <option value="LOGIN_USER_NOT_FOUND">Email no existe</option>
+                  <option value="FORGOT_PASSWORD_REQUESTED">Solicitud reset</option>
+                  <option value="FORGOT_PASSWORD_UNKNOWN_EMAIL">Reset a email desconocido</option>
+                  <option value="PASSWORD_RESET_SUCCESS">Reset completado</option>
+                  <option value="PASSWORD_RESET_FAILED">Reset fallido</option>
+                  <option value="LOGIN_ERROR">Error interno</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">Email</label>
+                <input type="text" id="logsEmail" class="form-control" style="height:38px" placeholder="Buscar email..." oninput="if(this._t)clearTimeout(this._t); this._t=setTimeout(loadAuthLogs,500);" />
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--gray-500);font-weight:700;text-transform:uppercase">IP</label>
+                <input type="text" id="logsIp" class="form-control" style="height:38px" placeholder="Buscar IP..." oninput="if(this._t)clearTimeout(this._t); this._t=setTimeout(loadAuthLogs,500);" />
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button class="btn btn-ghost" onclick="document.getElementById('logsEventType').value='';document.getElementById('logsEmail').value='';document.getElementById('logsIp').value='';loadAuthLogs()" style="height:38px;width:100%">Limpiar</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Evento</th><th>Email</th><th class="hm">IP</th><th class="hm">User Agent</th><th>Razón</th></tr></thead>
+                <tbody id="authLogsBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Cargando...</td></tr></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1506,8 +1579,8 @@ async function api(path, opts) {
 }
 
 // ── Navigation ──
-var sections = ['overview','admins','parents','teachers','cashiers','students','products','recharges','bankAccounts','expenses','sales','profit','email'];
-var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Padres de familia', teachers:'Profesores', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', expenses:'Gastos', sales:'Ventas', profit:'Rendimiento', email:'Correo y notificaciones' };
+var sections = ['overview','admins','parents','teachers','cashiers','students','products','recharges','bankAccounts','expenses','sales','profit','authLogs','email'];
+var sectionTitles = { overview:'Resumen', admins:'Administradores', parents:'Padres de familia', teachers:'Profesores', cashiers:'Cajeros', students:'Estudiantes', products:'Productos', recharges:'Recargas', bankAccounts:'Cuentas bancarias', expenses:'Gastos', sales:'Ventas', profit:'Rendimiento', authLogs:'Logs de acceso', email:'Correo y notificaciones' };
 
 function showSection(id) {
   if (!sections.includes(id)) id = 'overview';
@@ -1541,6 +1614,7 @@ function showSection(id) {
   if (id === 'sales')        { loadSalesStats(); loadSalesCashiers(); }
   if (id === 'expenses')     { loadExpenseCategoriesIntoFilter(); loadExpenses(); }
   if (id === 'profit')       { initProfitDates(); loadProfit(); }
+  if (id === 'authLogs')     { loadAuthLogsSummary(); loadAuthLogs(); }
   if (id === 'email')        loadEmailSettings();
 }
 
@@ -3357,6 +3431,90 @@ async function deleteSale(id, fromModal) {
   if (fromModal) closeModal('modalSaleDetail');
   loadSales();
   loadSalesStats();
+}
+
+// ── Logs de autenticación ──
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+var _eventLabels = {
+  LOGIN_SUCCESS:                 { label: 'Login exitoso',          color: '#16a34a', bg: '#dcfce7' },
+  LOGIN_FAILED:                  { label: 'Login fallido',          color: '#dc2626', bg: '#fef2f2' },
+  LOGIN_USER_NOT_FOUND:          { label: 'Email no existe',        color: '#d97706', bg: '#fef3c7' },
+  LOGIN_ERROR:                   { label: 'Error interno',          color: '#7c2d12', bg: '#fee4d6' },
+  FORGOT_PASSWORD_REQUESTED:     { label: 'Solicitud reset',        color: '#2563eb', bg: '#dbeafe' },
+  FORGOT_PASSWORD_UNKNOWN_EMAIL: { label: 'Reset email desconoc.',  color: '#9333ea', bg: '#f3e8ff' },
+  PASSWORD_RESET_SUCCESS:        { label: 'Reset completado',       color: '#16a34a', bg: '#dcfce7' },
+  PASSWORD_RESET_FAILED:         { label: 'Reset fallido',          color: '#dc2626', bg: '#fef2f2' }
+};
+
+function eventBadge(t) {
+  var info = _eventLabels[t] || { label: t, color: '#6b7280', bg: '#f3f4f6' };
+  return '<span class="badge" style="background:'+info.bg+';color:'+info.color+';font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap">'+info.label+'</span>';
+}
+
+async function loadAuthLogsSummary() {
+  var data = await api('/auth/logs/summary');
+  if (!data) return;
+
+  // Cards
+  var statsDiv = document.getElementById('authLogsStats');
+  var counts = {};
+  (data.by_event || []).forEach(r => { counts[r.event_type] = r.count; });
+  var fail   = (counts.LOGIN_FAILED || 0) + (counts.LOGIN_USER_NOT_FOUND || 0);
+  var ok     = counts.LOGIN_SUCCESS || 0;
+  var resets = (counts.PASSWORD_RESET_SUCCESS || 0) + (counts.FORGOT_PASSWORD_REQUESTED || 0);
+  var errs   = counts.LOGIN_ERROR || 0;
+  statsDiv.innerHTML = [
+    {n:ok,    l:'Logins exitosos (7d)',   bg:'#dcfce7', c:'#16a34a'},
+    {n:fail,  l:'Logins fallidos (7d)',   bg:'#fef2f2', c:'#dc2626'},
+    {n:resets,l:'Solicitudes reset (7d)', bg:'#dbeafe', c:'#2563eb'},
+    {n:errs,  l:'Errores internos (7d)',  bg:'#fee4d6', c:'#7c2d12'}
+  ].map(s => '<div class="stat-card"><div class="stat-icon" style="background:'+s.bg+';color:'+s.c+'"><strong style="font-size:18px">'+s.n+'</strong></div><div><div class="stat-value">'+s.n+'</div><div class="stat-label">'+s.l+'</div></div></div>').join('');
+
+  // Top IPs
+  var ipBody = document.getElementById('topFailIpsBody');
+  ipBody.innerHTML = (data.top_failed_ips || []).length
+    ? data.top_failed_ips.map(r => '<tr><td style="font-family:monospace;font-size:12px">'+escapeHtml(r.ip_address)+'</td><td style="text-align:right"><strong style="color:var(--danger)">'+r.attempts+'</strong></td><td class="hm" style="font-size:11px;color:var(--gray-500)">'+new Date(r.last_attempt).toLocaleString('es-EC')+'</td></tr>').join('')
+    : '<tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gray-400)">Sin intentos fallidos</td></tr>';
+
+  // Top emails
+  var emailBody = document.getElementById('topFailEmailsBody');
+  emailBody.innerHTML = (data.top_failed_emails || []).length
+    ? data.top_failed_emails.map(r => '<tr><td style="font-size:12px">'+escapeHtml(r.email)+'</td><td style="text-align:right"><strong style="color:var(--danger)">'+r.attempts+'</strong></td><td class="hm" style="font-size:11px;color:var(--gray-500)">'+new Date(r.last_attempt).toLocaleString('es-EC')+'</td></tr>').join('')
+    : '<tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gray-400)">Sin intentos fallidos</td></tr>';
+}
+
+async function loadAuthLogs() {
+  var qs = new URLSearchParams();
+  var ev = document.getElementById('logsEventType')?.value;
+  var em = document.getElementById('logsEmail')?.value;
+  var ip = document.getElementById('logsIp')?.value;
+  if (ev) qs.set('event_type', ev);
+  if (em) qs.set('email', em);
+  if (ip) qs.set('ip', ip);
+  qs.set('limit', '500');
+  var data = await api('/auth/logs?' + qs.toString());
+  var tb = document.getElementById('authLogsBody');
+  if (!data || !data.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sin resultados</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(l => {
+    var fecha = new Date(l.createdAt).toLocaleString('es-EC');
+    return '<tr>' +
+      '<td style="font-size:12px;white-space:nowrap;color:var(--gray-700)">'+fecha+'</td>' +
+      '<td>'+eventBadge(l.event_type)+'</td>' +
+      '<td style="font-size:12px">'+escapeHtml(l.email || '—')+'</td>' +
+      '<td class="hm" style="font-family:monospace;font-size:11px;color:var(--gray-600)">'+escapeHtml(l.ip_address || '—')+'</td>' +
+      '<td class="hm" style="font-size:11px;color:var(--gray-500);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escapeHtml(l.user_agent||'')+'">'+escapeHtml((l.user_agent||'').slice(0,60))+'</td>' +
+      '<td style="font-size:11px;color:var(--gray-500)">'+escapeHtml(l.reason || '')+'</td>' +
+    '</tr>';
+  }).join('');
 }
 
 // ── Email Settings ──

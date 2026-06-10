@@ -145,6 +145,17 @@ const StudentTransfer = sequelize.define('StudentTransfer', {
   note:            { type: DataTypes.STRING(255) },
 }, { tableName: 'student_transfers', underscored: true });
 
+const AuthLog = sequelize.define('AuthLog', {
+  id:         { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  event_type: { type: DataTypes.STRING(40), allowNull: false },
+  email:      { type: DataTypes.STRING(120) },
+  user_id:    { type: DataTypes.INTEGER },
+  ip_address: { type: DataTypes.STRING(45) },
+  user_agent: { type: DataTypes.TEXT },
+  reason:     { type: DataTypes.STRING(120) },
+  metadata:   { type: DataTypes.JSONB },
+}, { tableName: 'auth_logs', underscored: true, updatedAt: false });
+
 const PasswordReset = sequelize.define('PasswordReset', {
   id:         { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   user_id:    { type: DataTypes.INTEGER, allowNull: false },
@@ -174,4 +185,4 @@ StudentTransfer.belongsTo(User,    { foreignKey: 'performed_by',    as: 'perform
 Expense.belongsTo(ExpenseCategory, { foreignKey: 'category_id', as: 'category' });
 Expense.belongsTo(User,            { foreignKey: 'created_by',  as: 'creator' });
 
-module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset, StudentTransfer, ExpenseCategory, Expense };
+module.exports = { sequelize, User, Student, Product, Sale, SaleItem, Recharge, RechargeAllocation, BankAccount, Category, Setting, PasswordReset, StudentTransfer, ExpenseCategory, Expense, AuthLog };

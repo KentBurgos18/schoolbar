@@ -3,21 +3,34 @@ const router   = express.Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
-const { User, PasswordReset, Setting } = require('../models');
+const { User, PasswordReset, Setting, AuthLog } = require('../models');
+const { Op } = require('sequelize');
 const { sendMail } = require('../services/EmailService');
 const auth     = require('../middlewares/auth');
+const { logAuthEvent } = require('../services/authLogger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'schoolbar_jwt_secret';
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
+  const { email, password } = req.body || {};
   try {
-    const { email, password } = req.body;
+    if (!email || !password) {
+      await logAuthEvent(req, 'LOGIN_FAILED', { email, reason: 'Missing email or password' });
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    }
+
     const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
+    if (!user) {
+      await logAuthEvent(req, 'LOGIN_USER_NOT_FOUND', { email, reason: 'Email not registered' });
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' });
+    if (!valid) {
+      await logAuthEvent(req, 'LOGIN_FAILED', { email, user_id: user.id, reason: 'Wrong password' });
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
 
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name },
@@ -25,11 +38,14 @@ router.post('/login', async (req, res) => {
       { expiresIn: '12h' }
     );
 
+    await logAuthEvent(req, 'LOGIN_SUCCESS', { email, user_id: user.id, metadata: { role: user.role } });
+
     res.json({
       token,
       user: { id: user.id, name: user.name, role: user.role, email: user.email, balance: user.balance, debt: user.debt }
     });
   } catch (err) {
+    await logAuthEvent(req, 'LOGIN_ERROR', { email, reason: err.message?.slice(0, 100) });
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 });
@@ -216,7 +232,11 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     // Responder siempre igual para no revelar si el email existe
-    if (!user) return res.json({ message: 'Si el correo está registrado recibirás un enlace en breve.' });
+    if (!user) {
+      await logAuthEvent(req, 'FORGOT_PASSWORD_UNKNOWN_EMAIL', { email });
+      return res.json({ message: 'Si el correo está registrado recibirás un enlace en breve.' });
+    }
+    await logAuthEvent(req, 'FORGOT_PASSWORD_REQUESTED', { email, user_id: user.id });
 
     // Invalidar tokens anteriores del mismo usuario
     await PasswordReset.update({ used: true }, { where: { user_id: user.id, used: false } });
@@ -272,8 +292,14 @@ router.post('/reset-password', async (req, res) => {
     if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
 
     const record = await PasswordReset.findOne({ where: { token, used: false } });
-    if (!record) return res.status(400).json({ error: 'El enlace no es válido o ya fue utilizado.' });
-    if (new Date() > record.expires_at) return res.status(400).json({ error: 'El enlace expiró. Solicita uno nuevo.' });
+    if (!record) {
+      await logAuthEvent(req, 'PASSWORD_RESET_FAILED', { reason: 'Invalid or used token' });
+      return res.status(400).json({ error: 'El enlace no es válido o ya fue utilizado.' });
+    }
+    if (new Date() > record.expires_at) {
+      await logAuthEvent(req, 'PASSWORD_RESET_FAILED', { user_id: record.user_id, reason: 'Token expired' });
+      return res.status(400).json({ error: 'El enlace expiró. Solicita uno nuevo.' });
+    }
 
     const user = await User.findByPk(record.user_id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -282,9 +308,71 @@ router.post('/reset-password', async (req, res) => {
     await user.update({ password: hash });
     await record.update({ used: true });
 
+    await logAuthEvent(req, 'PASSWORD_RESET_SUCCESS', { email: user.email, user_id: user.id });
+
     res.json({ message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' });
   } catch (err) {
     res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+});
+
+// GET /api/auth/logs  → admin consulta los logs de autenticación
+router.get('/logs', auth('ADMIN'), async (req, res) => {
+  try {
+    const { event_type, email, ip, from, to, limit } = req.query;
+    const where = {};
+    if (event_type) where.event_type = event_type;
+    if (email)      where.email = { [Op.iLike]: `%${email}%` };
+    if (ip)         where.ip_address = { [Op.iLike]: `%${ip}%` };
+    if (from || to) {
+      where.created_at = {};
+      if (from) where.created_at[Op.gte] = new Date(from + 'T00:00:00-05:00');
+      if (to)   where.created_at[Op.lte] = new Date(to   + 'T23:59:59-05:00');
+    }
+    const logs = await AuthLog.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+      limit: Math.min(parseInt(limit) || 500, 2000)
+    });
+    res.json(logs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener logs' });
+  }
+});
+
+// GET /api/auth/logs/summary  → resumen de eventos y top IPs sospechosas
+router.get('/logs/summary', auth('ADMIN'), async (req, res) => {
+  try {
+    const { sequelize } = require('../models');
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 días
+    const [byEvent, topFailIps, topFailEmails] = await Promise.all([
+      sequelize.query(`
+        SELECT event_type, COUNT(*)::int AS count
+        FROM auth_logs WHERE created_at >= :since
+        GROUP BY event_type ORDER BY count DESC
+      `, { replacements: { since }, type: sequelize.QueryTypes.SELECT }),
+      sequelize.query(`
+        SELECT ip_address, COUNT(*)::int AS attempts, MAX(created_at) AS last_attempt
+        FROM auth_logs
+        WHERE event_type IN ('LOGIN_FAILED','LOGIN_USER_NOT_FOUND') AND created_at >= :since AND ip_address IS NOT NULL
+        GROUP BY ip_address
+        ORDER BY attempts DESC
+        LIMIT 10
+      `, { replacements: { since }, type: sequelize.QueryTypes.SELECT }),
+      sequelize.query(`
+        SELECT email, COUNT(*)::int AS attempts, MAX(created_at) AS last_attempt
+        FROM auth_logs
+        WHERE event_type IN ('LOGIN_FAILED','LOGIN_USER_NOT_FOUND') AND created_at >= :since AND email IS NOT NULL
+        GROUP BY email
+        ORDER BY attempts DESC
+        LIMIT 10
+      `, { replacements: { since }, type: sequelize.QueryTypes.SELECT })
+    ]);
+    res.json({ by_event: byEvent, top_failed_ips: topFailIps, top_failed_emails: topFailEmails });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener resumen' });
   }
 });
 
