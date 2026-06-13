@@ -1,0 +1,4 @@
+# Forzar LF en archivos que se ejecutan/leen en Linux (VPS),
+# para evitar errores por CRLF al editarlos en Windows.
+*.sh   text eol=lf
+*.conf text eol=lf
