@@ -1208,7 +1208,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalRecharge')">Cancelar</button>
-      <button class="btn btn-primary" onclick="applyRecharge()">Aplicar recarga</button>
+      <button class="btn btn-primary" onclick="applyRecharge(this)">Aplicar recarga</button>
     </div>
   </div>
 </div>
@@ -2834,7 +2834,10 @@ function toggleRcTransfer() {
   document.getElementById('rcTransferFields').style.display = method === 'TRANSFER' ? 'block' : 'none';
 }
 
-async function applyRecharge() {
+async function applyRecharge(btn) {
+  // Evita doble envío: si ya se está procesando, ignorar clics extra
+  if (btn && btn.dataset.loading === '1') return;
+
   var parentId = document.getElementById('rcParent').value;
   if (!parentId) { toast('Selecciona un responsable', 'error'); return; }
 
@@ -2860,12 +2863,36 @@ async function applyRecharge() {
     receipt_ref: document.getElementById('rcRef').value || null,
   };
 
-  var res = await fetch(API + '/recharges/admin-add', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-  var data = await res.json();
-  if (!res.ok) { toast(data.error, 'error'); return; }
-  toast(data.message, 'success');
-  closeModal('modalRecharge');
-  loadRecharges();
+  // Bloquear el botón (gris) hasta que la recarga se complete
+  var originalText;
+  if (btn) {
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    originalText = btn.textContent;
+    btn.textContent = 'Aplicando…';
+  }
+
+  try {
+    var res = await fetch(API + '/recharges/admin-add', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast(data.message, 'success');
+    closeModal('modalRecharge');
+    loadRecharges();
+  } catch (err) {
+    toast('Error de conexión al aplicar la recarga', 'error');
+  } finally {
+    // Restaurar el botón siempre (haya éxito o error)
+    if (btn) {
+      btn.dataset.loading = '';
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+      btn.textContent = originalText;
+    }
+  }
 }
 
 var _rechargesData = [];
