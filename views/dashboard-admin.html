@@ -2944,7 +2944,9 @@ function renderRechargesTable(data) {
       <td>${statusBadge(r.status)}</td>
       <td class="hm" style="font-size:12px;color:var(--gray-500)">${new Date(r.createdAt).toLocaleString('es-EC')}</td>
       <td>
-        ${r.status==='PENDING'?`<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>` : '—'}
+        ${r.status==='PENDING'
+          ? `<div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="approveRecharge(${r.id})">Aprobar</button><button class="btn btn-danger btn-sm" onclick="rejectRecharge(${r.id})">Rechazar</button></div>`
+          : `<button class="btn btn-danger btn-sm" onclick="deleteRecharge(${r.id}, this)">Eliminar</button>`}
       </td>
     </tr>`;
   }).join('');
@@ -2971,6 +2973,44 @@ async function rejectRecharge(id) {
   if (!res.ok) { toast('Error al rechazar', 'error'); return; }
   toast('Recarga rechazada', 'warning');
   loadOverview(); loadRecharges();
+}
+
+async function deleteRecharge(id, btn) {
+  if (btn && btn.dataset.loading === '1') return; // evita doble clic
+
+  var r = _rechargesData.find(x => x.id == id);
+  var nombre = r && r.parent ? r.parent.name : 'este responsable';
+  var monto  = r ? parseFloat(r.amount).toFixed(2) : '';
+  if (!confirm('¿Eliminar la recarga de $' + monto + ' de ' + nombre + '?\n\n' +
+               'Se revertirá el saldo/deuda automáticamente. Esta acción NO se puede deshacer.')) return;
+
+  var originalText;
+  if (btn) {
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    originalText = btn.textContent;
+    btn.textContent = 'Eliminando…';
+  }
+
+  try {
+    var res = await fetch(API + '/recharges/' + id, { method:'DELETE', headers: authHeaders() });
+    var data = await res.json();
+    if (!res.ok) { toast(data.error, 'error'); return; }
+    toast(data.message, 'success');
+    loadOverview(); loadRecharges();
+  } catch (err) {
+    toast('Error de conexión al eliminar la recarga', 'error');
+  } finally {
+    if (btn) {
+      btn.dataset.loading = '';
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+      btn.textContent = originalText;
+    }
+  }
 }
 
 // Cache de recargas para ver el comprobante sin otra petición

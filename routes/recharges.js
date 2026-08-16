@@ -293,6 +293,66 @@ router.patch('/:id/reject', auth('ADMIN'), async (req, res) => {
   }
 });
 
+// DELETE /api/recharges/:id  → solo admin. Elimina una recarga y REVIERTE los saldos.
+// Regla de reversión (por cada asignación, monto = amt):
+//   - si el saldo actual alcanza: saldo -= amt (la deuda no cambia)
+//   - si no alcanza: la parte que falta se convierte en deuda (saldo = 0, deuda += amt - saldo)
+// Esto revierte EXACTO cuando no hubo consumo posterior, y es lo correcto cuando sí lo hubo
+// (lo consumido después vuelve a quedar como deuda). Solo aplica a recargas APROBADAS/REJECTED.
+router.delete('/:id', auth('ADMIN'), async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const recharge = await Recharge.findByPk(req.params.id, { transaction: t, lock: true });
+    if (!recharge) { await t.rollback(); return res.status(404).json({ error: 'Recarga no encontrada' }); }
+    if (recharge.status === 'PENDING') {
+      await t.rollback();
+      return res.status(400).json({ error: 'Esta recarga está pendiente. Apruébala o recházala antes de eliminarla.' });
+    }
+
+    const allocations = await RechargeAllocation.findAll({ where: { recharge_id: recharge.id }, transaction: t });
+    const afectados = [];
+
+    // Solo revertir saldos si la recarga fue APROBADA (una REJECTED nunca aplicó saldo).
+    if (recharge.status === 'APPROVED') {
+      for (const alloc of allocations) {
+        const amt = parseFloat(alloc.amount);
+        const target = alloc.user_id
+          ? await User.findByPk(alloc.user_id, { transaction: t, lock: true })
+          : await Student.findByPk(alloc.student_id, { transaction: t, lock: true });
+        if (!target) continue;
+
+        const balance = parseFloat(target.balance);
+        const debt    = parseFloat(target.debt);
+        let newBalance, newDebt;
+        if (balance >= amt) {
+          newBalance = balance - amt;
+          newDebt    = debt;
+        } else {
+          newDebt    = debt + (amt - balance);
+          newBalance = 0;
+        }
+        await target.update({ balance: newBalance, debt: newDebt }, { transaction: t });
+        afectados.push(`${target.name}: saldo $${newBalance.toFixed(2)}, deuda $${newDebt.toFixed(2)}`);
+      }
+    }
+
+    await RechargeAllocation.destroy({ where: { recharge_id: recharge.id }, transaction: t });
+    const monto = parseFloat(recharge.amount).toFixed(2);
+    await recharge.destroy({ transaction: t });
+
+    await t.commit();
+    EventBus.emit('recharge:deleted', { id: req.params.id });
+    res.json({
+      message: `Recarga de $${monto} eliminada.` + (afectados.length ? ' ' + afectados.join(' · ') : ''),
+      afectados
+    });
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar la recarga' });
+  }
+});
+
 // PATCH /api/recharges/pay-debt  → padre paga deuda
 router.patch('/pay-debt', auth('PARENT'), async (req, res) => {
   const t = await sequelize.transaction();
